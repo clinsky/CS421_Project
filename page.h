@@ -1,3 +1,6 @@
+#ifndef PAGE_H
+#define PAGE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,3 +18,5 @@ void insert_key_at_end_of_page(Page *page_ptr, int pkey);
 void insert_key_into_page_location(Page *page_ptr, int pkey, int count);
 void insert_key_into_page(Page *page_ptr, int pkey);
 Page *new_page(int max_num_records);
+
+#endif
