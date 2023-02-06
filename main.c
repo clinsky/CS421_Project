@@ -1,4 +1,6 @@
 #include "page.h"
+#include "parse_utils.h"
+#include "query_processor.h"
 #include <stdio.h>
 #include <stdlib.h>
 
