@@ -96,5 +96,3 @@ void split_page(Page *page_ptr, int pkey) {
   }
   insert_key_into_page(page_ptr, pkey);
 }
-
-void lmao() { printf("lmao"); }
