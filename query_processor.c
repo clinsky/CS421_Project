@@ -1,14 +1,7 @@
 #include "query_processor.h"
 #include "attribute_types.h"
 #include "parse_utils.h"
-
-// WILL PROBABLY NEED TO MOVE THIS TO A DIFFERENT FILE,
-// SCAFFOLDING TO TEST QUICK
-struct table {
-  char *name;
-  Attribute attributes[MAX_ATTRS];
-};
-typedef struct table Table;
+#include "table.h"
 
 /*
  * WORK IN PROGRESS
@@ -29,18 +22,24 @@ bool process_create_table() {
 
   Table *table_ptr = malloc(sizeof(Table));
   scanf("%s", table_name);
-  printf("%s is table_name\n", table_name);
-  table_ptr->name = malloc(strlen(table_name) + 1);
-  strcpy(table_ptr->name, table_name);
-  while (1) {
+  if (!endsWith(table_name, "(")) {
+    // should follow format create table foo(
+    printf("invalid table name\n");
+    return false;
+  }
+  table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
+  strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
+  printf("%s (len %lu) is table name \n", table_ptr->name,
+         strlen(table_ptr->name));
 
-    // first word
+  while (1) {
+    // field name
     scanf("%s", word);
     printf("here %s %lu\n", word, strlen(word));
     Attribute *attribute_ptr = malloc(sizeof(Attribute));
     attribute_ptr->name = malloc(strlen(word) + 1);
 
-    // second word
+    // attr type
     scanf("%s", word);
     // strcpy(attributes[num_attributes].type, word);
     // printf("%s is attr %s is type\n", attributes[num_attributes].name,

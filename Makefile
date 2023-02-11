@@ -18,5 +18,8 @@ parse_utils.o: parse_utils.c parse_utils.h
 query_processor.o: query_processor.c query_processor.h
 	$(CC) $(CFLAGS) query_processor.c
 
+table.o: table.h
+	$(CC) $(CFLAGS) query_processor.c
+
 clean:
 	rm -f *.o main
