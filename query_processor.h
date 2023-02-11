@@ -28,4 +28,7 @@ bool process_insert_record();
 // parse a select command from stdin
 bool process_select();
 
+// prints "SUCCESS" or "ERROR" depending on if statement was executed
+void print_command_result(bool success);
+
 #endif

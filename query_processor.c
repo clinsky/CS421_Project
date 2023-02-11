@@ -80,11 +80,22 @@ void process() {
   char word[100];
   scanf("%s", word);
   if (strcmp(word, "create") == 0) {
-    bool created_table = process_create_table();
+    printf("attempting to parse create statement..\n");
+    print_command_result(process_create_table());
   } else if (strcmp(word, "insert") == 0) {
-    bool inserted_record = process_insert_record();
+    printf("attempting to parse insert statement..\n");
+    print_command_result(process_insert_record());
   } else if (strcmp(word, "select")) {
-    bool valid_query = process_select();
+    print_command_result(process_select());
+    printf("attempting to parse select statement..\n");
+  }
+}
+
+void print_command_result(bool success) {
+  if (success) {
+    printf("SUCCESS\n");
+  } else {
+    printf("ERROR\n");
   }
 }
 
