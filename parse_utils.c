@@ -13,3 +13,18 @@ bool endsWith(const char *str, const char *suffix) {
     return 0;
   return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
+
+char *attribute_type_to_string(ATTRIBUTE_TYPE t) {
+  if (t == INTEGER) {
+    return "integer";
+  } else if (t == BOOL) {
+    return "bool";
+  } else if (t == DOUBLE) {
+    return "double";
+  } else if (t == CHAR) {
+    return "char";
+  } else if (t == VARCHAR) {
+    return "varchar";
+  }
+  return "";
+}

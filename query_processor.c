@@ -42,7 +42,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
     return VARCHAR;
   }
   // parse failed
-  printf("invalid attribute type\n");
+  printf("Invalid data type \"%s\"\n", attr);
   return INVALID_ATTR;
 }
 
@@ -82,8 +82,6 @@ bool process_create_table() {
     //   printf("field name: %s (len %lu)\n", word, strlen(word));
     attribute_ptr->name = malloc(strlen(word) + 1);
     strncpy(attribute_ptr->name, word, strlen(word) + 1);
-
-    printf("%s is attr name\n", attribute_ptr->name);
 
     // attr type
     scanf("%s", word);
@@ -169,22 +167,33 @@ bool process_create_table() {
 // unimplemented at the moment
 bool process_insert_record() { return false; }
 
-// unimplemented at the moment
-bool process_select() { return false; }
+bool process_select() {
+  char select_query[1000];
+  char table[1000];
+  fgets(select_query, 1000, stdin);
+
+  // remove trailing newline
+  select_query[strlen(select_query) - 1] = '\0';
+
+  // need that space in the beginning since "select" was parsed in process()
+  // and the rest is of the form " ..."
+  if (sscanf(select_query, " * from %s;", table) == 1) {
+    printf("%s is table \n", table);
+    return true;
+  }
+  return false;
+}
 
 void process() {
   char word[100];
   while (1) {
     scanf("%s", word);
     if (strcmp(word, "create") == 0) {
-      printf("attempting to parse create statement..\n");
       print_command_result(process_create_table());
     } else if (strcmp(word, "insert") == 0) {
-      printf("attempting to parse insert statement..\n");
       print_command_result(process_insert_record());
     } else if (strcmp(word, "select") == 0) {
       print_command_result(process_select());
-      printf("attempting to parse select statement..\n");
     } else if (strcmp(word, "q") == 0 || strcmp(word, "<quit>") == 0) {
       break;
     } else {
@@ -197,6 +206,7 @@ void print_command_result(bool success) {
   if (success) {
     printf("SUCCESS\n");
   } else {
+    fflush(stdin);
     printf("ERROR\n");
   }
 }
