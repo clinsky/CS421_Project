@@ -1,6 +1,8 @@
 #ifndef QUERY_PROCESSOR_H
 #define QUERY_PROCESSOR_H
 
+#include "attribute_types.h"
+#include "display.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,5 +29,11 @@ bool process_insert_record();
 
 // parse a select command from stdin
 bool process_select();
+
+// prints "SUCCESS" or "ERROR" depending on if statement was executed
+void print_command_result(bool success);
+
+// parse attribute type from string input and set it in attribute ptr
+ATTRIBUTE_TYPE parse_attribute_type(char *, Attribute *);
 
 #endif

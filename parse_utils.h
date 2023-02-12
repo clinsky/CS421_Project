@@ -1,6 +1,7 @@
 #ifndef PARSE_UTILS_H
 #define PARSE_UTILS_H
 
+#include "attribute_types.h"
 #include <stdbool.h>
 #include <string.h>
 
@@ -15,5 +16,7 @@ bool startsWith(const char *, const char *);
  * Used to check for ) and );
  * */
 bool endsWith(const char *, const char *);
+
+char *attribute_type_to_string(ATTRIBUTE_TYPE t);
 
 #endif

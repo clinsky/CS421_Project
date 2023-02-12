@@ -3,8 +3,8 @@ CFLAGS = -c -Wall
 
 all: main
 
-main: main.o page.o parse_utils.o query_processor.o
-	$(CC) main.o page.o parse_utils.o query_processor.o -o main
+main: main.o page.o parse_utils.o query_processor.o display.o
+	$(CC) main.o page.o parse_utils.o query_processor.o display.o -o main
 
 main.o: main.c
 	$(CC) $(CFLAGS) main.c
@@ -18,5 +18,9 @@ parse_utils.o: parse_utils.c parse_utils.h
 query_processor.o: query_processor.c query_processor.h
 	$(CC) $(CFLAGS) query_processor.c
 
+display.o: display.c display.h
+	$(CC) $(CFLAGS) display.c
+
 clean:
 	rm -f *.o main
+
