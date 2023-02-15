@@ -1,98 +1,124 @@
 #include "page.h"
+#include <string.h>
+#include <dirent.h>
 
-Page *new_page(int max_num_records) {
+char * create_new_table_file(char * table_file){
+    return table_file;
 
-  Page *page_ptr = (Page *)malloc(max_num_records * 4 + 4 + 4 + 8);
-  page_ptr->next = NULL;
-  return page_ptr;
 }
 
-Page *page_splitting(int *keys, int num_keys, int max_num_records) {
-  /*
-  Manage a database using the slotted page algorithm.
-          keys: array of primary keys to be inserted into the database
-          num_keys: the number of keys in the array of primary keys
-          max_num_records: the number of keys that can be in a page
-  */
-
-  // initialize a new page
-  Page *page_ptr = new_page(max_num_records);
-  for (int count = 0; count < num_keys; count++) {
-    // try to insert into the page
-    insert_key_into_page(page_ptr, (*keys + 4 * count));
-  }
-  return page_ptr;
+FILE * get_table_file(char * db_loc, int table_idx){
+    char char_string[2] = {table_idx, '\n'};
+    char * table_filename = strcat(db_loc, "/table/");
+    table_filename = strcat(table_filename, char_string);
+    FILE * file = fopen(table_filename, "rb");
+    return file;
 }
 
-void insert_key_into_page(Page *page_ptr, int pkey) {
-  /*
-          page_ptr: points to one of the pages that compose the database
-          pkey: the primary key to be inserted into the database
-  */
+bool record_before_current_record(Record rec, Record current_record) {
+    return get_primary_key(rec) < get_primary_key(current_record);
+}
 
-  // move through the pages to find where the pkey fits
-  int count = 0;
-  while (count < page_ptr->size) {
-    if (pkey < *(4 * count + page_ptr->primary_keys)) {
-      insert_key_into_page_location(page_ptr, pkey, count);
-      break;
+void insert_before_current_record(Record rec, Record curr, Page * page, int current_record_idx) {
+        Record temp = rec;
+        for (int idx = current_record_idx; idx < page->num_records - 1; idx++) {
+            page->records[idx + 1] = page->records[idx];
+            page->records[idx] = temp;
+            temp = page->records[idx+1];
+        }
+        (page->num_records)++;
+}
+
+bool page_is_overfull(Page * page) {
+    return sizeof(page) > global_page_size;
+}
+
+void split_page(Page * page, FILE * table_file_ptr){
+    /*
+     * make a new page
+     * remove half the items from the current page
+     * add the items to the new page
+     * insert the new page after the current page in the table file
+     */
+
+    // make a new page
+    Page * new_page = (Page *)malloc(global_page_size);
+    new_page->num_records = 0;
+    // remove half the items from the current page
+    // add the items to the new page
+    int left_num_records = page->num_records / 2;
+    int right_num_records = page->num_records - left_num_records;
+    for(int idx = left_num_records; idx < page->num_records; idx++){
+        new_page->records[idx - left_num_records] = page->records[idx];
+        new_page->num_records++;
     }
-    count++;
-  }
-  if (count == page_ptr->size) {
-    insert_key_at_end_of_page(page_ptr, pkey);
-  }
+    page->num_records = left_num_records;
+
+    // insert the new page after the current page in the table file
+    fwrite(page, sizeof(page), 1, table_file_ptr);
 }
 
-void insert_key_into_page_location(Page *page_ptr, int pkey, int count) {
-  if (page_ptr->size == page_ptr->max_num_records) {
-    split_page(page_ptr, pkey);
-  } else {
-    int temp = pkey;
-    for (int idx = count; idx < page_ptr->size - 1; idx++) {
-      *(page_ptr->primary_keys + 4 * (idx + 1)) =
-          *(page_ptr->primary_keys + 4 * idx);
-      *(page_ptr->primary_keys + 4 * idx) = temp;
-      temp = *(page_ptr->primary_keys + 4 * (idx + 1));
+void insert_record_into_table_file(char * db_loc, int table_idx, Record rec){
+    /*
+     * if there are no pages for this table:
+     *  make a new file for the table
+     *  add this entry to a new page
+     *  insert the page into the table file
+     *  end
+     * Read each table page in order from the table file:
+     *  iterate the records in page:
+     *      if the record belongs before the current record:
+     *          insert the record before it
+     *  if the current page becomes overfull:
+     *      split the page
+     *      end
+     * If the record does not get inserted:
+     *  insert it into the last page of the table file
+     *  if page becomes overfull:
+     *      split the page
+     *  end
+     */
+
+    FILE * table_file_ptr = get_table_file(db_loc, table_idx);
+    int * num_pages;
+    fread(&num_pages, sizeof(int), 1, table_file_ptr);
+    // if there are no pages for this table
+    if(!num_pages){
+        // make a new file for the table
+        int new_size = 1;
+        fwrite(&new_size, sizeof(int), 1, table_file_ptr);
+        // add this entry to a new page
+        Page * new_page = (Page*)malloc(global_page_size);
+        new_page->records[0] = rec;
+        new_page->size++;
+        // insert the page into the table file
+        fwrite(new_page, global_page_size, 1, table_file_ptr);
+        fclose(table_file_ptr);
+        return;
     }
-    (page_ptr->size)++;
-  }
-}
 
-void insert_key_at_end_of_page(Page *page_ptr, int pkey) {
-  if (page_ptr->size == page_ptr->max_num_records) {
-    if (page_ptr->next == NULL) {
-      split_page(page_ptr, pkey);
-    } else {
-      insert_key_into_page(page_ptr->next, pkey);
+    Page * page;
+    int inserted = 0;
+    // Read each table page in order from the table file
+    while(fread(&page, sizeof(Page), 1, table_file_ptr) == 1) {
+        // Iterate the records in page
+        for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
+            Record current_record = (page->records)[record_idx];
+            if (record_before_current_record(rec, current_record)) {
+                insert_before_current_record(rec, current_record, page, record_idx);
+                inserted = 1;
+            }
+        }
+        if (page_is_overfull(page)) {
+            split_page(page, table_file_ptr);
+        }
+
     }
-  }
-
-  else {
-    *(page_ptr->primary_keys + 4 * (page_ptr->size - 1)) = pkey;
-    (page_ptr->size)++;
-  }
-}
-
-void split_page(Page *page_ptr, int pkey) {
-  /*
-          page_ptr: pointer to the page to be split
-          pkey: a primary key to be inserted into the database
-  */
-  int first_page_size = (page_ptr->size) / 2;
-  int second_page_size = (page_ptr->size) - first_page_size;
-  Page *page_ptr2 = new_page(page_ptr->max_num_records);
-  for (int idx = 0; idx < second_page_size; idx++) {
-    *(page_ptr2->primary_keys + 4 * idx) =
-        *(page_ptr->primary_keys + 4 * first_page_size + 4 * idx);
-  }
-  page_ptr->size = first_page_size;
-  page_ptr2->size = second_page_size;
-  if (page_ptr->next == NULL) {
-    page_ptr->next = page_ptr2;
-  } else {
-    page_ptr2->next = page_ptr->next;
-    page_ptr->next = page_ptr2;
-  }
-  insert_key_into_page(page_ptr, pkey);
+    // if record not inserted, insert into last page of the file
+    if(inserted == 0){
+        page->records[page->num_records + 1] = rec;
+        if(page_is_overfull(page)){
+            split_page(page, table_file_ptr);
+        }
+    }
 }

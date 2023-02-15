@@ -3,17 +3,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "record.h"
 
 struct page {
-  int *primary_keys;
-  int size;
-  int max_num_records;
-  struct page *next;
+  int num_records;
+  Record * records;
 };
 
 typedef struct page Page;
 Page *page_splitting(int *keys, int num_keys, int max_num_records);
-void split_page(Page *page_ptr, int pkey);
+void split_page(Page *page_ptr, FILE * table_file_ptr);
 void insert_key_at_end_of_page(Page *page_ptr, int pkey);
 void insert_key_into_page_location(Page *page_ptr, int pkey, int count);
 void insert_key_into_page(Page *page_ptr, int pkey);
