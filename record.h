@@ -11,13 +11,15 @@
 #ifndef CS421_PROJECT_RECORD_H
 #define CS421_PROJECT_RECORD_H
 
+typedef struct pair Pair;
 struct record {
     /*
      * Attributes represented by fixed size (offset, length) with actual data stored after all fixed
      * length attributes.
      */
-    Attribute * attributes;
-    uint64_t null_values;
+    int * start;
+
+
 };
 
 typedef struct record Record;
