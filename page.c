@@ -15,6 +15,14 @@ FILE * get_table_file(char * db_loc, int table_idx){
     return file;
 }
 
+int get_page_number_location(int page_number, Catalog catalog){
+    return catalog->page_locations[page_number];
+}
+
+void update_catalog(Catalog catalog, int page_number, int page_location){
+    catalog->page_locations[page_number] = page_location;
+}
+
 bool record_before_current_record(Record rec, Record current_record) {
     return get_primary_key(rec) < get_primary_key(current_record);
 }
@@ -33,7 +41,7 @@ bool page_is_overfull(Page * page) {
     return sizeof(page) > global_page_size;
 }
 
-void split_page(Page * page, FILE * table_file_ptr){
+void split_page(Page * page, FILE * table_file_ptr, Catalog catalog){
     /*
      * make a new page
      * remove half the items from the current page
@@ -58,7 +66,7 @@ void split_page(Page * page, FILE * table_file_ptr){
     fwrite(page, sizeof(page), 1, table_file_ptr);
 }
 
-void insert_record_into_table_file(char * db_loc, int table_idx, Record rec){
+void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Catalog catalog){
     /*
      * if there are no pages for this table:
      *  make a new file for the table
@@ -80,10 +88,10 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec){
      */
 
     FILE * table_file_ptr = get_table_file(db_loc, table_idx);
-    int * num_pages;
-    fread(&num_pages, sizeof(int), 1, table_file_ptr);
+    int * num_pages_ptr;
+    fread(&num_pages_ptr, sizeof(int), 1, table_file_ptr);
     // if there are no pages for this table
-    if(!num_pages){
+    if(!num_pages_ptr){
         // make a new file for the table
         int new_size = 1;
         fwrite(&new_size, sizeof(int), 1, table_file_ptr);
@@ -100,7 +108,10 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec){
     Page * page;
     int inserted = 0;
     // Read each table page in order from the table file
-    while(fread(&page, sizeof(Page), 1, table_file_ptr) == 1) {
+    for(int page_number = 0; page_number <= *num_pages_ptr; page_number++){
+        // read in the page
+
+        page = fseek(table_file_ptr, get_page_number_location(page_number, catalog));
         // Iterate the records in page
         for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
             Record current_record = (page->records)[record_idx];
@@ -111,6 +122,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec){
         }
         if (page_is_overfull(page)) {
             split_page(page, table_file_ptr);
+            update_catalog(catalog, page_number, *num_pages_ptr);
         }
 
     }
@@ -119,6 +131,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec){
         page->records[page->num_records + 1] = rec;
         if(page_is_overfull(page)){
             split_page(page, table_file_ptr);
+            update_catalog(catalog, page_number, *num_pages_ptr);
         }
     }
 }

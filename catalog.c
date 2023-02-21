@@ -22,6 +22,7 @@ struct table {
     struct attribute table_attributes[50];
     unsigned int num_records;
     unsigned int num_pages;
+    unsigned int * page_locations;
 };
 
 int write_catalog(struct schema db_schema, struct table* tables)
