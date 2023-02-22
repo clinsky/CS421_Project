@@ -131,3 +131,4 @@ dmypy.json
 catalog.db
 *.o
 .idea/
+main
