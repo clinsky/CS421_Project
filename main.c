@@ -4,7 +4,6 @@
 #include "query_processor.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 bool database_exists(char * db_loc){
     FILE * db_file = fopen(db_loc, "rb");

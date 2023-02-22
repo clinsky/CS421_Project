@@ -186,8 +186,9 @@ bool process_select() {
 
 void process() {
   char word[100];
-  while (1) {
-    scanf("%s", word);
+  printf(">");
+  scanf("%s", word);
+  while (strcmp(word, "quit") != 0) {
     if (strcmp(word, "create") == 0) {
       print_command_result(process_create_table());
     } else if (strcmp(word, "insert") == 0) {
@@ -199,6 +200,8 @@ void process() {
     } else {
       printf("INVALID QUERY\n");
     }
+    printf(">");
+    scanf("%s", word);
   }
 }
 
