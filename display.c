@@ -6,7 +6,7 @@ void print_table_metadata(Table *t) {
   printf("Number of attributes: %d\n", t->num_attributes);
   for (int i = 0; i < t->num_attributes; i++) {
     if ((t->attributes[i]).type == CHAR || (t->attributes[i]).type == VARCHAR) {
-      printf("\t%s:%s\(%d)\n", (t->attributes + i)->name,
+      printf("\t%s:%s\t(%d)\n", (t->attributes + i)->name,
              attribute_type_to_string((t->attributes + i)->type),
              (t->attributes[i]).len);
 

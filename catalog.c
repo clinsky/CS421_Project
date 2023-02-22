@@ -88,7 +88,7 @@ int create_catalog()
     struct table bar;
     bar.attributes[0] = x;
     bar.attributes[1] = y;
-    strncpy(bar.name, "bar", sizeof(bar.name));
+    strncpy(bar.name, "bar", strlen(bar.name));
     bar.num_attributes = 1;
     
     // Update schema to have 1 table.
