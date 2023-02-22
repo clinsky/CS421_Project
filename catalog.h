@@ -7,6 +7,8 @@ struct schema {
     unsigned int * page_locations;
 };
 
+
+
 // Each attribute contains a type and a name
 struct attribute {
     char attribute_name[50];
@@ -22,3 +24,5 @@ struct table {
 };
 
 typedef struct schema Schema;
+
+Schema create_schema(char * db_loc, int page_size, int buffer_size);

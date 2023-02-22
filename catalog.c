@@ -1,7 +1,9 @@
+#include "catalog.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/*
 // Schema
 struct schema {
     char db_path[100];
@@ -24,6 +26,7 @@ struct table {
     unsigned int num_pages;
     unsigned int * page_locations;
 };
+ */
 
 int write_catalog(struct schema db_schema, struct table* tables)
 {
@@ -53,7 +56,17 @@ int read_catalog()
     printf("%i\n", bar.num_records);
 }
 
-int main()
+Schema create_schema(char * db_loc, int page_size, int buffer_size){
+    Schema db_schema;
+    strncpy(db_schema.db_path, "some_path/db", sizeof(db_schema.db_path));
+    db_schema.page_size = page_size;
+    db_schema.buffer_size = buffer_size;
+    db_schema.num_tables = 0;
+    return db_schema;
+}
+
+
+int create_catalog()
 {
     // Create schema
     struct schema db_schema;
