@@ -44,13 +44,15 @@ int main(int argc, char *argv[]) {
   else{
       create_new_database(db_loc, page_size, buffer_size);
   }
-    char * command;
+
+    char * command = (char *)malloc(100);
     printf(">");
     scanf("%s", command);
-    while(strcmp(command, "quit") != -1){
-      process_command(command);
-      printf("\n>");
-      scanf("%s", command);
+    while(strcmp(command, "quit") != 0){
+        printf("bananas\n");
+        process_command(command);
+        printf("\n>");
+        scanf("%s", command);
   }
 
   printf("db_loc: %s\npage_size: %d\nbuffer_size:%d\n", db_loc, page_size,
