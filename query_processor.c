@@ -1,15 +1,16 @@
+#ifndef QUERY_PROCESSOR_H
+#define QUERY_PROCESSOR_H
+
 #include "query_processor.h"
 #include "attribute_types.h"
 #include "parse_utils.h"
 #include "table.h"
+#include "catalog.h"
+#include "page.h"
+#include "record.h"
+#include "display.h"
 
-ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
-                                           int num_last_char_exclude,
-                                           Attribute *attribute_ptr) {
-  char temp[strlen(attr) - num_last_char_exclude + 1];
-  strncpy(temp, attr, strlen(attr) - num_last_char_exclude);
-  return parse_attribute_type(temp, attribute_ptr);
-}
+
 
 ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
   //  printf("trying to determine %s's type\n", attr);
@@ -46,11 +47,23 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
   return INVALID_ATTR;
 }
 
+ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
+                                           int num_last_char_exclude,
+                                           Attribute *attribute_ptr) {
+    char temp[strlen(attr) - num_last_char_exclude + 1];
+    strncpy(temp, attr, strlen(attr) - num_last_char_exclude);
+    return parse_attribute_type(temp, attribute_ptr);
+}
+
 /*
  * WORK IN PROGRESS
  *
  * */
+
+
 bool process_create_table() {
+  int MAX_NAME_LEN = 100;
+  int MAX_ATTR_LEN = 100;
   char word[MAX_NAME_LEN];
   char table_name[MAX_NAME_LEN];
   bool has_primary_key = false;
@@ -167,28 +180,115 @@ bool process_create_table() {
 // unimplemented at the moment
 bool process_insert_record() { return false; }
 
-bool process_select() {
-  char select_query[1000];
-  char table[1000];
-  fgets(select_query, 1000, stdin);
+void display_attributes(Schema schema){
 
-  // remove trailing newline
-  select_query[strlen(select_query) - 1] = '\0';
-
-  // need that space in the beginning since "select" was parsed in process()
-  // and the rest is of the form " ..."
-  if (sscanf(select_query, " * from %s;", table) == 1) {
-    printf("%s is table \n", table);
-    return true;
-  }
-  return false;
 }
 
-void process() {
-  char word[100];
+void display_record(Record record){
+    int ** offset_len_pairs = record.offset_length_pairs;
+    //TODO: Find a way to get the number of attributes
+    int num_attributes = 3;
+    for(int i = 0; i < num_attributes; i+=2){
+        int offset = offset_len_pairs[i][0];
+        int len = offset_len_pairs[i][1];
+        Attribute attr = record.attributes[offset];
+        printf("%s ", attr.name);
+    }
+}
+
+bool select_all(char *table_name, char *db_loc, Schema schema) {
+    char * filename = strcat(db_loc, table_name);
+    FILE *fp = fopen(filename, "r");
+    if(fp == NULL) {
+        printf("No such table %s\n", table_name);
+        return false;
+    }
+
+    // TODO: Display the attributes of the table
+    // TODO: Use the design shown on the writeup
+
+    display_attributes(schema);
+
+    int * page_locations = schema.page_locations;
+    int num_pages;
+    Page page;
+    fread(&num_pages, sizeof(int), 1, fp);
+    for(int i = 0; i < num_pages; i++) {
+        fseek(fp, page_locations[i], SEEK_SET);
+        fread(&page, sizeof(Page), 1, fp);
+        for(int j = 0; j < page.num_records; j++) {
+            Record record = page.records[j];
+            display_record(record);
+        }
+    }
+    return true;
+
+}
+
+
+
+
+
+bool process_select(char * command, char * db_loc, Schema schema) {
+    char attributes[256];
+    char table_name[256];
+    char *token = strtok(command, " ");
+    token = strtok(NULL, " ");
+    strcpy(attributes, token);
+    token = strtok(NULL, " ");
+    if(strcmp(token, "FROM") != 0){
+        printf("Syntax Error");
+        return false;
+    }
+    token = strtok(NULL, " ");
+    strcpy(table_name, token);
+    if(strcmp(attributes, "*") == 0) {
+        return select_all(table_name, db_loc, schema);
+    }
+    return true;
+}
+
+
+bool process_display_schema(char * command, char * db_loc, Schema schema){
+    return true;
+}
+
+bool process_display_info(char * command, char * db_loc, Schema schema){
+    return true;
+}
+
+void parse_command(char *command, char * db_loc, Schema schema){
+
+    if(startsWith(command, "select") == true){
+        process_select(command, db_loc, schema);
+    }
+    else if(startsWith(command, "insert") == true){
+        process_insert_record(command, db_loc, schema);
+    }
+    else if(startsWith(command, "display schema") == true){
+        process_display_schema(command, db_loc, schema);
+    }
+    else if(startsWith(command, "display info") == true){
+        process_display_info(command, db_loc, schema);
+    }
+    else{
+        printf("Invalid command\n");
+    }
+}
+
+
+void process(char * db_loc, Schema schema){
+  // TODO: SELECT * FROM <table_name>
+  // TODO: INSERT
+  // TODO: DISPLAY SCHEMA
+  // TODO: DISPLAY INFO
+  char command[256];
   printf(">");
-  scanf("%s", word);
-  while (strcmp(word, "quit") != 0) {
+  scanf("%s", command);
+  while (strcmp(command, "quit") != 0) {
+
+    parse_command(command, db_loc, schema);
+    /*
     if (strcmp(word, "create") == 0) {
       print_command_result(process_create_table());
     } else if (strcmp(word, "insert") == 0) {
@@ -200,8 +300,9 @@ void process() {
     } else {
       printf("INVALID QUERY\n");
     }
+     */
     printf(">");
-    scanf("%s", word);
+    scanf("%s", command);
   }
 }
 
@@ -214,4 +315,6 @@ void print_command_result(bool success) {
   }
 }
 
-void query_loop() { process(); }
+void query_loop(char * db_loc, Schema schema) { process(db_loc, schema); }
+
+#endif

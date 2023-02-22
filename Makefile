@@ -3,8 +3,8 @@ CFLAGS = -c -Wall
 
 all: main
 
-main: main.o page.o parse_utils.o query_processor.o display.o
-	$(CC) main.o page.o parse_utils.o query_processor.o display.o catalog.o -o main
+main: main.o catalog.o page.o parse_utils.o query_processor.o display.o
+	$(CC) main.o catalog.o page.o parse_utils.o query_processor.o display.o -o main
 
 main.o: main.c
 	$(CC) $(CFLAGS) main.c

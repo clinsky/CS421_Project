@@ -28,9 +28,6 @@ void restart_database(int buffer_size){
 
 }
 
-void process_command(char * command){
-    process(command);
-}
 
 int main(int argc, char *argv[]) {
   char *db_loc = argv[1];
@@ -44,7 +41,7 @@ int main(int argc, char *argv[]) {
       create_new_database(db_loc, page_size, buffer_size);
   }
 
-    process();
+    process(db_loc);
   return 0;
 }
 
