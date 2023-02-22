@@ -25,6 +25,11 @@ void update_catalog(Schema * schema, int page_number, int page_location){
     schema->page_locations[page_number] = page_location;
 }
 
+
+ATTRIBUTE_TYPE get_primary_key(Record record){
+    return INTEGER;
+}
+
 bool record_before_current_record(Record rec, Record current_record) {
     return get_primary_key(rec) < get_primary_key(current_record);
 }
@@ -39,7 +44,8 @@ void insert_before_current_record(Record rec, Record curr, Page * page, int curr
         (page->num_records)++;
 }
 
-bool page_is_overfull(Page * page) {
+bool page_is_overfull(Page * page, Schema * schema) {
+    int global_page_size = schema->page_size;
     return sizeof(page) > global_page_size;
 }
 
@@ -50,7 +56,7 @@ void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_nu
      * add the items to the new page
      * insert the new page after the current page in the table file
      */
-
+    int global_page_size = schema->page_size;
     // make a new page
     Page * new_page = (Page *)malloc(global_page_size);
     new_page->num_records = 0;
@@ -91,7 +97,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
      *      split the page
      *  end
      */
-
+    int global_page_size = schema->page_size;
     FILE * table_file_ptr = get_table_file(db_loc, table_idx);
     int * num_pages_ptr;
     fread(&num_pages_ptr, sizeof(int), 1, table_file_ptr);
@@ -103,7 +109,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         // add this entry to a new page
         Page * new_page = (Page*)malloc(global_page_size);
         new_page->records[0] = rec;
-        new_page->size++;
+        new_page->num_records++;
         // insert the page into the table file
         fwrite(new_page, global_page_size, 1, table_file_ptr);
         fclose(table_file_ptr);
@@ -125,7 +131,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
                 inserted = 1;
             }
         }
-        if (page_is_overfull(page)) {
+        if (page_is_overfull(page, schema)) {
             split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr);
 
 
@@ -135,7 +141,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     // if record not inserted, insert into last page of the file
     if(inserted == 0){
         page->records[page->num_records + 1] = rec;
-        if(page_is_overfull(page)){
+        if(page_is_overfull(page, schema)){
             split_page(page, table_file_ptr, schema, *num_pages_ptr, *num_pages_ptr);
         }
     }
