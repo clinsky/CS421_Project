@@ -14,9 +14,10 @@ bool database_exists(char * db_loc){
     return false;
 }
 
-void create_new_database(char * db_loc, int page_size, int buffer_size){
+Schema create_new_database(char * db_loc, int page_size, int buffer_size){
    Schema new_schema =  create_schema(db_loc, page_size, buffer_size);
    // TODO: create a table directory in db_loc
+   return new_schema;
 }
 
 void read_in_catalog(){

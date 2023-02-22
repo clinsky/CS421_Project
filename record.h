@@ -1,3 +1,6 @@
+#ifndef RECORD_H
+#define RECORD_H
+
 //
 // Created by Jared Lantner on 2/11/23.
 //
@@ -5,11 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "attribute_types.h"
-
-
-
-#ifndef CS421_PROJECT_RECORD_H
-#define CS421_PROJECT_RECORD_H
 
 typedef struct pair Pair;
 struct record {

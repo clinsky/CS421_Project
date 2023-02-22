@@ -1,3 +1,6 @@
+#ifndef CATALOG_H
+#define CATALOG_H
+
 // Schema
 struct schema {
     char db_path[100];
@@ -30,3 +33,5 @@ struct table {
 typedef struct schema Schema;
 
 Schema create_schema(char * db_loc, int page_size, int buffer_size);
+
+#endif

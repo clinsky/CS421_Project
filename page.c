@@ -4,6 +4,8 @@
 #include <dirent.h>
 
 
+
+
 char * create_new_table_file(char * table_file){
     return table_file;
 
@@ -122,7 +124,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     for(int page_number = 0; page_number <= *num_pages_ptr; page_number++){
         // read in the page
 
-        page = fseek(table_file_ptr, get_page_number_location(page_number, schema));
+        page = fseek(table_file_ptr, get_page_number_location(page_number, schema), 0);
         // Iterate the records in page
         for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
             Record current_record = (page->records)[record_idx];

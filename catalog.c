@@ -1,5 +1,5 @@
-#include "catalog.h"
 #include "table.h"
+#include "catalog.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,9 +52,9 @@ int read_catalog()
     
     struct table bar;
     fread(&bar, sizeof(struct table), 1, fp);
-    printf(bar.table_name);
+    printf(bar.name);
     printf("\n");
-    printf("%i\n", bar.num_records);
+    printf("%i\n", bar.num_attributes);
 }
 
 Schema create_schema(char * db_loc, int page_size, int buffer_size){
@@ -78,19 +78,18 @@ int create_catalog()
     
     // Creating table
     struct attribute x;
-    strncpy(x.attribute_name, "x", sizeof(x.attribute_name));
-    strncpy(x.attribute_type, "double", sizeof(x.attribute_type));
+    strncpy(x.name, "x", sizeof(x.name));
+    strncpy(x.type, "double", sizeof(x.type));
     
     struct attribute y;
-    strncpy(y.attribute_name, "y", sizeof(y.attribute_name));
-    strncpy(y.attribute_type, "char(5)", sizeof(y.attribute_type));
+    strncpy(y.name, "y", sizeof(y.name));
+    strncpy(y.type, "char(5)", sizeof(y.type));
     
     struct table bar;
-    bar.table_attributes[0] = x;
-    bar.table_attributes[1] = y;
-    strncpy(bar.table_name, "bar", sizeof(bar.table_name));
-    bar.num_records = 1;
-    bar.num_pages = 1;
+    bar.attributes[0] = x;
+    bar.attributes[1] = y;
+    strncpy(bar.name, "bar", sizeof(bar.name));
+    bar.num_attributes = 1;
     
     // Update schema to have 1 table.
     db_schema.num_tables = 1;

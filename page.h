@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "record.h"
+#include "catalog.h"
 
 struct page {
   int num_records;
