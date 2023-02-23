@@ -25,5 +25,6 @@ void increment_table_count();
 void write_catalog(Table *tables);
 void create_catalog(Table *table);
 void read_catalog();
+void TESTCATALOG();
 
 #endif
