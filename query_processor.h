@@ -19,7 +19,7 @@ void query_loop();
 // looks at first word from stdin
 // delegates to either process_create_table,
 // process_insert_record or process_select
-void process();
+void process(char * db_loc, Schema * schema);
 
 // parses a create table command from stdin
 bool process_create_table();

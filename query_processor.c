@@ -66,28 +66,38 @@ ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
 
 
 
-bool process_create_table(char * table_name, int num_attributes, char ** attribute_strings, char * db_loc, Schema schema) {
+bool process_create_table(char * table_name, int num_attributes, char ** attribute_strings, char * db_loc, Schema * schema) {
+
     int MAX_NAME_LEN = 100;
     bool has_primary_key = false;
 
-    Table *table_ptr = malloc(sizeof(Table));
+    Table *table_ptr = (Table *)malloc(sizeof(Table));
 
+    /*
     if (!endsWith(table_name, "(")) {
         // should follow format create table foo(
         printf("invalid table name\n");
         return false;
     }
+     */
+
+
 
     table_ptr->name = table_name;
+
     for (int i = 0; i < num_attributes; i++) {
+
         char attribute_name[256];
         char attribute_type[256];
-        char attribute_string = attribute_strings[i];
-        char tokens = strtok(attribute_string, " ");
+        char * attribute_string = attribute_strings[i];
+        char * tokens = strtok(attribute_string, " ");
+
         strcpy(attribute_name, tokens);
         tokens = strtok(NULL, " ");
         strcpy(attribute_type, tokens);
+
         tokens = strtok(NULL, " ");
+
         if (tokens != NULL && strcmp(tokens, "primarykey") == 0) {
             // TODO: Make this attribute the primary key
             if (has_primary_key) {
@@ -96,11 +106,49 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
             }
             has_primary_key = true;
         }
-        Attribute *attribute_ptr = malloc(sizeof(Attribute));
+
+
+        Attribute attributes[num_attributes];
+        table_ptr->attributes = attributes;
+        Attribute * attribute_ptr = (Attribute *)malloc(sizeof(Attribute));
+        table_ptr->attributes[i] = *attribute_ptr;
         attribute_ptr->name = attribute_name;
         attribute_ptr->type = parse_attribute_type(attribute_type, attribute_ptr);
-        table_ptr->attributes[i] = *attribute_ptr;
+        (table_ptr->attributes)[i] = *attribute_ptr;
         table_ptr->num_attributes++;
+        unsigned int num_tables = schema->num_tables;
+        // convert num_tables to a string
+        char * filename = table_name;
+        char path[100];
+
+
+        strcpy(path, db_loc);
+        strcat(path, "/tables/");
+
+
+        //create a new file in the tables directory
+        char * filepath = strcat(path, filename);
+
+        FILE *fp = fopen(filepath, "wb");
+
+
+        char zero = '0';
+        fwrite(&zero, sizeof(int), 1, fp);
+        // add the table name to the schema
+
+        if(schema->num_tables == schema->max_num_tables){
+            schema->max_num_tables *= 2;
+            schema->table_names = realloc(schema->table_names, schema->max_num_tables * sizeof(char *));
+        }
+
+
+        schema->table_names[num_tables] = table_name;
+
+
+        // close the file
+        fclose(fp);
+        schema->num_tables++;
+
     }
     /*
   if(!has_primary_key){
@@ -202,8 +250,8 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
     return true;
 }
 
-bool parse_create_table(char * command, char * db_loc, Schema schema){
-    //TODO: Parse create table statement
+bool parse_create_table(char * command, char * db_loc, Schema * schema){
+
     char table_name[256];
     char attribute_name[256];
     char attribute_type[256];
@@ -211,17 +259,23 @@ bool parse_create_table(char * command, char * db_loc, Schema schema){
     char * cmd = strtok(command, "(");
     char first_part[256];
     char second_part[256];
+
     strcpy(first_part, cmd);
-    strtok(NULL, " ");
+    cmd = strtok(NULL, ")");
     strcpy(second_part, cmd);
+
     char * tokens = strtok(first_part, " ");
-    strtok(NULL, " ");
+
+    tokens = strtok(NULL, " ");
+
+    tokens = strtok(NULL, " ");
+
     strcpy(table_name, tokens);
     tokens = strtok(second_part, ",");
     char ** attribute_strings = malloc(sizeof(char *) * 256);
     while(tokens != NULL){
         attribute_strings[num_attributes] = tokens;
-        strtok(NULL, ",");
+        tokens = strtok(NULL, ",");
         num_attributes++;
     }
     char * last_attr = attribute_strings[num_attributes - 1];
@@ -299,7 +353,7 @@ bool process_insert_record(char *command, Schema schema)
     }
 }
 
-void display_attributes(Schema schema){
+void display_attributes(Schema * schema){
 
 }
 
@@ -315,7 +369,7 @@ void display_record(Record record){
     }
 }
 
-bool select_all(char *table_name, char *db_loc, Schema schema) {
+bool select_all(char *table_name, char *db_loc, Schema * schema) {
     char * filename = strcat(db_loc, table_name);
     FILE *fp = fopen(filename, "r");
     if(fp == NULL) {
@@ -327,7 +381,7 @@ bool select_all(char *table_name, char *db_loc, Schema schema) {
 
     display_attributes(schema);
 
-    int * page_locations = schema.page_locations;
+    int * page_locations = schema->page_locations;
     int num_pages;
     Page page;
     fread(&num_pages, sizeof(int), 1, fp);
@@ -343,7 +397,7 @@ bool select_all(char *table_name, char *db_loc, Schema schema) {
 
 }
 
-bool parse_select(char * command, char * db_loc, Schema schema) {
+bool parse_select(char * command, char * db_loc, Schema * schema) {
     char attributes[256];
     char table_name[256];
     char *token = strtok(command, " ");
@@ -365,13 +419,32 @@ bool parse_select(char * command, char * db_loc, Schema schema) {
     return true;
 }
 
-
 bool process_display_schema(char * command, char * db_loc, Schema schema){
     printf("Display Schema not implemented!");
 }
 
 bool process_display_info(char * command, char * db_loc, Schema schema){
     printf("Display Info not implemented!");
+
+void parse_command(char *command, char * db_loc, Schema * schema){
+    if(startsWith(command, "select") == true){
+        parse_select(command, db_loc, schema);
+    }
+    else if(startsWith(command, "create") == true){
+        parse_create_table(command, db_loc, schema);
+    }
+    else if(startsWith(command, "insert") == true){
+        process_insert_record(command, db_loc, schema);
+    }
+    else if(startsWith(command, "display schema") == true){
+        process_display_schema(command, db_loc, schema);
+    }
+    else if(startsWith(command, "display info") == true){
+        process_display_info(command, db_loc, schema);
+    }
+    else{
+        printf("Invalid command\n");
+    }
 }
 
 void shut_down_database(){
@@ -382,8 +455,12 @@ void purge_page_buffer(){
 
 }
 
-void save_catalog(){
-
+void save_catalog(Schema * schema, char * db_loc){
+    char path[100];
+    strcpy(path, db_loc);
+    strcat(path, "/catalog");
+    FILE * fp = fopen(path, "wb");
+    fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
 void parse_command(char * command, char * db_loc, Schema schema)
@@ -459,6 +536,6 @@ void print_command_result(bool success) {
   }
 }
 
-void query_loop(char * db_loc, Schema schema) { process(db_loc, schema); }
+void query_loop(char * db_loc, Schema * schema) { process(db_loc, schema); }
 
 #endif
