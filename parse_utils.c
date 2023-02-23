@@ -43,3 +43,18 @@ int attribute_type_to_int(ATTRIBUTE_TYPE t) {
   }
   return -1;
 }
+
+ATTRIBUTE_TYPE int_to_attribute_type(int t) {
+  if (t == 0) {
+    return INTEGER;
+  } else if (t == 1) {
+    return BOOL;
+  } else if (t == 2) {
+    return DOUBLE;
+  } else if (t == 3) {
+    return CHAR;
+  } else if (t == 4) {
+    return VARCHAR;
+  }
+  return INVALID_ATTR;
+}
