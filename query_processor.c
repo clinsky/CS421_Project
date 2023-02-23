@@ -426,27 +426,6 @@ bool process_display_schema(char * command, char * db_loc, Schema schema){
 bool process_display_info(char * command, char * db_loc, Schema schema){
     printf("Display Info not implemented!");
 
-void parse_command(char *command, char * db_loc, Schema * schema){
-    if(startsWith(command, "select") == true){
-        parse_select(command, db_loc, schema);
-    }
-    else if(startsWith(command, "create") == true){
-        parse_create_table(command, db_loc, schema);
-    }
-    else if(startsWith(command, "insert") == true){
-        process_insert_record(command, db_loc, schema);
-    }
-    else if(startsWith(command, "display schema") == true){
-        process_display_schema(command, db_loc, schema);
-    }
-    else if(startsWith(command, "display info") == true){
-        process_display_info(command, db_loc, schema);
-    }
-    else{
-        printf("Invalid command\n");
-    }
-}
-
 void shut_down_database(){
 
 }
