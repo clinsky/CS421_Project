@@ -1,13 +1,9 @@
 #include "catalog.h"
 
-Schema create_schema(char *db_loc, int page_size, int buffer_size) {
-  Schema db_schema;
-  strncpy(db_schema.db_path, "some_path/db", sizeof(db_schema.db_path));
-  db_schema.page_size = page_size;
-  db_schema.buffer_size = buffer_size;
-  db_schema.num_tables = 0;
-  db_schema.table_names = malloc(sizeof(char *) * 10);
-  db_schema.max_num_tables = 10;
+Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
+  Schema *db_schema = read_catalog();
+  db_schema->page_size = page_size;
+  db_schema->buffer_size = buffer_size;
   return db_schema;
 }
 

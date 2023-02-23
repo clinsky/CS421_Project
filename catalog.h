@@ -19,7 +19,7 @@ struct schema {
 
 typedef struct schema Schema;
 
-Schema create_schema(char *db_loc, int page_size, int buffer_size);
+Schema *create_schema(char *db_loc, int page_size, int buffer_size);
 void increment_table_count();
 void write_catalog(Table *tables);
 void create_catalog(Table *table);
