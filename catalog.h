@@ -14,6 +14,8 @@ struct schema {
   unsigned int buffer_size;
   unsigned int num_tables;
   unsigned int *page_locations;
+  char ** table_names;
+  int max_num_tables;
 };
 
 typedef struct schema Schema;

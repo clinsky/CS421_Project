@@ -6,6 +6,8 @@ Schema create_schema(char *db_loc, int page_size, int buffer_size) {
   db_schema.page_size = page_size;
   db_schema.buffer_size = buffer_size;
   db_schema.num_tables = 0;
+  db_schema.table_names = malloc(sizeof(char *) * 10);
+  db_schema.max_num_tables = 10;
   return db_schema;
 }
 

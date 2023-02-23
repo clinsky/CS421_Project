@@ -4,6 +4,7 @@
 #include "query_processor.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 bool database_exists(char * db_loc){
     FILE * db_file = fopen(db_loc, "rb");
@@ -16,6 +17,12 @@ bool database_exists(char * db_loc){
 Schema create_new_database(char * db_loc, int page_size, int buffer_size){
    Schema new_schema =  create_schema(db_loc, page_size, buffer_size);
    // TODO: create a table directory in db_loc
+   // create a directory called "myDB"
+   mkdir(db_loc, 0755);
+   char path[100];
+   strcpy(path, db_loc);
+   strcat(path, "/tables");
+   mkdir(path, 0755);
    return new_schema;
 }
 
