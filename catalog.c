@@ -1,7 +1,8 @@
 #include "catalog.h"
 
 Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
-  Schema *db_schema = read_catalog();
+  //Schema *db_schema = read_catalog();
+  Schema * db_schema = malloc(sizeof(Schema));
   db_schema->page_size = page_size;
   db_schema->buffer_size = buffer_size;
   return db_schema;
@@ -38,8 +39,23 @@ void increment_table_count() {
   fclose(fp);
 }
 
-Schema *read_catalog() {
-  FILE *fp = fopen("catalog", "rb");
+Schema * read_catalog(char * db_loc) {
+   printf("berries\n");
+   char path[100];
+   strcpy(path, db_loc);
+   strcat(path, "/catalog");
+   FILE *fp = fopen(path, "rb");
+    printf("berries\n");
+   Schema schema;
+    printf("berries\n");
+   fread(&schema, sizeof(Schema), 1, fp);
+   printf("berries\n");
+   Schema *db_schemas = malloc(sizeof(Schema));
+
+   *db_schemas = schema;
+
+
+   /*
   if (fp == NULL) {
     printf("Failed to open file for reading\n");
     return NULL;
@@ -51,7 +67,7 @@ Schema *read_catalog() {
     return NULL;
   }
 
-  Schema *db_schemas = malloc(sizeof(Schema));
+
 
   int table_count;
   // read #table count
@@ -157,8 +173,10 @@ Schema *read_catalog() {
       //        attr_name, attribute_type_to_string(attr_type), is_primary_key);
       db_schemas->tables[i].attributes[j] = *attribute_ptr;
     }
-  }
 
+  }
+    */
+  printf("closing\n");
   fclose(fp);
   return db_schemas;
 }
@@ -298,7 +316,7 @@ void TESTCATALOG() {
   write_catalog(t);
 
   // Read catalog and print examples
-  Schema *schema = read_catalog();
+  Schema *schema = read_catalog("/myDB");
   printf("done reading catalog\n");
   for (int i = 0; i < schema->num_tables; i++) {
     Table *curr_table = &schema->tables[i];

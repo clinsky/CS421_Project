@@ -22,10 +22,10 @@ void query_loop();
 void process(char * db_loc, Schema * schema);
 
 // parses a create table command from stdin
-bool process_create_table();
+bool process_create_table(char * command, char * db_loc, Schema * schema);
 
 // parses an insert into command from stdin
-bool process_insert_record();
+bool process_insert_record(char * command, char * db_loc, Schema * schema);
 
 // parse a select command from stdin
 bool process_select();

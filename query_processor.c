@@ -118,10 +118,11 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
         table_ptr->num_attributes++;
         unsigned int num_tables = schema->num_tables;
         // convert num_tables to a string
-        char * filename = table_name;
-        char path[100];
+        //char * filename = table_name;
+        //char path[100];
 
 
+        /*
         strcpy(path, db_loc);
         strcat(path, "/tables/");
 
@@ -135,18 +136,18 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
         char zero = '0';
         fwrite(&zero, sizeof(int), 1, fp);
         // add the table name to the schema
-
+    */
         if(schema->num_tables == schema->max_num_tables){
             schema->max_num_tables *= 2;
-            schema->table_names = realloc(schema->table_names, schema->max_num_tables * sizeof(char *));
+            schema->tables = realloc(schema->tables, schema->max_num_tables * sizeof(char *));
         }
 
 
-        schema->table_names[num_tables] = table_name;
+        schema->tables[num_tables] = *table_ptr;
 
 
         // close the file
-        fclose(fp);
+        //fclose(fp);
         schema->num_tables++;
 
     }
@@ -283,7 +284,7 @@ bool parse_create_table(char * command, char * db_loc, Schema * schema){
     return process_create_table(table_name, num_attributes, attribute_strings, db_loc, schema);
 }
 
-struct table get_table(table_name)
+struct table get_table(char * table_name)
 {
     struct attribute id = { "Student ID", INTEGER, NULL, 1 };
     struct attribute name = { "Student Name", VARCHAR, 5, 0 };
@@ -296,7 +297,7 @@ struct table get_table(table_name)
     return student;
 }
 
-bool process_insert_record(char *command, Schema schema) 
+bool process_insert_record(char *command, char * db_loc, Schema * schema)
 {
     // Add a semi-colon at the end of the command
     int command_len = strlen(command);
@@ -371,7 +372,7 @@ void display_record(Record record){
 
 bool select_all(char *table_name, char *db_loc, Schema * schema) {
     char * filename = strcat(db_loc, table_name);
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
     if(fp == NULL) {
         printf("No such table %s\n", table_name);
         return false;
@@ -419,16 +420,18 @@ bool parse_select(char * command, char * db_loc, Schema * schema) {
     return true;
 }
 
-bool process_display_schema(char * command, char * db_loc, Schema schema){
+bool process_display_schema(char * command, char * db_loc, Schema * schema){
     printf("Display Schema not implemented!");
 }
 
-bool process_display_info(char * command, char * db_loc, Schema schema){
+bool process_display_info(char * command, char * db_loc, Schema * schema) {
     printf("Display Info not implemented!");
+}
 
 void shut_down_database(){
-
+    return;
 }
+
 
 void purge_page_buffer(){
 
@@ -442,7 +445,7 @@ void save_catalog(Schema * schema, char * db_loc){
     fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
-void parse_command(char * command, char * db_loc, Schema schema)
+void parse_command(char * command, char * db_loc, Schema * schema)
 {
     // Self explanatory code.
     if(startsWith(command, "select")){
@@ -452,7 +455,7 @@ void parse_command(char * command, char * db_loc, Schema schema)
         parse_create_table(command, db_loc, schema);
     }
     else if(startsWith(command, "insert")){
-        process_insert_record(command, schema);
+        process_insert_record(command, db_loc, schema);
     }
     else if(startsWith(command, "display schema")){
         process_display_schema(command, db_loc, schema);
@@ -466,7 +469,7 @@ void parse_command(char * command, char * db_loc, Schema schema)
     printf("\n");
 }
 
-void process(char * db_loc, Schema schema){
+void process(char * db_loc, Schema * schema){
     // Continuously accept commands from a user
     while(1){
         // Iterate through characters typed by the user
@@ -486,7 +489,7 @@ void process(char * db_loc, Schema schema){
                 printf("Purging page buffer...\n");
                 purge_page_buffer();
                 printf("Saving catalog...\n");
-                save_catalog();
+                save_catalog(schema, db_loc);
                 printf("\n");
                 printf("Exiting the database...\n");
                 return;

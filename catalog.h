@@ -13,6 +13,7 @@ struct schema {
   unsigned int page_size;
   unsigned int buffer_size;
   unsigned int num_tables;
+  unsigned int max_num_tables;
   unsigned int *page_locations;
   Table *tables;
 };
