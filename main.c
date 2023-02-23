@@ -23,7 +23,7 @@ void read_in_catalog(){
 
 }
 
-void restart_database(int buffer_size){
+Schema restart_database(int buffer_size){
     read_in_catalog();
 
 }
@@ -33,15 +33,15 @@ int main(int argc, char *argv[]) {
   char *db_loc = argv[1];
   int page_size = atoi(argv[2]);
   int buffer_size = atoi(argv[3]);
-
+  Schema schema;
   if(database_exists(db_loc)){
-      restart_database(buffer_size);
+      schema = restart_database(buffer_size);
   }
   else{
-      create_new_database(db_loc, page_size, buffer_size);
+      schema = create_new_database(db_loc, page_size, buffer_size);
   }
 
-    process(db_loc);
+    process(db_loc, &schema);
   return 0;
 }
 
