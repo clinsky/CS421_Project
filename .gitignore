@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-catalog.db
+catalog
 *.o
 .idea/
 main
