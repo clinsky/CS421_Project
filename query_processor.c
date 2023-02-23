@@ -61,33 +61,53 @@ ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
  * */
 
 
-bool process_create_table(char * table_name, int num_attributes, char ** attributes) {
-  int MAX_NAME_LEN = 100;
-  int MAX_ATTR_LEN = 100;
-  char word[MAX_NAME_LEN];
-  char table_name[MAX_NAME_LEN];
-  bool has_primary_key = false;
-  scanf("%s", word);
 
-  // create keyword wasn't followed by "table"
-  if (strcmp(word, "table") != 0) {
-    return false;
-  }
 
-  Table *table_ptr = malloc(sizeof(Table));
-  scanf("%s", table_name);
-  if (!endsWith(table_name, "(")) {
-    // should follow format create table foo(
-    printf("invalid table name\n");
-    return false;
+bool process_create_table(char * table_name, int num_attributes, char ** attribute_strings, char * db_loc, Schema schema) {
+    int MAX_NAME_LEN = 100;
+    bool has_primary_key = false;
+
+    Table *table_ptr = malloc(sizeof(Table));
+
+    if (!endsWith(table_name, "(")) {
+        // should follow format create table foo(
+        printf("invalid table name\n");
+        return false;
+    }
+
+    table_ptr->name = table_name;
+    for (int i = 0; i < num_attributes; i++) {
+        char attribute_name[256];
+        char attribute_type[256];
+        char attribute_string = attribute_strings[i];
+        char tokens = strtok(attribute_string, " ");
+        strcpy(attribute_name, tokens);
+        tokens = strtok(NULL, " ");
+        strcpy(attribute_type, tokens);
+        tokens = strtok(NULL, " ");
+        if (tokens != NULL && strcmp(tokens, "primarykey") == 0) {
+            // TODO: Make this attribute the primary key
+            if (has_primary_key) {
+                printf("More than one primarykey\n");
+                return false;
+            }
+            has_primary_key = true;
+        }
+        Attribute *attribute_ptr = malloc(sizeof(Attribute));
+        attribute_ptr->name = attribute_name;
+        attribute_ptr->type = parse_attribute_type(attribute_type, attribute_ptr);
+        table_ptr->attributes[i] = *attribute_ptr;
+        table_ptr->num_attributes++;
+    }
+    /*
+  if(!has_primary_key){
+      printf("No primary key defined\n");
+      return false;
   }
-  table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
-  strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
-  //  printf("%s (len %lu) is table name \n", table_ptr->name,
-  // strlen(table_ptr->name));
 
   while (1) {
-    table_ptr->num_attributes++;
+
+
     Attribute *attribute_ptr = malloc(sizeof(Attribute));
 
     // field name
@@ -164,7 +184,7 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
       continue;
     }
     // shouldn't have anyother options i think...
-    return false;
+    table_ptr->num_attributes++;
   }
 
   // check has primary key
@@ -175,6 +195,35 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
 
   print_table_metadata(table_ptr);
   return true;
+     */
+    return true;
+}
+
+bool parse_create_table(char * command, char * db_loc, Schema schema){
+    //TODO: Parse create table statement
+    char table_name[256];
+    char attribute_name[256];
+    char attribute_type[256];
+    int num_attributes = 0;
+    char * cmd = strtok(command, "(");
+    char first_part[256];
+    char second_part[256];
+    strcpy(first_part, cmd);
+    strtok(NULL, " ");
+    strcpy(second_part, cmd);
+    char * tokens = strtok(first_part, " ");
+    strtok(NULL, " ");
+    strcpy(table_name, tokens);
+    tokens = strtok(second_part, ",");
+    char ** attribute_strings = malloc(sizeof(char *) * 256);
+    while(tokens != NULL){
+        attribute_strings[num_attributes] = tokens;
+        strtok(NULL, ",");
+        num_attributes++;
+    }
+    char * last_attr = attribute_strings[num_attributes - 1];
+    last_attr[strcspn(last_attr, ")")] = '\0';
+    return process_create_table(table_name, num_attributes, attribute_strings, db_loc, schema);
 }
 
 // unimplemented at the moment
@@ -229,7 +278,9 @@ bool select_all(char *table_name, char *db_loc, Schema schema) {
 
 
 
-bool process_select(char * command, char * db_loc, Schema schema) {
+
+
+bool parse_select(char * command, char * db_loc, Schema schema) {
     char attributes[256];
     char table_name[256];
     char *token = strtok(command, " ");
@@ -263,7 +314,10 @@ bool process_display_info(char * command, char * db_loc, Schema schema){
 void parse_command(char *command, char * db_loc, Schema schema){
 
     if(startsWith(command, "select") == true){
-        process_select(command, db_loc, schema);
+        parse_select(command, db_loc, schema);
+    }
+    else if(startsWith(command, "create") == true){
+        parse_select(command, db_loc, schema);
     }
     else if(startsWith(command, "insert") == true){
         process_insert_record(command, db_loc, schema);
