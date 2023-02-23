@@ -1,8 +1,7 @@
 #include "catalog.h"
 
 Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
-  // Schema *db_schema = read_catalog();
-  Schema *db_schema = malloc(sizeof(Schema));
+  Schema *db_schema = read_catalog(db_loc);
   db_schema->page_size = page_size;
   db_schema->buffer_size = buffer_size;
   db_schema->num_tables = 0;
@@ -43,10 +42,9 @@ void increment_table_count() {
 }
 
 Schema *read_catalog(char *db_loc) {
-  char path[100];
-  strcpy(path, db_loc);
-  strcat(path, "/catalog");
-  FILE *fp = fopen(path, "rb");
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
+  FILE *fp = fopen(filepath, "rb");
   Schema *db_schemas = malloc(sizeof(Schema));
 
   if (fp == NULL) {
@@ -170,11 +168,14 @@ Schema *read_catalog(char *db_loc) {
   return db_schemas;
 }
 
-void write_catalog(Table *table) {
+void write_catalog(char *db_loc, Table *table) {
   increment_table_count();
 
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
+
   // needs to be ab+ so that data isnt erased when opening file
-  FILE *fp = fopen("catalog", "ab+");
+  FILE *fp = fopen(filepath, "ab+");
   // Move the file pointer to the end of the file
   if (fseek(fp, 0, SEEK_END) != 0) {
     printf("Failed to seek to end of file\n");
@@ -252,13 +253,17 @@ void write_catalog(Table *table) {
   fclose(fp);
 }
 
-void create_catalog(Table *table) {
+void create_catalog(char *db_loc) {
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
+  printf("%s is filepath\n", filepath);
   int table_count = 0;
-  FILE *fp = fopen("catalog", "wb");
+  FILE *fp = fopen(filepath, "wb");
   if (fwrite(&table_count, sizeof(int), 1, fp) != 1) {
     printf("failed to initialize table count\n");
   }
   fclose(fp);
+  printf("done creating catalog\n");
 }
 
 /*
@@ -299,10 +304,10 @@ void TESTCATALOG() {
                                        t->num_attributes * sizeof(Attribute));
   t->attributes[t->num_attributes - 1] = *attribute_ptr;
 
-  create_catalog(t);
+  create_catalog("");
 
   // Write catalog
-  write_catalog(t);
+  write_catalog("", t);
 
   // Read catalog and print examples
   Schema *schema = read_catalog("/myDB");
