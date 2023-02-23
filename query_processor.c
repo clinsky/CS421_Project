@@ -2,6 +2,8 @@
 #define QUERY_PROCESSOR_H
 
 #include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 #include "query_processor.h"
 #include "attribute_types.h"
 #include "parse_utils.h"
@@ -281,8 +283,75 @@ bool parse_create_table(char * command, char * db_loc, Schema * schema){
     return process_create_table(table_name, num_attributes, attribute_strings, db_loc, schema);
 }
 
-// unimplemented at the moment
-bool process_insert_record() { return false; }
+struct table get_table(table_name)
+{
+    struct attribute id = { "Student ID", INTEGER, NULL, 1 };
+    struct attribute name = { "Student Name", VARCHAR, 5, 0 };
+
+    struct attribute student_attributes[2];
+    student_attributes[0] = id;
+    student_attributes[1] = name;
+    struct table student = { "Student", student_attributes, 2 };
+    
+    return student;
+}
+
+bool process_insert_record(char *command, Schema schema) 
+{
+    // Add a semi-colon at the end of the command
+    int command_len = strlen(command);
+    command[command_len] = ';';
+    command[command_len+1] = '\0';
+    
+    // Parse the table name and values out of the command
+    char table_name[20], values[50];
+    sscanf(command, "insert into %s values %[^;]", table_name, values);
+    
+    // Make sure the values are comma delimited with no space
+    char values_delimited[50];
+    values_delimited[0] = values[0];
+    char prev = values[0];
+    int j = 1;
+    for(int i=1; i < strlen(values); i++)
+    {
+        if(!(prev == ',' && values[i] == ' '))
+        {
+            values_delimited[j] = values[i];
+            j++;
+        }
+        prev = values[i];
+    }
+    values_delimited[j] = '\0';
+        
+    // Print table name and values, sanity check
+    printf("Table Name = %s\nValues = %s\n", table_name, values_delimited);
+
+    // Count the number of values the user provided
+    int num_values = 0;
+    for(int i = 0; i < strlen(values_delimited); i++)
+    {
+        if(values_delimited[i] == ',')  
+        {
+            num_values++;
+        }
+    }
+    num_values++;
+
+    // Create the array to be returned
+    struct table command_table = get_table(table_name);
+    char *values_parsed[num_values][command_table.num_attributes];
+    
+    // Iterate through values
+    char* tuple = strtok(values_delimited, ",");
+    printf(tuple);
+    printf("\n");
+    while (tuple != NULL) 
+    {
+        tuple = strtok(NULL, ",");
+        printf(tuple);
+        printf("\n");
+    }
+}
 
 void display_attributes(Schema * schema){
 
@@ -350,17 +419,14 @@ bool parse_select(char * command, char * db_loc, Schema * schema) {
     return true;
 }
 
-
-bool process_display_schema(char * command, char * db_loc, Schema * schema){
-    return true;
+bool process_display_schema(char * command, char * db_loc, Schema schema){
+    printf("Display Schema not implemented!");
 }
 
-bool process_display_info(char * command, char * db_loc, Schema * schema){
-    return true;
-}
+bool process_display_info(char * command, char * db_loc, Schema schema){
+    printf("Display Info not implemented!");
 
 void parse_command(char *command, char * db_loc, Schema * schema){
-
     if(startsWith(command, "select") == true){
         parse_select(command, db_loc, schema);
     }
@@ -397,68 +463,68 @@ void save_catalog(Schema * schema, char * db_loc){
     fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
+void parse_command(char * command, char * db_loc, Schema schema)
+{
+    // Self explanatory code.
+    if(startsWith(command, "select")){
+        parse_select(command, db_loc, schema);
+    }
+    else if(startsWith(command, "create")){
+        parse_create_table(command, db_loc, schema);
+    }
+    else if(startsWith(command, "insert")){
+        process_insert_record(command, schema);
+    }
+    else if(startsWith(command, "display schema")){
+        process_display_schema(command, db_loc, schema);
+    }
+    else if(startsWith(command, "display info")){
+        process_display_info(command, db_loc, schema);
+    }
+    else{
+        printf("Invalid command\n");
+    }
+    printf("\n");
+}
 
-void process(char * db_loc, Schema * schema){
-  // TODO: Parse at the semicolon instead of the newline
-  // TODO: INSERT
-
-
-
-  //fgets(command, 256, stdin);
-  //command[strcspn(command, "\n")] = '\0';
-  while(1){
-    char command[256];
-    command[0] = '\0';
-    char next_char = '\0';
-    printf(">");
-
-
-    int command_idx = 0;
-
-    while(((next_char = getchar()) != ';')){
-        command[command_idx] = next_char;
-        command_idx++;
-        command[command_idx] = '\0';
-        if(strcmp(command, "<quit>") == 0){
-            printf("Safely shutting down the database...\n");
-            shut_down_database();
-            printf("Purging page buffer...\n");
-            purge_page_buffer();
-            printf("Saving catalog...\n");
-            save_catalog(schema, db_loc);
-            printf("\n");
-            printf("Exiting the database...\n");
-            return;
+void process(char * db_loc, Schema schema){
+    // Continuously accept commands from a user
+    while(1){
+        // Iterate through characters typed by the user
+        // Stop iterating if the user enters <quit> or a semi-colon
+        printf(">");
+        char command[500];
+        command[0] = '\0';
+        char next_char = '\0';
+        int command_idx = 0;
+        while(((next_char = getchar()) != ';')){
+            command[command_idx] = next_char;
+            command_idx++;
+            command[command_idx] = '\0';
+            if(strcmp(command, "<quit>") == 0){
+                printf("Safely shutting down the database...\n");
+                shut_down_database();
+                printf("Purging page buffer...\n");
+                purge_page_buffer();
+                printf("Saving catalog...\n");
+                save_catalog();
+                printf("\n");
+                printf("Exiting the database...\n");
+                return;
+            }
         }
-
-
+        
+        // Fill newlines with spaces
+        while (strcspn(command, "\n") != strlen(command)){
+            command[strcspn(command, "\n")] = ' ';
+        }
+        
+        // We've read a command from the user. Parse it and take some action
+        parse_command(command, db_loc, schema);
+        
+        // I'm not sure what this does. Jared?
+        next_char = getchar();
     }
-
-    while (strcspn(command, "\n") != strlen(command)){
-        command[strcspn(command, "\n")] = ' ';
-    }
-
-    parse_command(command, db_loc, schema);
-    next_char = getchar();
-
-
-    /*
-    if (strcmp(word, "create") == 0) {
-      print_command_result(process_create_table());
-    } else if (strcmp(word, "insert") == 0) {
-      print_command_result(process_insert_record());
-    } else if (strcmp(word, "select") == 0) {
-      print_command_result(process_select());
-    } else if (strcmp(word, "q") == 0 || strcmp(word, "<quit>") == 0) {
-      break;
-    } else {
-      printf("INVALID QUERY\n");
-    }
-     */
-
-    //fgets(command, 256, stdin);
-    //command[strcspn(command, "\n")] = '\0';
-  }
 }
 
 void print_command_result(bool success) {
