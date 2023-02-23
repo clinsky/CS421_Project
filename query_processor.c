@@ -234,12 +234,15 @@ bool process_select(char * command, char * db_loc, Schema schema) {
     char table_name[256];
     char *token = strtok(command, " ");
     token = strtok(NULL, " ");
+
     strcpy(attributes, token);
+
     token = strtok(NULL, " ");
-    if(strcmp(token, "FROM") != 0){
-        printf("Syntax Error");
+    if(strcmp(token, "from") != 0){
+        printf("Syntax Error\n");
         return false;
     }
+
     token = strtok(NULL, " ");
     strcpy(table_name, token);
     if(strcmp(attributes, "*") == 0) {
@@ -284,8 +287,8 @@ void process(char * db_loc, Schema schema){
   // TODO: DISPLAY INFO
   char command[256];
   printf(">");
-  scanf("%s", command);
-  while (strcmp(command, "quit") != 0) {
+  fgets(command, 256, stdin);
+  while (strcmp(command, "quit\n") != 0) {
 
     parse_command(command, db_loc, schema);
     /*
@@ -302,7 +305,7 @@ void process(char * db_loc, Schema schema){
     }
      */
     printf(">");
-    scanf("%s", command);
+    fgets(command, 256, stdin);
   }
 }
 
