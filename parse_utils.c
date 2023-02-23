@@ -28,3 +28,18 @@ char *attribute_type_to_string(ATTRIBUTE_TYPE t) {
   }
   return "";
 }
+
+int attribute_type_to_int(ATTRIBUTE_TYPE t) {
+  if (t == INTEGER) {
+    return 0;
+  } else if (t == BOOL) {
+    return 1;
+  } else if (t == DOUBLE) {
+    return 2;
+  } else if (t == CHAR) {
+    return 3;
+  } else if (t == VARCHAR) {
+    return 4;
+  }
+  return -1;
+}
