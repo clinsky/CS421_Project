@@ -163,7 +163,6 @@ Schema *read_catalog(char *db_loc) {
       db_schemas->tables[i].attributes[j] = *attribute_ptr;
     }
   }
-  printf("closing\n");
   fclose(fp);
   return db_schemas;
 }
