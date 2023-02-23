@@ -116,15 +116,31 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
         table_ptr->num_attributes++;
         unsigned int num_tables = schema->num_tables;
         // convert num_tables to a string
-        char filename[10];
+        char * filename = table_name;
         char path[100];
-        sprintf(filename, "%d", num_tables);
-        strcpy(path, "./myDB/tables/");
+
+
+        strcpy(path, db_loc);
+        strcat(path, "/tables/");
+
+
         //create a new file in the tables directory
         char * filepath = strcat(path, filename);
+
         FILE *fp = fopen(filepath, "wb");
+
+
         char zero = '0';
         fwrite(&zero, sizeof(int), 1, fp);
+        // add the table name to the schema
+
+        if(schema->num_tables == schema->max_num_tables){
+            schema->max_num_tables *= 2;
+            schema->table_names = realloc(schema->table_names, schema->max_num_tables * sizeof(char *));
+        }
+
+
+        schema->table_names[num_tables] = table_name;
 
 
         // close the file
@@ -233,6 +249,7 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
 }
 
 bool parse_create_table(char * command, char * db_loc, Schema * schema){
+
     char table_name[256];
     char attribute_name[256];
     char attribute_type[256];
@@ -372,14 +389,20 @@ void purge_page_buffer(){
 
 }
 
-void save_catalog(){
-
+void save_catalog(Schema * schema, char * db_loc){
+    char path[100];
+    strcpy(path, db_loc);
+    strcat(path, "/catalog");
+    FILE * fp = fopen(path, "wb");
+    fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
 
 void process(char * db_loc, Schema * schema){
   // TODO: Parse at the semicolon instead of the newline
   // TODO: INSERT
+
+
 
   //fgets(command, 256, stdin);
   //command[strcspn(command, "\n")] = '\0';
@@ -402,7 +425,7 @@ void process(char * db_loc, Schema * schema){
             printf("Purging page buffer...\n");
             purge_page_buffer();
             printf("Saving catalog...\n");
-            save_catalog();
+            save_catalog(schema, db_loc);
             printf("\n");
             printf("Exiting the database...\n");
             return;
