@@ -25,6 +25,7 @@ void increment_table_count();
 void write_catalog(Table *tables);
 void create_catalog(Table *table);
 Schema *read_catalog();
+Table *get_table(Schema *db_schema, char *table_name);
 void TESTCATALOG();
 
 #endif
