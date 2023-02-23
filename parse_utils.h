@@ -21,4 +21,6 @@ char *attribute_type_to_string(ATTRIBUTE_TYPE t);
 
 int attribute_type_to_int(ATTRIBUTE_TYPE t);
 
+ATTRIBUTE_TYPE int_to_attribute_type(int t);
+
 #endif
