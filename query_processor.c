@@ -288,7 +288,8 @@ void process(char * db_loc, Schema schema){
   char command[256];
   printf(">");
   fgets(command, 256, stdin);
-  while (strcmp(command, "quit\n") != 0) {
+  command[strcspn(command, "\n")] = '\0';
+  while (strcmp(command, "quit") != 0) {
 
     parse_command(command, db_loc, schema);
     /*
@@ -306,6 +307,7 @@ void process(char * db_loc, Schema schema){
      */
     printf(">");
     fgets(command, 256, stdin);
+    command[strcspn(command, "\n")] = '\0';
   }
 }
 
