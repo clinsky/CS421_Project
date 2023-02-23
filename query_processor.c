@@ -289,17 +289,39 @@ bool parse_create_table(char * command, char * db_loc, Schema * schema){
     return process_create_table(table_name, num_attributes, attribute_strings, db_loc, schema);
 }
 
-struct table get_table(char * table_name)
+char** parse_tuple(char* tuple, struct table *command_table)
 {
-    struct attribute id = { "Student ID", INTEGER, NULL, 1 };
-    struct attribute name = { "Student Name", VARCHAR, 5, 0 };
-
-    struct attribute student_attributes[2];
-    student_attributes[0] = id;
-    student_attributes[1] = name;
-    struct table student = { "Student", student_attributes, 2 };
+    printf("Type: %d\n", &command_table->attributes[0].type);
+    printf("Type: %d\n", &command_table->attributes[1].type);
     
-    return student;
+    // Remove parentheses from tuple
+    sscanf(tuple, "(%[^)]", tuple);
+    
+    // Create array to be returned
+    char tuple_parsed[&command_table->num_attributes][50];
+    
+    // Iterate
+    char current_token[50];
+    char next_tokens[50];
+    strcpy(next_tokens, tuple);
+    for(int i = 0; i < &command_table->num_attributes; i++){
+        if(&command_table->attributes[i].type == CHAR || &command_table->attributes[i].type == VARCHAR){
+            if(next_tokens[0] == '"'){
+                sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
+            }
+            else{
+                sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+            }
+        }
+        else{
+            sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+        }
+        printf(current_token);
+        printf("\n");
+        printf(next_tokens);
+        printf("\n");
+    }
+    printf("\n");
 }
 
 bool process_insert_record(char *command, char * db_loc, Schema * schema)
@@ -344,18 +366,15 @@ bool process_insert_record(char *command, char * db_loc, Schema * schema)
     num_values++;
 
     // Create the array to be returned
-    struct table command_table = get_table(table_name);
-    char *values_parsed[num_values][command_table.num_attributes];
+    struct table command_table = get_table(schema, table_name);
+    char values_parsed[num_values][&command_table->num_attributes][50];
     
     // Iterate through values
     char* tuple = strtok(values_delimited, ",");
-    printf(tuple);
-    printf("\n");
     while (tuple != NULL) 
     {
+        parse_tuple(tuple, command_table);
         tuple = strtok(NULL, ",");
-        printf(tuple);
-        printf("\n");
     }
 }
 
