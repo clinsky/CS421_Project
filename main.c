@@ -37,6 +37,7 @@ bool database_exists(char * db_loc){
 Schema * create_new_database(char * db_loc, int page_size, int buffer_size){
     printf("Jared\n");
    Schema * new_schema =  create_schema(db_loc, page_size, buffer_size);
+   printf("num tables: %d\n", new_schema->num_tables);
    printf("Lantner\n");
 
 
@@ -46,6 +47,7 @@ Schema * create_new_database(char * db_loc, int page_size, int buffer_size){
    strcpy(path, db_loc);
    strcat(path, "/tables");
    mkdir(path, 0755);
+   printf("num tables: %d\n", new_schema->num_tables);
    return new_schema;
 }
 
@@ -79,9 +81,10 @@ int main(int argc, char *argv[]) {
   else{
       printf("new\n");
       schema = create_new_database(db_loc, page_size, buffer_size);
+      printf("num tables: %d\n", schema->num_tables);
   }
 
-    process(db_loc, &schema);
+    process(db_loc, schema);
   return 0;
 }
 

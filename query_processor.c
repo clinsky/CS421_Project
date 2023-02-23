@@ -67,7 +67,8 @@ ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
 
 
 bool process_create_table(char * table_name, int num_attributes, char ** attribute_strings, char * db_loc, Schema * schema) {
-
+    printf("num_tables: %d\n", schema->num_tables);
+    printf("creating table\n");
     int MAX_NAME_LEN = 100;
     bool has_primary_key = false;
 
@@ -115,6 +116,7 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
         attribute_ptr->name = attribute_name;
         attribute_ptr->type = parse_attribute_type(attribute_type, attribute_ptr);
         (table_ptr->attributes)[i] = *attribute_ptr;
+
         table_ptr->num_attributes++;
         unsigned int num_tables = schema->num_tables;
         // convert num_tables to a string
@@ -142,13 +144,16 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
             schema->tables = realloc(schema->tables, schema->max_num_tables * sizeof(char *));
         }
 
-
+        printf("Hello\n");
+        printf("num_tables: %d\n", num_tables);
         schema->tables[num_tables] = *table_ptr;
-
+        printf("n: %s\n", table_ptr->name);
+        schema->num_tables++;
+        printf("Hello\n");
 
         // close the file
         //fclose(fp);
-        schema->num_tables++;
+
 
     }
     /*
@@ -252,8 +257,8 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
 }
 
 bool parse_create_table(char * command, char * db_loc, Schema * schema){
-
-    char table_name[256];
+    printf("num_tables: %d\n", schema->num_tables);
+    char * table_name = malloc(256 * sizeof(char));
     char attribute_name[256];
     char attribute_type[256];
     int num_attributes = 0;
@@ -371,10 +376,34 @@ void display_record(Record record){
 }
 
 bool select_all(char *table_name, char *db_loc, Schema * schema) {
+    Table * requested_table = NULL;
+    Table * tables = schema->tables;
+    int num_tables = schema->num_tables;
+    printf("num_tables: %d\n", num_tables);
+    for(int i = 0; i < num_tables; i++){
+        printf("name: %s\n", tables[i].name);
+        if(strcmp(tables[i].name, table_name) == 0){
+            requested_table = &tables[i];
+            break;
+        }
+    }
+    if(!requested_table){
+        printf("No such table %s\n", table_name);
+        return false;
+    }
+
+    //TODO: format the attributes as in the writeup
+    int num_atrributes = requested_table->num_attributes;
+    for(int i = 0; i < num_atrributes; i++){
+        Attribute attr = requested_table->attributes[i];
+        printf("%s ", attr.name);
+    }
+
+
     char * filename = strcat(db_loc, table_name);
     FILE *fp = fopen(filename, "rb");
     if(fp == NULL) {
-        printf("No such table %s\n", table_name);
+        //printf("No such table %s\n", table_name);
         return false;
     }
 
@@ -414,6 +443,7 @@ bool parse_select(char * command, char * db_loc, Schema * schema) {
 
     token = strtok(NULL, " ");
     strcpy(table_name, token);
+    printf("tableName: %s\n", table_name);
     if(strcmp(attributes, "*") == 0) {
         return select_all(table_name, db_loc, schema);
     }
