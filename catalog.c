@@ -40,141 +40,128 @@ void increment_table_count() {
 }
 
 Schema *read_catalog(char *db_loc) {
-  printf("berries\n");
   char path[100];
   strcpy(path, db_loc);
   strcat(path, "/catalog");
   FILE *fp = fopen(path, "rb");
-  printf("berries\n");
-  Schema schema;
-  printf("berries\n");
-  fread(&schema, sizeof(Schema), 1, fp);
-  printf("berries\n");
   Schema *db_schemas = malloc(sizeof(Schema));
 
-  *db_schemas = schema;
+  if (fp == NULL) {
+    printf("Failed to open file for reading\n");
+    return NULL;
+  }
 
-  /*
- if (fp == NULL) {
-   printf("Failed to open file for reading\n");
-   return NULL;
- }
+  if (fseek(fp, 0, SEEK_SET) != 0) {
+    printf("failed to seek to beginning of file\n");
+    fclose(fp);
+    return NULL;
+  }
 
- if (fseek(fp, 0, SEEK_SET) != 0) {
-   printf("failed to seek to beginning of file\n");
-   fclose(fp);
-   return NULL;
- }
+  int table_count;
+  // read #table count
+  if (fread(&table_count, sizeof(int), 1, fp) != 1) {
+    printf("failed to read table count from catalog\n");
+    fclose(fp);
+    return NULL;
+  }
 
+  db_schemas->num_tables = table_count;
+  db_schemas->tables = malloc(sizeof(Table) * table_count);
 
+  // printf("num tables stored in catalog: %d\n", table_count);
 
- int table_count;
- // read #table count
- if (fread(&table_count, sizeof(int), 1, fp) != 1) {
-   printf("failed to read table count from catalog\n");
-   fclose(fp);
-   return NULL;
- }
+  for (int i = 0; i < table_count; i++) {
+    int table_name_len;
+    if (fread(&table_name_len, sizeof(int), 1, fp) != 1) {
+      printf("failed to read %d table name len from catalog\n", i);
+      fclose(fp);
+      return NULL;
+    }
 
- db_schemas->num_tables = table_count;
- db_schemas->tables = malloc(sizeof(Table) * table_count);
+    char *table_name = malloc(table_name_len);
+    if (fread(table_name, sizeof(char), table_name_len, fp) != table_name_len) {
+      printf("failed to read first table name from catalog\n");
+      fclose(fp);
+      return NULL;
+    }
 
- // printf("num tables stored in catalog: %d\n", table_count);
+    db_schemas->tables[i].name = table_name;
 
- for (int i = 0; i < table_count; i++) {
-   int table_name_len;
-   if (fread(&table_name_len, sizeof(int), 1, fp) != 1) {
-     printf("failed to read %d table name len from catalog\n", i);
-     fclose(fp);
-     return NULL;
-   }
+    // printf("attempting to read table #%d name: %s...\n", i, table_name);
 
-   char *table_name = malloc(table_name_len);
-   if (fread(table_name, sizeof(char), table_name_len, fp) != table_name_len) {
-     printf("failed to read first table name from catalog\n");
-     fclose(fp);
-     return NULL;
-   }
+    int num_attributes;
+    if (fread(&num_attributes, sizeof(int), 1, fp) != 1) {
+      printf("failed to read num_attributes from table #%d\n", i);
+      fclose(fp);
+      return NULL;
+    }
 
-   db_schemas->tables[i].name = table_name;
+    // printf("table #%d num_attribute: %d\n", i, num_attributes);
 
-   // printf("attempting to read table #%d name: %s...\n", i, table_name);
+    db_schemas->tables[i].num_attributes = num_attributes;
+    db_schemas->tables[i].attributes =
+        malloc(sizeof(Attribute) * num_attributes);
+    // loop over attributes
+    for (int j = 0; j < num_attributes; j++) {
 
-   int num_attributes;
-   if (fread(&num_attributes, sizeof(int), 1, fp) != 1) {
-     printf("failed to read num_attributes from table #%d\n", i);
-     fclose(fp);
-     return NULL;
-   }
+      Attribute *attribute_ptr = malloc(sizeof(Attribute));
 
-   // printf("table #%d num_attribute: %d\n", i, num_attributes);
+      // attribute name length
+      int attr_name_len;
+      if (fread(&attr_name_len, sizeof(int), 1, fp) != 1) {
+        printf("failed to read attr #%d attr_name_len from table #%d\n", j, i);
+        fclose(fp);
+        return NULL;
+      }
 
-   db_schemas->tables[i].num_attributes = num_attributes;
-   db_schemas->tables[i].attributes =
-       malloc(sizeof(Attribute) * num_attributes);
-   // loop over attributes
-   for (int j = 0; j < num_attributes; j++) {
+      // actual attribute name
+      char *attr_name = malloc(attr_name_len);
+      if (fread(attr_name, sizeof(char), attr_name_len, fp) != attr_name_len) {
+        printf("failed to read attr #%d attr name from table #%d\n", j, i);
+        fclose(fp);
+        return NULL;
+      }
+      attribute_ptr->name = attr_name;
 
-     Attribute *attribute_ptr = malloc(sizeof(Attribute));
+      // determine what type (integer, bool etc)
+      int attr_type;
+      if (fread(&attr_type, sizeof(int), 1, fp) != 1) {
+        printf("failed to read attr #%d attr_type from table #%d\n", j, i);
+        fclose(fp);
+        return NULL;
+      }
 
-     // attribute name length
-     int attr_name_len;
-     if (fread(&attr_name_len, sizeof(int), 1, fp) != 1) {
-       printf("failed to read attr #%d attr_name_len from table #%d\n", j, i);
-       fclose(fp);
-       return NULL;
-     }
+      attribute_ptr->type = int_to_attribute_type(attr_type);
 
-     // actual attribute name
-     char *attr_name = malloc(attr_name_len);
-     if (fread(attr_name, sizeof(char), attr_name_len, fp) != attr_name_len) {
-       printf("failed to read attr #%d attr name from table #%d\n", j, i);
-       fclose(fp);
-       return NULL;
-     }
-     attribute_ptr->name = attr_name;
+      // need to read len for char/varchar
+      if (attr_type == 3 || attr_type == 4) {
+        int attr_len;
+        if (fread(&attr_len, sizeof(int), 1, fp) != 1) {
+          printf("failed to read attr #%d attr_len from table #%d\n", j, i);
+          fclose(fp);
+          return NULL;
+        }
+        attribute_ptr->len = attr_len;
+      }
 
-     // determine what type (integer, bool etc)
-     int attr_type;
-     if (fread(&attr_type, sizeof(int), 1, fp) != 1) {
-       printf("failed to read attr #%d attr_type from table #%d\n", j, i);
-       fclose(fp);
-       return NULL;
-     }
+      int is_primary_key;
+      if (fread(&is_primary_key, sizeof(int), 1, fp) != 1) {
+        printf("failed to read attr #%d primary_key ness from table #%d\n", j,
+               i);
+        fclose(fp);
+        return NULL;
+      }
+      if (is_primary_key == 1) {
+        attribute_ptr->is_primary_key = true;
+      } else {
+        attribute_ptr->is_primary_key = false;
+      }
 
-     attribute_ptr->type = int_to_attribute_type(attr_type);
-
-     // need to read len for char/varchar
-     if (attr_type == 3 || attr_type == 4) {
-       int attr_len;
-       if (fread(&attr_len, sizeof(int), 1, fp) != 1) {
-         printf("failed to read attr #%d attr_len from table #%d\n", j, i);
-         fclose(fp);
-         return NULL;
-       }
-       attribute_ptr->len = attr_len;
-     }
-
-     int is_primary_key;
-     if (fread(&is_primary_key, sizeof(int), 1, fp) != 1) {
-       printf("failed to read attr #%d primary_key ness from table #%d\n", j,
-              i);
-       fclose(fp);
-       return NULL;
-     }
-     if (is_primary_key == 1) {
-       attribute_ptr->is_primary_key = true;
-     } else {
-       attribute_ptr->is_primary_key = false;
-     }
-
-     // printf("attr #%d name: %s , type: %s , is_primary_key: %d\n", j,
-     //        attr_name, attribute_type_to_string(attr_type), is_primary_key);
-     db_schemas->tables[i].attributes[j] = *attribute_ptr;
-   }
-
- }
-   */
+      // printf("attr #%d name: %s , type: %s , is_primary_key: %d\n", j,
+      //        attr_name, attribute_type_to_string(attr_type), is_primary_key);
+      db_schemas->tables[i].attributes[j] = *attribute_ptr;
+    }
+  }
   printf("closing\n");
   fclose(fp);
   return db_schemas;
