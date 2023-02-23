@@ -99,6 +99,19 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
         attribute_ptr->type = parse_attribute_type(attribute_type, attribute_ptr);
         table_ptr->attributes[i] = *attribute_ptr;
         table_ptr->num_attributes++;
+        int num_tables = schema.num_tables;
+        // convert num_tables to a string
+        char filename[10];
+        sprintf(filename, "%d", num_tables);
+        // add a new file to myDB/tables
+        char * path = "myDB/tables/";
+        FILE *fp = fopen(strcat(path, filename), "wb");
+        // write the number 0 to the file
+        fwrite(0, sizeof(int), 1, fp);
+        // close the file
+        fclose(fp);
+        schema.num_tables++;
+
     }
     /*
   if(!has_primary_key){
@@ -202,6 +215,7 @@ bool process_create_table(char * table_name, int num_attributes, char ** attribu
 
 bool parse_create_table(char * command, char * db_loc, Schema schema){
     //TODO: Parse create table statement
+
     char table_name[256];
     char attribute_name[256];
     char attribute_type[256];
@@ -209,6 +223,7 @@ bool parse_create_table(char * command, char * db_loc, Schema schema){
     char * cmd = strtok(command, "(");
     char first_part[256];
     char second_part[256];
+
     strcpy(first_part, cmd);
     strtok(NULL, " ");
     strcpy(second_part, cmd);
@@ -219,7 +234,7 @@ bool parse_create_table(char * command, char * db_loc, Schema schema){
     char ** attribute_strings = malloc(sizeof(char *) * 256);
     while(tokens != NULL){
         attribute_strings[num_attributes] = tokens;
-        strtok(NULL, ",");
+        tokens = strtok(NULL, ",");
         num_attributes++;
     }
     char * last_attr = attribute_strings[num_attributes - 1];
@@ -274,12 +289,6 @@ bool select_all(char *table_name, char *db_loc, Schema schema) {
 
 }
 
-
-
-
-
-
-
 bool parse_select(char * command, char * db_loc, Schema schema) {
     char attributes[256];
     char table_name[256];
@@ -317,7 +326,7 @@ void parse_command(char *command, char * db_loc, Schema schema){
         parse_select(command, db_loc, schema);
     }
     else if(startsWith(command, "create") == true){
-        parse_select(command, db_loc, schema);
+        parse_create_table(command, db_loc, schema);
     }
     else if(startsWith(command, "insert") == true){
         process_insert_record(command, db_loc, schema);
@@ -379,9 +388,11 @@ void process(char * db_loc, Schema schema){
 
 
     }
+
     while (strcspn(command, "\n") != strlen(command)){
         command[strcspn(command, "\n")] = ' ';
     }
+
     parse_command(command, db_loc, schema);
     next_char = getchar();
 
