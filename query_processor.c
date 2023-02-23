@@ -61,7 +61,7 @@ ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
  * */
 
 
-bool process_create_table() {
+bool process_create_table(char * table_name, int num_attributes, char ** attributes) {
   int MAX_NAME_LEN = 100;
   int MAX_ATTR_LEN = 100;
   char word[MAX_NAME_LEN];
