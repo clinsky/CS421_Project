@@ -1,6 +1,7 @@
 #ifndef QUERY_PROCESSOR_H
 #define QUERY_PROCESSOR_H
 
+#include <stdio.h>
 #include "query_processor.h"
 #include "attribute_types.h"
 #include "parse_utils.h"
@@ -253,7 +254,6 @@ bool select_all(char *table_name, char *db_loc, Schema schema) {
         return false;
     }
 
-    // TODO: Display the attributes of the table
     // TODO: Use the design shown on the writeup
 
     display_attributes(schema);
@@ -333,19 +333,59 @@ void parse_command(char *command, char * db_loc, Schema schema){
     }
 }
 
+void shut_down_database(){
+
+}
+
+void purge_page_buffer(){
+
+}
+
+void save_catalog(){
+
+}
+
 
 void process(char * db_loc, Schema schema){
-  // TODO: SELECT * FROM <table_name>
+  // TODO: Parse at the semicolon instead of the newline
   // TODO: INSERT
-  // TODO: DISPLAY SCHEMA
-  // TODO: DISPLAY INFO
-  char command[256];
-  printf(">");
-  fgets(command, 256, stdin);
-  command[strcspn(command, "\n")] = '\0';
-  while (strcmp(command, "quit") != 0) {
 
+  //fgets(command, 256, stdin);
+  //command[strcspn(command, "\n")] = '\0';
+  while(1){
+    char command[256];
+    command[0] = '\0';
+    char next_char = '\0';
+    printf(">");
+
+
+    int command_idx = 0;
+
+    while(((next_char = getchar()) != ';')){
+        command[command_idx] = next_char;
+        command_idx++;
+        command[command_idx] = '\0';
+        if(strcmp(command, "<quit>") == 0){
+            printf("Safely shutting down the database...\n");
+            shut_down_database();
+            printf("Purging page buffer...\n");
+            purge_page_buffer();
+            printf("Saving catalog...\n");
+            save_catalog();
+            printf("\n");
+            printf("Exiting the database...\n");
+            return;
+        }
+
+
+    }
+    while (strcspn(command, "\n") != strlen(command)){
+        command[strcspn(command, "\n")] = ' ';
+    }
     parse_command(command, db_loc, schema);
+    next_char = getchar();
+
+
     /*
     if (strcmp(word, "create") == 0) {
       print_command_result(process_create_table());
@@ -359,9 +399,9 @@ void process(char * db_loc, Schema schema){
       printf("INVALID QUERY\n");
     }
      */
-    printf(">");
-    fgets(command, 256, stdin);
-    command[strcspn(command, "\n")] = '\0';
+
+    //fgets(command, 256, stdin);
+    //command[strcspn(command, "\n")] = '\0';
   }
 }
 
