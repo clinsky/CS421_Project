@@ -71,8 +71,6 @@ void read_catalog() {
       return;
     }
 
-    printf("table #%d len: %d\n", i, table_name_len);
-
     char *table_name = malloc(table_name_len);
     if (fread(table_name, sizeof(char), table_name_len, fp) != table_name_len) {
       printf("failed to read first table name from catalog\n");
@@ -80,7 +78,7 @@ void read_catalog() {
       return;
     }
 
-    printf("table #%d name: %s\n", i, table_name);
+    printf("attempting to read table #%d name: %s...\n", i, table_name);
 
     int num_attributes;
     if (fread(&num_attributes, sizeof(int), 1, fp) != 1) {
@@ -89,6 +87,7 @@ void read_catalog() {
       return;
     }
 
+    printf("table #%d num_attribute: %d\n", i, num_attributes);
     // loop over attributes
     for (int j = 0; j < num_attributes; j++) {
 
@@ -125,11 +124,18 @@ void read_catalog() {
           return;
         }
       }
-      printf("attr %d name: %s type: %s\n", attr_name_len, attr_name,
-             attribute_type_to_string(attr_type));
-    }
 
-    printf("table #%d num_attribute: %d\n", i, num_attributes);
+      int is_primary_key;
+      if (fread(&is_primary_key, sizeof(int), 1, fp) != 1) {
+        printf("failed to read attr #%d primary_key ness from table #%d\n", j,
+               i);
+        fclose(fp);
+        return;
+      }
+
+      printf("attr #%d name: %s , type: %s , is_primary_key: %d\n", j,
+             attr_name, attribute_type_to_string(attr_type), is_primary_key);
+    }
   }
 
   fclose(fp);
@@ -204,6 +210,14 @@ void write_catalog(Table *table) {
         return;
       }
     }
+
+    // write if part of primary key (0 for false, 1 for true)
+    int is_primary_key = curr_attribute->is_primary_key ? 1 : 0;
+    if (fwrite(&is_primary_key, sizeof(int), 1, fp) != 1) {
+      printf("failed to write attr primary_key ness\n");
+      fclose(fp);
+      return;
+    }
   }
 
   fclose(fp);
@@ -233,6 +247,7 @@ void TESTCATALOG() {
   Attribute *attribute_ptr = malloc(sizeof(Attribute));
   attribute_ptr->type = VARCHAR;
   attribute_ptr->len = 100;
+  attribute_ptr->is_primary_key = true;
   char *attr_name1 = "att1";
   attribute_ptr->name =
       malloc(strlen(attr_name1)); // no +1 because subtract the (
@@ -244,6 +259,7 @@ void TESTCATALOG() {
 
   t->num_attributes += 1;
   attribute_ptr = malloc(sizeof(Attribute));
+  attribute_ptr->is_primary_key = true;
   attribute_ptr->type = DOUBLE;
   char *attr_name2 = "testattr2";
   attribute_ptr->name =
