@@ -191,20 +191,19 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   schema->tables[schema->num_tables - 1] = *table_ptr;
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
-  // printf("the table that was just created: ..\n");
-  // Schema *schema2 = read_catalog(db_loc);
-  // for (int i = 0; i < schema2->num_tables; i++) {
-  //   Table *curr_table = &schema2->tables[i];
-  //   printf("table #%d name: %s\n", i, curr_table->name);
-  //   for (int j = 0; j < curr_table->num_attributes; j++) {
-  //     printf("attr #%d name: %s , type: %s , len: %d is_primary_key: %d\n",
-  //     j,
-  //            curr_table->attributes[j].name,
-  //            attribute_type_to_string(curr_table->attributes[j].type),
-  //            curr_table->attributes[j].len,
-  //            curr_table->attributes[j].is_primary_key);
-  //   }
-  // }
+  printf("the table that was just created: ..\n");
+  Schema *schema2 = read_catalog(db_loc);
+  for (int i = 0; i < schema2->num_tables; i++) {
+    Table *curr_table = &schema2->tables[i];
+    printf("table #%d name: %s\n", i, curr_table->name);
+    for (int j = 0; j < curr_table->num_attributes; j++) {
+      printf("attr #%d name: %s , type: %s , len: %d is_primary_key: %d\n", j,
+             curr_table->attributes[j].name,
+             attribute_type_to_string(curr_table->attributes[j].type),
+             curr_table->attributes[j].len,
+             curr_table->attributes[j].is_primary_key);
+    }
+  }
 
   return true;
 }
@@ -295,7 +294,8 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
-
+  printf("num values: %d\n", num_values);
+  printf("printing values parsed\n");
   for (int i = 0; i < num_values; i++) {
     for (int j = 0; j < command_table->num_attributes; j++) {
       printf("%s ", values_parsed[i][j]);
@@ -401,6 +401,7 @@ bool process_display_info(char *command, char *db_loc, Schema *schema) {
   char table_name[50];
   sscanf(command, "display info %s", &table_name);
   Table *table = get_table(schema, &table_name);
+  printf("table %s not null\n", table_name);
   if (table == NULL) {
     printf("table cant be displayed, was null\n");
   } else {
