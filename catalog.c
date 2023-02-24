@@ -2,6 +2,7 @@
 
 Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
   Schema *db_schema = read_catalog(db_loc);
+  strncpy(db_schema->db_path, db_loc, strlen(db_loc));
   db_schema->page_size = page_size;
   db_schema->buffer_size = buffer_size;
   db_schema->num_tables = 0;

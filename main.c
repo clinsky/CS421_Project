@@ -45,8 +45,15 @@ Schema *create_new_database(char *db_loc, int page_size, int buffer_size) {
   return new_schema;
 }
 
-Schema *restart_database(char *db_loc, int buffer_size) {
+Schema *restart_database(char *db_loc, int page_size, int buffer_size) {
+  // read_catalog reconstructs tables stored in catalog into schema
   Schema *schema = read_catalog(db_loc);
+
+  // still need to set these fields still
+  strncpy(schema->db_path, db_loc, strlen(db_loc));
+  schema->page_size = page_size;
+  schema->buffer_size = buffer_size;
+  schema->max_num_tables = 10;
   return schema;
 }
 
@@ -58,7 +65,7 @@ int main(int argc, char *argv[]) {
   printf("db_loc: %s\n", db_loc);
   if (database_exists(db_loc)) {
     printf("%s database exists..\n", db_loc);
-    schema = restart_database(db_loc, buffer_size);
+    schema = restart_database(db_loc, page_size, buffer_size);
   } else {
     printf("new database being created..\n");
     schema = create_new_database(db_loc, page_size, buffer_size);

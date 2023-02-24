@@ -182,9 +182,10 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
     return false;
   }
 
+  write_catalog(db_loc, table_ptr);
+
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
   // print_table_metadata(table_ptr);
-  // write_catalog(db_loc, table_ptr);
   // Schema *schema2 = read_catalog(db_loc);
   // for (int i = 0; i < schema2->num_tables; i++) {
   //   Table *curr_table = &schema2->tables[i];
@@ -380,10 +381,15 @@ bool process_display_schema(char *command, char *db_loc, Schema *schema) {
 }
 
 bool process_display_info(char *command, char *db_loc, Schema *schema) {
-  // im pretty sure display_info is already implemented in parse_utils.c
-  // but i havent looked at the write up in weeks so i dont remember what
-  // display info is lol
-  printf("Display Info not implemented!");
+  char table_name[50];
+  sscanf(command, "display info %s", &table_name);
+  Table *table = get_table(schema, &table_name);
+  if (table == NULL) {
+    printf("table cant be displayed, was null\n");
+  } else {
+    print_table_metadata(table);
+  }
+
   return false;
 }
 
