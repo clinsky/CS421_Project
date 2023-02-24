@@ -82,6 +82,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   char *table_name = strtok(NULL, " ");
 
   Table *table_ptr = malloc(sizeof(Table));
+  table_ptr->attributes = malloc(sizeof(Attribute) * 100);
   if (!endsWith(table_name, "(")) {
     // should follow format create table foo(
     printf("invalid table name\n");
@@ -123,8 +124,6 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
       if (attr_type == INVALID_ATTR) {
         return false;
       }
-      table_ptr->attributes = (Attribute *)realloc(
-          table_ptr->attributes, table_ptr->num_attributes * sizeof(Attribute));
       table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
       break;
     }
@@ -136,8 +135,6 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
       if (attr_type == INVALID_ATTR) {
         return false;
       }
-      table_ptr->attributes = (Attribute *)realloc(
-          table_ptr->attributes, table_ptr->num_attributes * sizeof(Attribute));
       table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
       continue;
     }
@@ -167,16 +164,12 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
     // last statement of the form num integer primarykey);
     if (endsWith(token, ");")) {
-      table_ptr->attributes = (Attribute *)realloc(
-          table_ptr->attributes, table_ptr->num_attributes * sizeof(Attribute));
       table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
       break;
     }
 
     // ends with comma => more statements to follow
     if (endsWith(token, ",")) {
-      table_ptr->attributes = (Attribute *)realloc(
-          table_ptr->attributes, table_ptr->num_attributes * sizeof(Attribute));
       table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
       continue;
     }
@@ -194,8 +187,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
   // need to also update schema
   schema->num_tables += 1;
-  schema->tables =
-      (Table *)realloc(schema->tables, schema->num_tables * sizeof(Table));
+  schema->tables = malloc(sizeof(Table) * 100);
   schema->tables[schema->num_tables - 1] = *table_ptr;
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
@@ -230,15 +222,15 @@ bool parse_tuple(char *tuple, char tuple_parsed[][50], Table *command_table) {
         command_table->attributes[i].type == VARCHAR) {
       if (next_tokens[0] == '"') {
         sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
-        if(strlen(current_token) > command_table->attributes[i].len){
-            printf("Invalid data type, char is too long!");
-            return false;
+        if (strlen(current_token) > command_table->attributes[i].len) {
+          printf("Invalid data type, char is too long!");
+          return false;
         }
       } else {
         sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
-        if(strcmp(current_token, "null") != 0){
-            printf("Invalid data type, chars must be in quotes!");
-            return false;
+        if (strcmp(current_token, "null") != 0) {
+          printf("Invalid data type, chars must be in quotes!");
+          return false;
         }
       }
     } else {
@@ -294,22 +286,22 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   int tuple_index = 0;
   while (tuple != NULL) {
     char tuple_parsed[command_table->num_attributes][50];
-    if(!parse_tuple(tuple, tuple_parsed, command_table)){
+    if (!parse_tuple(tuple, tuple_parsed, command_table)) {
       return false;
     }
     for (int i = 0; i < command_table->num_attributes; i++) {
-        strcpy(values_parsed[tuple_index][i], tuple_parsed[i]);
+      strcpy(values_parsed[tuple_index][i], tuple_parsed[i]);
     }
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
 
-    for (int i = 0; i < num_values; i++) {
-        for(int j = 0; j < command_table->num_attributes; j++){
-            printf("%s ", values_parsed[i][j]);
-        }
-        printf("\n");
+  for (int i = 0; i < num_values; i++) {
+    for (int j = 0; j < command_table->num_attributes; j++) {
+      printf("%s ", values_parsed[i][j]);
     }
+    printf("\n");
+  }
   return false;
 }
 

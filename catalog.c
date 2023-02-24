@@ -269,64 +269,6 @@ void create_catalog(char *db_loc) {
   printf("done creating catalog\n");
 }
 
-/*
- * CREATE A DUMMY TABLE WITH 2 ATTRIBUTES
- * WRITES THE TABLE TO CATALOG
- * AND READS IT BACK
- */
-void TESTCATALOG() {
-  Table *t = malloc(sizeof(Table));
-  char *table_name = "table1";
-  t->name = malloc(strlen(table_name)); // no +1 because subtract the (
-  strncpy(t->name, table_name, strlen(table_name));
-
-  t->num_attributes = 1;
-  Attribute *attribute_ptr = malloc(sizeof(Attribute));
-  attribute_ptr->type = VARCHAR;
-  attribute_ptr->len = 100;
-  attribute_ptr->is_primary_key = true;
-  char *attr_name1 = "att1";
-  attribute_ptr->name =
-      malloc(strlen(attr_name1)); // no +1 because subtract the (
-  strncpy(attribute_ptr->name, attr_name1, strlen(attr_name1));
-
-  t->attributes = (Attribute *)realloc(t->attributes,
-                                       t->num_attributes * sizeof(Attribute));
-  t->attributes[t->num_attributes - 1] = *attribute_ptr;
-
-  t->num_attributes += 1;
-  attribute_ptr = malloc(sizeof(Attribute));
-  attribute_ptr->is_primary_key = true;
-  attribute_ptr->type = DOUBLE;
-  char *attr_name2 = "testattr2";
-  attribute_ptr->name =
-      malloc(strlen(attr_name2)); // no +1 because subtract the (
-  strncpy(attribute_ptr->name, attr_name2, strlen(attr_name2));
-
-  t->attributes = (Attribute *)realloc(t->attributes,
-                                       t->num_attributes * sizeof(Attribute));
-  t->attributes[t->num_attributes - 1] = *attribute_ptr;
-
-  create_catalog("");
-
-  // Write catalog
-  write_catalog("", t);
-
-  // Read catalog and print examples
-  Schema *schema = read_catalog("/myDB");
-  printf("done reading catalog\n");
-  for (int i = 0; i < schema->num_tables; i++) {
-    Table *curr_table = &schema->tables[i];
-    printf("table #%d name: %s\n", i, curr_table->name);
-    for (int j = 0; j < curr_table->num_attributes; j++) {
-      printf("attr #%d name: %s , type: %s , is_primary_key: %d\n", j,
-             curr_table->attributes[j].name,
-             attribute_type_to_string(curr_table->attributes[j].type),
-             curr_table->attributes[j].is_primary_key);
-    }
-  }
-}
-
 Table *get_table(Schema *db_schema, char *table_name) {
   for (int i = 0; i < db_schema->num_tables; i++) {
     Table *t = &db_schema->tables[i];
