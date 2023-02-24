@@ -217,40 +217,36 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   return true;
 }
 
-char **parse_tuple(char *tuple, Table *command_table) {
-  printf("Type: %d\n",
-         attribute_type_to_int(command_table->attributes[0].type));
-  printf("Type: %d\n",
-         attribute_type_to_int(command_table->attributes[1].type));
-
+bool parse_tuple(char *tuple, char tuple_parsed[][50], Table *command_table) {
   // Remove parentheses from tuple
   sscanf(tuple, "(%[^)]", tuple);
 
-  // Create array to be returned
-  char tuple_parsed[command_table->num_attributes][50];
-
   // Iterate
   char current_token[50];
-  char next_tokens[50];
+  char next_tokens[256];
   strcpy(next_tokens, tuple);
   for (int i = 0; i < command_table->num_attributes; i++) {
     if (command_table->attributes[i].type == CHAR ||
         command_table->attributes[i].type == VARCHAR) {
       if (next_tokens[0] == '"') {
         sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
+        if(strlen(current_token) > command_table->attributes[i].len){
+            printf("Invalid data type, char is too long!");
+            return false;
+        }
       } else {
         sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+        if(strcmp(current_token, "null") != 0){
+            printf("Invalid data type, chars must be in quotes!");
+            return false;
+        }
       }
     } else {
       sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
     }
-    printf("current token: %s\n", current_token);
-    printf("\n");
-    printf("next tokens: %s\n", next_tokens);
-    printf("\n");
+    strcpy(tuple_parsed[i], current_token);
   }
-  printf("\n");
-  return NULL;
+  return true;
 }
 
 bool process_insert_record(char *command, char *db_loc, Schema *schema) {
@@ -260,11 +256,11 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   command[command_len + 1] = '\0';
 
   // Parse the table name and values out of the command
-  char table_name[20], values[50];
+  char table_name[50], values[256];
   sscanf(command, "insert into %s values %[^;]", table_name, values);
 
   // Make sure the values are comma delimited with no space
-  char values_delimited[50];
+  char values_delimited[256];
   values_delimited[0] = values[0];
   char prev = values[0];
   int j = 1;
@@ -295,9 +291,14 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 
   // Iterate through values
   char *tuple = strtok(values_delimited, ",");
+  int tuple_index = 0;
   while (tuple != NULL) {
-    parse_tuple(tuple, command_table);
+    char tuple_parsed[command_table->num_attributes][50];
+    if(!parse_tuple(tuple, tuple_parsed, command_table)){
+      return false;
+    }
     tuple = strtok(NULL, ",");
+    tuple_index++;
   }
   return false;
 }
