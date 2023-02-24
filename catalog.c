@@ -10,8 +10,10 @@ Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
   return db_schema;
 }
 
-void increment_table_count() {
-  FILE *fp = fopen("catalog", "rb+"); // rb+ for reading and writing
+void increment_table_count(char *db_loc) {
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
+  FILE *fp = fopen(filepath, "rb+"); // rb+ for reading and writing
   int table_count;
   if (fseek(fp, 0, SEEK_SET) != 0) {
     printf("failed to seek to beginning of file\n");
@@ -168,7 +170,8 @@ Schema *read_catalog(char *db_loc) {
 }
 
 void write_catalog(char *db_loc, Table *table) {
-  increment_table_count();
+
+  increment_table_count(db_loc);
 
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
