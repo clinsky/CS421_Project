@@ -202,23 +202,25 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   return true;
 }
 
-char **parse_tuple(char *tuple, struct table *command_table) {
-  printf("Type: %d\n", &command_table->attributes[0].type);
-  printf("Type: %d\n", &command_table->attributes[1].type);
+char **parse_tuple(char *tuple, Table *command_table) {
+  printf("Type: %d\n",
+         attribute_type_to_int(command_table->attributes[0].type));
+  printf("Type: %d\n",
+         attribute_type_to_int(command_table->attributes[1].type));
 
   // Remove parentheses from tuple
   sscanf(tuple, "(%[^)]", tuple);
 
   // Create array to be returned
-  char tuple_parsed[&command_table->num_attributes][50];
+  char tuple_parsed[command_table->num_attributes][50];
 
   // Iterate
   char current_token[50];
   char next_tokens[50];
   strcpy(next_tokens, tuple);
-  for (int i = 0; i < &command_table->num_attributes; i++) {
-    if (&command_table->attributes[i].type == CHAR ||
-        &command_table->attributes[i].type == VARCHAR) {
+  for (int i = 0; i < command_table->num_attributes; i++) {
+    if (command_table->attributes[i].type == CHAR ||
+        command_table->attributes[i].type == VARCHAR) {
       if (next_tokens[0] == '"') {
         sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
       } else {
@@ -227,9 +229,9 @@ char **parse_tuple(char *tuple, struct table *command_table) {
     } else {
       sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
     }
-    printf(current_token);
+    printf("current token: %s\n", current_token);
     printf("\n");
-    printf(next_tokens);
+    printf("next tokens: %s\n", next_tokens);
     printf("\n");
   }
   printf("\n");
@@ -273,8 +275,8 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   num_values++;
 
   // Create the array to be returned
-  struct table command_table = get_table(schema, table_name);
-  char values_parsed[num_values][&command_table->num_attributes][50];
+  Table *command_table = get_table(schema, table_name);
+  char values_parsed[num_values][command_table->num_attributes][50];
 
   // Iterate through values
   char *tuple = strtok(values_delimited, ",");
@@ -374,10 +376,15 @@ bool parse_select(char *command, char *db_loc, Schema *schema) {
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema) {
   printf("Display Schema not implemented!");
+  return false;
 }
 
 bool process_display_info(char *command, char *db_loc, Schema *schema) {
+  // im pretty sure display_info is already implemented in parse_utils.c
+  // but i havent looked at the write up in weeks so i dont remember what
+  // display info is lol
   printf("Display Info not implemented!");
+  return false;
 }
 
 void shut_down_database() { return; }
