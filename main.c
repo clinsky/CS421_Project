@@ -45,21 +45,9 @@ Schema *create_new_database(char *db_loc, int page_size, int buffer_size) {
   return new_schema;
 }
 
-Schema read_in_catalog(char *db_loc) {
-  Schema schema;
-  char path[100];
-  strcpy(path, db_loc);
-  strcat(path, "/catalog");
-  FILE *fp = fopen(path, "rb");
-  fread(&schema, sizeof(Schema), 1, fp);
-  return schema;
-}
-
 Schema *restart_database(char *db_loc, int buffer_size) {
-  Schema schema = read_in_catalog(db_loc);
-  Schema *new_schema = malloc(sizeof(Schema));
-  *new_schema = schema;
-  return new_schema;
+  Schema *schema = read_catalog(db_loc);
+  return schema;
 }
 
 int main(int argc, char *argv[]) {
@@ -77,6 +65,6 @@ int main(int argc, char *argv[]) {
     printf("num tables: %d\n", schema->num_tables);
   }
 
-  // process(db_loc, schema);
+  process(db_loc, schema);
   return 0;
 }
