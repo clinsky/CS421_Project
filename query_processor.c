@@ -80,14 +80,25 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   }
 
   char *table_name = strtok(NULL, " ");
+
   Table *table_ptr = malloc(sizeof(Table));
   if (!endsWith(table_name, "(")) {
     // should follow format create table foo(
     printf("invalid table name\n");
     return false;
   }
+
+  // remove the trailing (
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
   strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
+
+  // check no table in catalog with same name already
+  Table *table_in_catalog = get_table(schema, table_ptr->name);
+  if (table_in_catalog != NULL) {
+    printf("Table of name %s already exists\n", table_ptr->name);
+    return false;
+  }
+
   // printf("%s (len %lu) is table name \n", table_ptr->name,
   // strlen(table_ptr->name));
 
@@ -188,20 +199,20 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   schema->tables[schema->num_tables - 1] = *table_ptr;
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
-  // print_table_metadata(table_ptr);
-  printf("the table that was just created: ..\n");
-  Schema *schema2 = read_catalog(db_loc);
-  for (int i = 0; i < schema2->num_tables; i++) {
-    Table *curr_table = &schema2->tables[i];
-    printf("table #%d name: %s\n", i, curr_table->name);
-    for (int j = 0; j < curr_table->num_attributes; j++) {
-      printf("attr #%d name: %s , type: %s , len: %d is_primary_key: %d\n", j,
-             curr_table->attributes[j].name,
-             attribute_type_to_string(curr_table->attributes[j].type),
-             curr_table->attributes[j].len,
-             curr_table->attributes[j].is_primary_key);
-    }
-  }
+  // printf("the table that was just created: ..\n");
+  // Schema *schema2 = read_catalog(db_loc);
+  // for (int i = 0; i < schema2->num_tables; i++) {
+  //   Table *curr_table = &schema2->tables[i];
+  //   printf("table #%d name: %s\n", i, curr_table->name);
+  //   for (int j = 0; j < curr_table->num_attributes; j++) {
+  //     printf("attr #%d name: %s , type: %s , len: %d is_primary_key: %d\n",
+  //     j,
+  //            curr_table->attributes[j].name,
+  //            attribute_type_to_string(curr_table->attributes[j].type),
+  //            curr_table->attributes[j].len,
+  //            curr_table->attributes[j].is_primary_key);
+  //   }
+  // }
 
   return true;
 }
