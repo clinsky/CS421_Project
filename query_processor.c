@@ -184,6 +184,12 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
   write_catalog(db_loc, table_ptr);
 
+  // need to also update schema
+  schema->num_tables += 1;
+  schema->tables =
+      (Table *)realloc(schema->tables, schema->num_tables * sizeof(Table));
+  schema->tables[schema->num_tables - 1] = *table_ptr;
+
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
   // print_table_metadata(table_ptr);
   // Schema *schema2 = read_catalog(db_loc);
