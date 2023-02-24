@@ -82,15 +82,19 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   char *table_name = strtok(NULL, " ");
 
   Table *table_ptr = malloc(sizeof(Table));
+
+  /*
   if (!endsWith(table_name, "(")) {
     // should follow format create table foo(
+
     printf("invalid table name\n");
     return false;
   }
+   */
 
   // remove the trailing (
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
-  strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
+  strncpy(table_ptr->name, table_name, strlen(table_name));
 
   // check no table in catalog with same name already
   Table *table_in_catalog = get_table(schema, table_ptr->name);
@@ -103,12 +107,18 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // strlen(table_ptr->name));
 
   // continue with rest of tokens
+  table_ptr->num_attributes = 0;
+  token = strtok(NULL, " ");
+  if(token[0] == '('){
+    token++;
+  }
+
   while (1) {
     table_ptr->num_attributes++;
     Attribute *attribute_ptr = malloc(sizeof(Attribute));
 
-    // field name
-    token = strtok(NULL, " ");
+
+
     //   printf("field name: %s (len %lu)\n", word, strlen(word));
     attribute_ptr->name = malloc(strlen(token) + 1);
     strncpy(attribute_ptr->name, token, strlen(token) + 1);
@@ -182,6 +192,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
     }
     // shouldn't have anyother options i think...
     return false;
+      // field name
+    token = strtok(NULL, " ");
   }
 
   // check has primary key
@@ -287,7 +299,15 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 
   // Create the array to be returned
   Table *command_table = get_table(schema, table_name);
+
+
+
   char values_parsed[num_values][command_table->num_attributes][50];
+
+  //TODO: get the parameters for init_record
+  Record record =  init_record(num_fields, attributes, start, null_array);
+  insert_record_into_table_file(db_loc, table_name, record, schema);
+
 
   // Iterate through values
   char *tuple = strtok(values_delimited, ",");
@@ -315,11 +335,10 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 
 void display_attributes(Schema *schema) {}
 
-void display_record(Record record) {
+void display_record(Record record, Table * table) {
   int **offset_len_pairs = record.offset_length_pairs;
-  // TODO: Find a way to get the number of attributes
-  int num_attributes = 3;
-  for (int i = 0; i < num_attributes; i += 2) {
+  unsigned int num_attributes = table->num_attributes;
+  for (int i = 0; i < num_attributes; i += 1) {
     int offset = offset_len_pairs[i][0];
     int len = offset_len_pairs[i][1];
     Attribute attr = record.attributes[offset];
@@ -331,9 +350,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema) {
   Table *requested_table = NULL;
   Table *tables = schema->tables;
   int num_tables = schema->num_tables;
-  printf("num_tables: %d\n", num_tables);
   for (int i = 0; i < num_tables; i++) {
-    printf("name: %s\n", tables[i].name);
     if (strcmp(tables[i].name, table_name) == 0) {
       requested_table = &tables[i];
       break;
@@ -359,8 +376,9 @@ bool select_all(char *table_name, char *db_loc, Schema *schema) {
   }
 
   // TODO: Use the design shown on the writeup
-
+  printf("progress\n");
   display_attributes(schema);
+  printf("progress\n");
 
   int *page_locations = schema->page_locations;
   int num_pages;
@@ -371,7 +389,8 @@ bool select_all(char *table_name, char *db_loc, Schema *schema) {
     fread(&page, sizeof(Page), 1, fp);
     for (int j = 0; j < page.num_records; j++) {
       Record record = page.records[j];
-      display_record(record);
+
+      display_record(record, requested_table);
     }
   }
   return true;
@@ -393,7 +412,6 @@ bool parse_select(char *command, char *db_loc, Schema *schema) {
 
   token = strtok(NULL, " ");
   strcpy(table_name, token);
-  printf("tableName: %s\n", table_name);
   if (strcmp(attributes, "*") == 0) {
     return select_all(table_name, db_loc, schema);
   }
