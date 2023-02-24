@@ -62,14 +62,15 @@ int main(int argc, char *argv[]) {
   int page_size = atoi(argv[2]);
   int buffer_size = atoi(argv[3]);
   Schema *schema;
+  printf("db_loc: %s\n", db_loc);
   if (database_exists(db_loc)) {
     printf("%s database exists..\n", db_loc);
     schema = restart_database(db_loc, page_size, buffer_size);
   } else {
     printf("new database being created..\n");
     schema = create_new_database(db_loc, page_size, buffer_size);
+    printf("num tables: %d\n", schema->num_tables);
   }
-
 
   process(db_loc, schema);
   return 0;

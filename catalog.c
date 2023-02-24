@@ -82,8 +82,6 @@ Schema *read_catalog(char *db_loc) {
       return NULL;
     }
 
-    printf("table_name_len: %d\n", table_name_len);
-
     char *table_name = malloc(table_name_len);
     if (fread(table_name, sizeof(char), table_name_len, fp) != table_name_len) {
       printf("failed to read first table name from catalog\n");
@@ -103,9 +101,8 @@ Schema *read_catalog(char *db_loc) {
     }
 
     // printf("table #%d num_attribute: %d\n", i, num_attributes);
-    printf("num_attributes: %d\n", num_attributes);
+
     db_schemas->tables[i].num_attributes = num_attributes;
-      printf("num_attributes: %d\n", db_schemas->tables[i].num_attributes);
     db_schemas->tables[i].attributes =
         malloc(sizeof(Attribute) * num_attributes);
     // loop over attributes
@@ -332,12 +329,10 @@ void TESTCATALOG() {
 
 Table *get_table(Schema *db_schema, char *table_name) {
   for (int i = 0; i < db_schema->num_tables; i++) {
-    Table *t = &(db_schema->tables[i]);
-    printf("table name: %s\n", t->name);
+    Table *t = &db_schema->tables[i];
     if (strcmp(t->name, table_name) == 0) {
       return t;
     }
   }
-  printf("Got NULL\n");
   return NULL;
 }
