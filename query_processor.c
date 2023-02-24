@@ -297,9 +297,19 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
     if(!parse_tuple(tuple, tuple_parsed, command_table)){
       return false;
     }
+    for (int i = 0; i < command_table->num_attributes; i++) {
+        strcpy(values_parsed[tuple_index][i], tuple_parsed[i]);
+    }
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
+
+    for (int i = 0; i < num_values; i++) {
+        for(int j = 0; j < command_table->num_attributes; j++){
+            printf("%s ", values_parsed[i][j]);
+        }
+        printf("\n");
+    }
   return false;
 }
 
