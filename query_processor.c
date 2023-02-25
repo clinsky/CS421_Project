@@ -190,14 +190,19 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer 
   // need to also update schema
   schema->num_tables += 1;
   schema->tables[schema->num_tables - 1] = *table_ptr;
-    
-  struct page *new_page = (struct page *)malloc(sizeof(struct page));
+
+  Page *new_page = (Page *)malloc(sizeof(Page));
   new_page->records = NULL;
   new_page->num_records = 0;
   new_page->num_bytes = 0;
-  new_page->table_name = "my_table";
+  new_page->table_name = table_ptr->name;
   new_page->page_index = 0;
 
+  int page_index = get_page_index(page_buffer, schema);
+  page_buffer->pages[page_index] = *new_page;
+  page_buffer->last_used_count++;
+  page_buffer->last_used[page_index] = page_buffer->last_used_count;
+    
   return true;
 }
 
