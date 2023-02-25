@@ -1,150 +1,155 @@
 #include "page.h"
+#include "attribute_types.h"
 #include "catalog.h"
-#include <string.h>
 #include <dirent.h>
+#include <string.h>
 
+Attribute_Values *check_valid_parsed_tuple(Table *table,
+                                           char (*tuple_parsed)[50]) {
+  Attribute_Values *values =
+      malloc(sizeof(Attribute_Values) * table->num_attributes);
 
-
-
-char * create_new_table_file(char * table_file){
-    return table_file;
-
-}
-
-FILE * get_table_file(char * db_loc, int table_idx){
-    char char_string[2] = {table_idx, '\n'};
-    char * table_filename = strcat(db_loc, "/table/");
-    table_filename = strcat(table_filename, char_string);
-    FILE * file = fopen(table_filename, "rb");
-    return file;
-}
-
-int get_page_number_location(int page_number, Schema * schema){
-    return schema->page_locations[page_number];
-}
-
-void update_catalog(Schema * schema, int page_number, int page_location){
-    schema->page_locations[page_number] = page_location;
-}
-
-
-ATTRIBUTE_TYPE get_primary_key(Record record){
-    return INTEGER;
-}
-
-bool record_before_current_record(Record rec, Record current_record) {
-    return get_primary_key(rec) < get_primary_key(current_record);
-}
-
-void insert_before_current_record(Record rec, Record curr, Page * page, int current_record_idx) {
-        Record temp = rec;
-        for (int idx = current_record_idx; idx < page->num_records - 1; idx++) {
-            page->records[idx + 1] = page->records[idx];
-            page->records[idx] = temp;
-            temp = page->records[idx+1];
-        }
-        (page->num_records)++;
-}
-
-bool page_is_overfull(Page * page, Schema * schema) {
-    int global_page_size = schema->page_size;
-    return sizeof(page) > global_page_size;
-}
-
-void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location){
-    /*
-     * make a new page
-     * remove half the items from the current page
-     * add the items to the new page
-     * insert the new page after the current page in the table file
-     */
-    int global_page_size = schema->page_size;
-    // make a new page
-    Page * new_page = (Page *)malloc(global_page_size);
-    new_page->num_records = 0;
-    // remove half the items from the current page
-    // add the items to the new page
-    int left_num_records = page->num_records / 2;
-    int right_num_records = page->num_records - left_num_records;
-    for(int idx = left_num_records; idx < page->num_records; idx++){
-        new_page->records[idx - left_num_records] = page->records[idx];
-        new_page->num_records++;
+  for (int i = 0; i < table->num_attributes; i++) {
+    char *v = tuple_parsed[i];
+    printf("converting %s\n", v);
+    ATTRIBUTE_TYPE type = table->attributes[i].type;
+    if (strcmp(v, "null") == 0) {
+      if (table->attributes[i].is_primary_key) {
+        return NULL;
+      }
+      values[i].is_null = true;
     }
-    page->num_records = left_num_records;
+    if (type == INTEGER) {
+      printf("trying to convert %s to integer..\n", v);
+      printf("%lu\n", strlen(v));
+      int intval = atoi(v);
+      if (intval == 0) {
+        if (strcmp(v, "0") != 0) {
+          return NULL;
+        }
+      }
+      values[i].int_val = intval;
+    } else if (type == DOUBLE) {
+      char *endptr;
+      double double_val = strtod(v, &endptr);
+      if (endptr == v) {
+        return NULL;
+      } else if (*endptr != '\0') {
+        return NULL;
+      } else {
+        printf("The double value of '%s' is %lf\n", v, double_val);
+      }
+      values[i].double_val = double_val;
+    } else if (type == BOOL) {
+      int intval = atoi(v);
+      if (intval == 0) {
+        if (strcmp(v, "0") != 0) {
+          return false;
+        }
+        values[i].bool_val = false;
+      } else {
+        values[i].bool_val = true;
+      }
+    } else if (type == CHAR) {
+      if (strlen(v) > table->attributes[i].len) {
+        return false;
+      }
+      values[i].chars_val = malloc(table->attributes[i].len + 1);
+      strncpy(values[i].chars_val, v, strlen(v));
+      values[i].chars_val[table->attributes[i].len] = '\0';
 
-    // insert the new page after the current page in the table file
-    fwrite(page, sizeof(page), 1, table_file_ptr);
-
-    // update the schema
-    update_catalog(schema, page_number, page_location);
+    } else if (type == VARCHAR) {
+      if (strlen(v) > table->attributes[i].len) {
+        return false;
+      }
+      values[i].chars_val = malloc(strlen(v));
+      strncpy(values[i].chars_val, v, strlen(v));
+    }
+  }
+  return values;
 }
 
-void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema){
-    /*
-     * if there are no pages for this table:
-     *  make a new file for the table
-     *  add this entry to a new page
-     *  insert the page into the table file
-     *  end
-     * Read each table page in order from the table file:
-     *  iterate the records in page:
-     *      if the record belongs before the current record:
-     *          insert the record before it
-     *  if the current page becomes overfull:
-     *      split the page
-     *      end
-     * If the record does not get inserted:
-     *  insert it into the last page of the table file
-     *  if page becomes overfull:
-     *      split the page
-     *  end
-     */
-    int global_page_size = schema->page_size;
-    FILE * table_file_ptr = get_table_file(db_loc, table_idx);
-    int * num_pages_ptr;
-    fread(&num_pages_ptr, sizeof(int), 1, table_file_ptr);
-    // if there are no pages for this table
-    if(!num_pages_ptr){
-        // make a new file for the table
-        int new_size = 1;
-        fwrite(&new_size, sizeof(int), 1, table_file_ptr);
-        // add this entry to a new page
-        Page * new_page = (Page*)malloc(global_page_size);
-        new_page->records[0] = rec;
-        new_page->num_records++;
-        // insert the page into the table file
-        fwrite(new_page, global_page_size, 1, table_file_ptr);
-        fclose(table_file_ptr);
-        return;
+Page *read_page_from_file(Schema *schema, char *file_path) {
+  FILE *fp = fopen(file_path, "rb");
+  Page *first_page = malloc(sizeof(Page));
+  first_page->max_size = schema->page_size;
+  fwrite(&first_page->num_records, sizeof(int), 1, fp);
+  return NULL;
+};
+
+void write_page_to_file(Table *table, Page *p, char *file_path) {
+  FILE *fp = fopen(file_path, "r+"); // read write mode without overwriting
+  if (fp == NULL) {
+    printf("Error opening %s file\n", file_path);
+    return;
+  }
+  fseek(fp, 0, SEEK_SET);
+  fwrite(&p->num_records, sizeof(int), 1, fp);
+}
+
+Page *add_record_to_page(Schema *schema, Table *table,
+                         Attribute_Values *attr_vals) {
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+  Page *p;
+  if (access(filepath, F_OK) != -1) {
+    printf("File %s exists\n", filepath);
+    p = read_page_from_file(schema, filepath);
+  } else {
+    printf("File %s does not exist\n", filepath);
+    FILE *fp = fopen(filepath, "w");
+    if (fp != NULL) {
+      printf("File %s created successfully\n", filepath);
+      fseek(fp, schema->page_size - 1, SEEK_SET);
+      fputc(0, fp);
+      fclose(fp);
+    } else {
+      printf("Error creating %s file\n", filepath);
+      return NULL;
     }
-
-    Page * page;
-    int inserted = 0;
-    // Read each table page in order from the table file
-    for(int page_number = 0; page_number <= *num_pages_ptr; page_number++){
-        // read in the page
-
-        page = fseek(table_file_ptr, get_page_number_location(page_number, schema), 0);
-        // Iterate the records in page
-        for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
-            Record current_record = (page->records)[record_idx];
-            if (record_before_current_record(rec, current_record)) {
-                insert_before_current_record(rec, current_record, page, record_idx);
-                inserted = 1;
-            }
-        }
-        if (page_is_overfull(page, schema)) {
-            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr);
-
-
-        }
-
+    Page *first_page = malloc(sizeof(Page));
+    first_page->max_size = schema->page_size;
+    bool enough_space_to_insert =
+        check_enough_space(table, first_page, attr_vals);
+    if (!enough_space_to_insert) {
+      return NULL;
     }
-    // if record not inserted, insert into last page of the file
-    if(inserted == 0){
-        page->records[page->num_records + 1] = rec;
-        if(page_is_overfull(page, schema)){
-            split_page(page, table_file_ptr, schema, *num_pages_ptr, *num_pages_ptr);
-        }
+    p = first_page;
+  }
+  return p;
+}
+
+int calculate_record_size(Table *table, Attribute_Values *attr_vals) {
+  int record_size = 0;
+  for (int i = 0; i < table->num_attributes; i++) {
+    ATTRIBUTE_TYPE type = table->attributes[i].type;
+    if (type == INTEGER) {
+      record_size += 4;
+    } else if (type == DOUBLE) {
+      record_size += 8;
+    } else if (type == BOOL) {
+      record_size += 2;
+    } else if (type == CHAR) {
+      // a char(x) is x size even if input is less than x
+      record_size += table->attributes[i].len;
+    } else if (type == VARCHAR) {
+      record_size += strlen(attr_vals->chars_val);
     }
+  }
+  return record_size;
+}
+
+bool check_enough_space(Table *table, Page *p, Attribute_Values *attr_vals) {
+  int num_record_space = 4; // first byte of page
+  int offsets = (8 * (p->num_records + 1));
+  int so_far = num_record_space + offsets + p->total_bytes_from_records;
+  int record_size = calculate_record_size(table, attr_vals);
+  int total_if_add = so_far + record_size;
+  printf("record to be added is size: %d\n", record_size);
+  printf("after adding this record, the page will have size: %d\n",
+         total_if_add);
+  if (total_if_add > p->max_size) {
+    return false;
+  }
+  return true;
 }

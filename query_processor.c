@@ -300,12 +300,32 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   printf("num values: %d\n", num_values);
   printf("printing values parsed\n");
 
+  Attribute_Values *attr_vals = malloc(sizeof(Attribute_Values) * num_values);
+
+  // validate
   for (int i = 0; i < num_values; i++) {
-    for (int j = 0; j < command_table->num_attributes; j++) {
-      printf("%s ", values_parsed[i][j]);
+    Attribute_Values *att_val =
+        check_valid_parsed_tuple(command_table, values_parsed[i]);
+    if (att_val == NULL) {
+      return false;
     }
-    printf("\n");
+    attr_vals[i] = *att_val;
   }
+
+  // all good, time to add
+  for (int i = 0; i < num_values; i++) {
+    Page *p = add_record_to_page(schema, command_table, &attr_vals[i]);
+    if (p == NULL) {
+      return false;
+    }
+  }
+
+  // for (int i = 0; i < num_values; i++) {
+  //   for (int j = 0; j < command_table->num_attributes; j++) {
+  //     printf("%s ", values_parsed[i][j]);
+  //   }
+  //   printf("\n");
+  // }
   return false;
 }
 
