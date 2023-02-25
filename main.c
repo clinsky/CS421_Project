@@ -1,7 +1,7 @@
 #include "catalog.h"
-#include "page.h"
 #include "parse_utils.h"
 #include "query_processor.h"
+#include "page.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -71,7 +71,13 @@ int main(int argc, char *argv[]) {
     schema = create_new_database(db_loc, page_size, buffer_size);
     printf("num tables: %d\n", schema->num_tables);
   }
-
-  process(db_loc, schema);
+    
+  // Create page buffer
+  PageBuffer *page_buffer = (PageBuffer *)malloc(sizeof(PageBuffer));
+  page_buffer->last_used_count = 0;
+  page_buffer->last_used = (int *)calloc(buffer_size, sizeof(int));
+  page_buffer->pages = (Page *)calloc(buffer_size, sizeof(Page));
+  
+  process(db_loc, schema, page_buffer);
   return 0;
 }
