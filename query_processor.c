@@ -91,6 +91,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // remove the trailing (
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
   strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
+  table_ptr->name[strlen(table_name) - 1] = '\0';
 
   // check no table in catalog with same name already
   Table *table_in_catalog = get_table(schema, table_ptr->name);
@@ -105,6 +106,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // strlen(table_ptr->name));
 
   // continue with rest of tokens
+  table_ptr->num_attributes = 0;
   while (1) {
     table_ptr->num_attributes++;
     Attribute *attribute_ptr = malloc(sizeof(Attribute));
