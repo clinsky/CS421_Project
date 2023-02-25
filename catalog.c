@@ -6,7 +6,6 @@ Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
   db_schema->page_size = page_size;
   db_schema->buffer_size = buffer_size;
   db_schema->num_tables = 0;
-  db_schema->tables = malloc(sizeof(Table) * 10);
   db_schema->max_num_tables = 10;
   return db_schema;
 }
@@ -70,7 +69,7 @@ Schema *read_catalog(char *db_loc) {
   }
 
   db_schemas->num_tables = table_count;
-  db_schemas->tables = malloc(sizeof(Table) * table_count);
+  db_schemas->tables = malloc(sizeof(Table) * 100);
 
   // printf("num tables stored in catalog: %d\n", table_count);
 

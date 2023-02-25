@@ -92,6 +92,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // remove the trailing (
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
   strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
+  table_ptr->name[strlen(table_name) - 1] = '\0';
 
   // check no table in catalog with same name already
   Table *table_in_catalog = get_table(schema, table_ptr->name);
@@ -100,10 +101,13 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
     return false;
   }
 
+  table_ptr->attributes = malloc(sizeof(Attribute) * 100);
+
   // printf("%s (len %lu) is table name \n", table_ptr->name,
   // strlen(table_ptr->name));
 
   // continue with rest of tokens
+  table_ptr->num_attributes = 0;
   while (1) {
     table_ptr->num_attributes++;
     Attribute *attribute_ptr = malloc(sizeof(Attribute));
@@ -187,7 +191,6 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
   // need to also update schema
   schema->num_tables += 1;
-  schema->tables = malloc(sizeof(Table) * 100);
   schema->tables[schema->num_tables - 1] = *table_ptr;
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
@@ -296,6 +299,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   }
   printf("num values: %d\n", num_values);
   printf("printing values parsed\n");
+
   for (int i = 0; i < num_values; i++) {
     for (int j = 0; j < command_table->num_attributes; j++) {
       printf("%s ", values_parsed[i][j]);
