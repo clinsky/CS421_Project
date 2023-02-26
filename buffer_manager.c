@@ -108,7 +108,7 @@ Page * request_page(int page_num, Schema * schema, char * table_name, char * db_
 }
 
 
-
+/*
 bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_idx) {
     int size_of_record = record_size(rec, schema, table_idx);
     if(page->records - size_of_record < page->free_space) {
@@ -129,7 +129,7 @@ bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_i
     (*page->num_records)++;
     return false;
 }
-
+*/
 
 void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema, char * table_file, PageBuffer pageBuffer){
     /*

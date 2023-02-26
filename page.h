@@ -27,4 +27,5 @@ void write_to_file(Page * page, char * table_name, Schema * schema, int page_num
 bool record_before_current_record(Record record, Record current_record);
 bool insert_before_current_record(Record record, Record current_record, Page * page, int record_idx, Schema * schema, int table_idx);
 char * get_primary_key(Record record);
+bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_idx);
 #endif
