@@ -212,7 +212,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   return true;
 }
 
-bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index, Table *command_table) {
+bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
+                 Table *command_table) {
   // Remove parentheses from tuple
   sscanf(tuple, "(%[^)]", tuple);
   tuple[strlen(tuple)] = '\n';
@@ -246,10 +247,10 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index, Table *com
       }
     }
     if (!null) {
-      values_parsed[tuple_index][i] = (char * ) malloc((strlen(current_token) + 1) * sizeof(char));
+      values_parsed[tuple_index][i] =
+          (char *)malloc((strlen(current_token) + 1) * sizeof(char));
       strcpy(values_parsed[tuple_index][i], current_token);
-    }
-    else{
+    } else {
       values_parsed[tuple_index][i] = NULL;
     }
   }
@@ -298,7 +299,8 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
   char ***values_parsed;
   values_parsed = (char ***)malloc(num_values * sizeof(char **));
   for (int i = 0; i < command_table->num_attributes; i++) {
-    values_parsed[i] = (char **)malloc(command_table->num_attributes * sizeof(char *));
+    values_parsed[i] =
+        (char **)malloc(command_table->num_attributes * sizeof(char *));
   }
 
   // Iterate through values
@@ -458,7 +460,7 @@ void parse_command(char *command, char *db_loc, Schema *schema,
   printf("\n");
 }
 
-void process(char *db_loc, Schema *schema, Bufferm *bufferm) {
+void process(char *db_loc, Schema *schema, Bufferm *buffer) {
   // Continuously accept commands from a user
   while (1) {
     // Iterate through characters typed by the user
@@ -473,6 +475,7 @@ void process(char *db_loc, Schema *schema, Bufferm *bufferm) {
       command_idx++;
       command[command_idx] = '\0';
       if (strcmp(command, "<quit>") == 0) {
+        flush_buffer(buffer);
         return;
       }
     }
@@ -483,7 +486,7 @@ void process(char *db_loc, Schema *schema, Bufferm *bufferm) {
     }
 
     // We've read a command from the user. Parse it and take some action
-    parse_command(command, db_loc, schema, bufferm);
+    parse_command(command, db_loc, schema, buffer);
 
     // I'm not sure what this does. Jared?
     next_char = getchar();
