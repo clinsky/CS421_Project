@@ -7,7 +7,7 @@
 #include "catalog.h"
 
 struct page {
-  int num_records;
+  int * num_records;
   int * offsets;
   int * primary_keys;
   void * free_space;

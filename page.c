@@ -21,11 +21,14 @@ FILE * get_table_file(char * db_loc, int table_idx){
 
 Page new_page(Schema * schema) {
     int num_records = 1;
-    void *free_space = malloc(schema->page_size - 4);
+    void *free_space = malloc(schema->page_size);
+    free_space += 4;
+    int * num_records_ptr = (int *)(free_space - 4);
+    *(num_records_ptr) = 0;
     int *offsets = free_space;
     int *primary_keys = free_space;
     Record *records = free_space + (schema->page_size - 4);
-    Page page = {num_records, offsets, primary_keys, free_space, records};
+    Page page = {num_records_ptr, offsets, primary_keys, free_space, records};
     return page;
 }
 
@@ -55,18 +58,18 @@ bool insert_at_end_of_page(Record rec, Page page) {
         return true;
     }
     page.free_space += 8;
-    page.primary_keys[page.num_records + 2] = get_primary_key(rec);
-    for(int i = page.num_records - 1; i >= 0; i--){
+    page.primary_keys[*(page.num_records) + 2] = get_primary_key(rec);
+    for(int i = *(page.num_records) - 1; i >= 0; i--){
         page.primary_keys[i + 2] = page.primary_keys[i];
     }
     page.primary_keys += 4;
-    page.offsets[page.num_records + 1] = ((int)((void *)page.records - (void *)&page)) - record_size(rec);
-    for(int i = page.num_records - 1; i >= 0; i--){
+    page.offsets[*(page.num_records) + 1] = ((int)((void *)page.records - (void *)&page)) - record_size(rec);
+    for(int i = *(page.num_records) - 1; i >= 0; i--){
         page.offsets[i + 1] = page.offsets[i];
     }
     page.records -= record_size(rec);
     *page.records = rec;
-    page.num_records++;
+    (*page.num_records)++;
     return false;
 }
 
@@ -76,7 +79,7 @@ bool insert_before_current_record(Record rec, Record curr, Page page, int curren
         return true;
     }
     page.free_space += 8;
-    for (int i = page.num_records; i > current_record_idx; i--) {
+    for (int i = *page.num_records; i > current_record_idx; i--) {
         page.primary_keys[i + 2] = page.primary_keys[i];
     }
     page.primary_keys[current_record_idx] = get_primary_key(rec);
@@ -84,7 +87,7 @@ bool insert_before_current_record(Record rec, Record curr, Page page, int curren
         page.primary_keys[i + 2] = page.primary_keys[i];
     }
     page.primary_keys += 4;
-    for (int i = page.num_records; i > current_record_idx; i--) {
+    for (int i = *page.num_records; i > current_record_idx; i--) {
         page.offsets[i + 1] = page.offsets[i];
     }
     page.offsets[current_record_idx] = ((int)((void *)page.records - (void *)&page)) - record_size(rec);
@@ -168,7 +171,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         *(new_page.records) = rec;
 
 
-        new_page.num_records++;
+        *(new_page.num_records)++;
         buffer_and_write_page(new_page);
         return;
     }
