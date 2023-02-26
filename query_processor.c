@@ -341,7 +341,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
 
   // all good, time to add
   for (int i = 0; i < num_values; i++) {
-    printf("record size to be added: %d\n", records[i].size);
+    // printf("record size to be added: %d\n", records[i].size);
     Page *p = add_record_to_page(schema, command_table, &records[i], buffer);
     if (p == NULL) {
       return false;
