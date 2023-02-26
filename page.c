@@ -130,6 +130,9 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
 
       for (int i = 0; i < table->num_attributes; i++) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
+        if ((record->bitmap & (1 << i)) == 0) {
+          printf("attr %d is null\n", i);
+        }
         ATTRIBUTE_TYPE type = table->attributes[i].type;
         if (table->attributes[i].is_primary_key) {
           record->primary_key_index = i;
@@ -473,7 +476,7 @@ void print_page(Table *table, Page *p) {
       printf("record #%d of size %d: ", k, curr_page->records[k].size);
       for (int l = 0; l < table->num_attributes; l++) {
         ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
-        if (curr_page->records[k].attr_vals->is_null) {
+        if (curr_page->records[k].attr_vals[l].is_null) {
           printf("null ");
           continue;
         }
