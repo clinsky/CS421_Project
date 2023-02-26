@@ -21,5 +21,6 @@ void insert_key_at_end_of_page(Page *page_ptr, int pkey);
 void insert_key_into_page_location(Page *page_ptr, int pkey, int count);
 void insert_key_into_page(Page *page_ptr, int pkey);
 Page *new_page(int max_num_records);
+void insert_record_into_table_file(char * db_loc, int table_idx, char ** values, Schema * schema, char * table_name);
 
 #endif

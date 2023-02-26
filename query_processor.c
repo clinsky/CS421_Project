@@ -256,9 +256,6 @@ bool parse_insert_record(char * command, char *db_loc, Schema *schema){
 
 
     Record record = create_record(num_fields, values, schema, table_idx);
-
-    int table_idx = get_table_idx(schema, table_name);
-
     insert_record_into_table_file(db_loc, table_idx, values, schema, table_name);
     return true;
 
