@@ -88,7 +88,7 @@ Schema *read_catalog(char *db_loc) {
       return NULL;
     }
     table_name[table_name_len] = '\0';
-    printf("CREATED TABLE NAME: %s %d\n", table_name, table_name_len);
+    // printf("CREATED TABLE NAME: %s %d\n", table_name, table_name_len);
 
     db_schemas->tables[i].name = table_name;
 
@@ -261,7 +261,7 @@ void write_catalog(char *db_loc, Table *table) {
 void create_catalog(char *db_loc) {
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
-  //printf("%s is filepath\n", filepath);
+  // printf("%s is filepath\n", filepath);
   int table_count = 0;
   FILE *fp = fopen(filepath, "wb");
   if (fwrite(&table_count, sizeof(int), 1, fp) != 1) {
@@ -269,7 +269,7 @@ void create_catalog(char *db_loc) {
     printf("ERROR\n");
   }
   fclose(fp);
-  //printf("done creating catalog\n");
+  // printf("done creating catalog\n");
 }
 
 Table *get_table(Schema *db_schema, char *table_name) {
