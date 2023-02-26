@@ -81,12 +81,14 @@ Schema *read_catalog(char *db_loc) {
       return NULL;
     }
 
-    char *table_name = malloc(table_name_len);
+    char *table_name = malloc(sizeof(char) * table_name_len + 1);
     if (fread(table_name, sizeof(char), table_name_len, fp) != table_name_len) {
       printf("failed to read first table name from catalog\n");
       fclose(fp);
       return NULL;
     }
+    table_name[table_name_len] = '\0';
+    printf("CREATED TABLE NAME: %s %d\n", table_name, table_name_len);
 
     db_schemas->tables[i].name = table_name;
 
