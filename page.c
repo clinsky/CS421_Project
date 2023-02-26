@@ -19,6 +19,19 @@ FILE * get_table_file(char * db_loc, int table_idx){
     return file;
 }
 
+Page new_page(Schema * schema) {
+    int num_records = 1;
+    void *free_space = malloc(schema->page_size - 4);
+    int *offsets = free_space;
+    int *primary_keys = free_space;
+    Record *records = free_space + (schema->page_size - 4);
+    Page page = {num_records, offsets, primary_keys, free_space, records};
+    return page;
+}
+
+
+
+
 int get_page_number_location(int page_number, Schema * schema){
     return schema->page_locations[page_number];
 }
@@ -36,15 +49,33 @@ bool record_before_current_record(Record rec, Record current_record) {
     return get_primary_key(rec) < get_primary_key(current_record);
 }
 
-void insert_before_current_record(Record rec, Record curr, Page * page, int current_record_idx) {
-        Record temp = rec;
-        for (int idx = current_record_idx; idx < page->num_records - 1; idx++) {
-            page->records[idx + 1] = page->records[idx];
-            page->records[idx] = temp;
-            temp = page->records[idx+1];
-        }
-        (page->num_records)++;
+bool insert_before_current_record(Record rec, Record curr, Page page, int current_record_idx) {
+    int size_of_record = record_size(rec);
+    if(page.records - size_of_record < page.free_space) {
+        return true;
+    }
+    page.free_space += 8;
+    for (int i = page.num_records; i > current_record_idx; i--) {
+        page.primary_keys[i + 2] = page.primary_keys[i];
+    }
+    page.primary_keys[current_record_idx] = get_primary_key(rec);
+    for (int i = current_record_idx - 1; i >= 0; i--) {
+        page.primary_keys[i + 2] = page.primary_keys[i];
+    }
+    page.primary_keys += 4;
+    for (int i = page.num_records; i > current_record_idx; i--) {
+        page.offsets[i + 1] = page.offsets[i];
+    }
+    page.offsets[current_record_idx] = (page.records - &page) - record_size(rec);
+    for (int i = current_record_idx - 1; i >= 0; i--) {
+        page.offsets[i + 1] = page.offsets[i];
+    }
+    page.records -= record_size(rec);
+    *page.records = rec;
+    return false;
 }
+
+
 
 bool page_is_overfull(Page * page, Schema * schema) {
     int global_page_size = schema->page_size;
@@ -106,15 +137,24 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     // if there are no pages for this table
     if(!num_pages_ptr){
         // make a new file for the table
+        Page new_page = new_page(schema);
         int new_size = 1;
-        fwrite(&new_size, sizeof(int), 1, table_file_ptr);
+        //fwrite(&new_size, sizeof(int), 1, table_file_ptr);
         // add this entry to a new page
-        Page * new_page = (Page*)malloc(global_page_size);
-        new_page->records[0] = rec;
-        new_page->num_records++;
-        // insert the page into the table file
-        fwrite(new_page, global_page_size, 1, table_file_ptr);
-        fclose(table_file_ptr);
+        //Page * new_page = (Page*)malloc(global_page_size);
+        new_page.free_space += 4;
+
+
+        // TODO: implement get_size_of_record in record.c
+        int record_size = get_size_of_record(rec);
+        *(new_page.offsets) = schema->page_size - record_size;
+        *(new_page.primary_keys) = get_primary_key(rec);
+        new_page.records -= record_size;
+        *(new_page.records) = rec;
+
+
+        new_page.num_records++;
+        buffer_and_write_page(new_page);
         return;
     }
 
@@ -124,12 +164,16 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     for(int page_number = 0; page_number <= *num_pages_ptr; page_number++){
         // read in the page
 
-        page = fseek(table_file_ptr, get_page_number_location(page_number, schema), 0);
+        //page = fseek(table_file_ptr, get_page_number_location(page_number, schema), 0);
+        //TODO: implement get_page_from_memory_manager in memory_manager.c
+        page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
+
         // Iterate the records in page
+        bool overfill = false;
         for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
             Record current_record = (page->records)[record_idx];
             if (record_before_current_record(rec, current_record)) {
-                insert_before_current_record(rec, current_record, page, record_idx);
+                overfill = insert_before_current_record(rec, current_record, page, record_idx);
                 inserted = 1;
             }
         }
