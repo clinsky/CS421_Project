@@ -4,6 +4,7 @@
 #include "record.h"
 #include <string.h>
 #include <dirent.h>
+#include <unistd.h>
 
 char * create_new_table_file(char * table_file){
     return table_file;
@@ -106,36 +107,54 @@ bool insert_before_current_record(Record rec, Record curr, Page * page, int curr
 }
 
 void write_to_file(Page * page, char * table_name, Schema * schema, int page_num, char * db_loc, int table_idx){
-    char * path = db_loc;
-    path = strcat(path, "/table/");
-    path = strcat(path, table_name);
-    FILE * fp = fopen(path, "rb");
-    fwrite(page->num_records, 4, 1, fp);
+    printf("table name: %s\n", table_name);
+    char path[100];
+    strcpy(path, db_loc);
+    strcat(path, "/tables/");
+    strcat(path, table_name);
+    printf("writing to file\n");
+
+    printf("tableName: %s\n", table_name);
+
+    FILE * fp = fopen(path, "wb");
+
+    fwrite(&(page->num_records), 4, 1, fp);
+    printf("writing to file\n");
     for(int i = 0; i < *(page->num_records); i++){
-        fwrite(page->offsets[i], 4, 1, fp);
+
+        fwrite(&(page->offsets[i]), 4, 1, fp);
     }
     for(int i = 0; i < *page->num_records; i++){
-        fwrite(page->primary_keys[i], 4, 1, fp);
+        fwrite(&(page->primary_keys[i]), 4, 1, fp);
     }
     void * current_location = page->free_space;
+    printf("writing to file\n");
     while(current_location < page->records){
         fwrite(current_location, 1, 1, fp);
         current_location += 1;
     }
+    printf("writing to file\n");
+
     for(int i = 0; i < *(page->num_records); i++){
         Record record = page->records[i];
         //TODO: write record to file
-        for(int i = 0; i < *(page->num_records); i++){
-            fwrite(record.offsets[i], 4, 1, fp);
+        for(int j = 0; j < *(page->num_records); j++){
+            //printf("Writing offsets\n");
+            fwrite(&(record.offsets[j]), 4, 1, fp);
         }
-        for(int i = 0; i < *(page->num_records); i++){
-            fwrite(record.lengths[i], 4, 1, fp);
+        for(int j = 0; j < *(page->num_records); j++){
+            //printf("Writing lengths\n");
+            fwrite(&(record.lengths[j]), 4, 1, fp);
         }
         fwrite(record.null_array, 1, 1, fp);
-        for(int i = 0; i < *(page->num_records); i++){
-            fwrite(record.data[i], record.lengths[i], 1, fp);
+        for(int j = 0; j < *(page->num_records); j++){
+            printf("Writing data\n");
+            printf("record.lengths[j]: %d\n", record.lengths[j]);
+            fwrite(record.data[j], record.lengths[j], 1, fp);
         }
+        printf("writing to file 5\n");
     }
+
 }
 
 void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location, char * table_file, char * db_loc, int table_idx){

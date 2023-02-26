@@ -34,7 +34,7 @@ bool database_exists(char *db_loc) {
 }
 
 Schema *create_new_database(char *db_loc, int page_size, int buffer_size) {
-  mkdir(db_loc, 0755);
+  mkdir(db_loc, 0777);
   create_catalog(db_loc);
   Schema *new_schema = create_schema(db_loc, page_size, buffer_size);
 
@@ -42,7 +42,7 @@ Schema *create_new_database(char *db_loc, int page_size, int buffer_size) {
 
   strcpy(path, db_loc);
   strcat(path, "/tables");
-  mkdir(path, 0755);
+  mkdir(path, 0777);
   return new_schema;
 }
 

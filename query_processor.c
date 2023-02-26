@@ -85,15 +85,18 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   char *table_name = strtok(NULL, " ");
 
   Table *table_ptr = malloc(sizeof(Table));
+
+  /*
   if (!endsWith(table_name, "(")) {
     // should follow format create table foo(
     printf("invalid table name\n");
     return false;
   }
+   */
 
   // remove the trailing (
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
-  strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
+  strncpy(table_ptr->name, table_name, strlen(table_name));
 
   // check no table in catalog with same name already
   Table *table_in_catalog = get_table(schema, table_ptr->name);
@@ -222,32 +225,56 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
 bool parse_insert_record(char * command, char *db_loc, Schema *schema, PageBuffer pageBuffer){
     char * part_1 = strtok(command, "(");
+    printf("Hello\n");
 
     // Insert
-    char * tokens = strtok(part_1, " ");
+    char temp[255];
+    strcpy(temp, part_1);
+
+    char value_str[255];
+    part_1 = strtok(NULL, "(");
+    printf("part 1 %s\n", part_1);
+    strcpy(value_str, part_1);
+
+
+    char * tokens = strtok(temp, " ");
     // into
     tokens = strtok(NULL, " ");
     // table name
     char * table_name = malloc(sizeof(char) * 256);
+
     tokens = strtok(NULL, " ");
     strcpy(table_name, tokens);
+
+    printf("tableName: %s\n", table_name);
+
     // values
     tokens = strtok(NULL, " ");
     // tuple
+
     char ** values = malloc(sizeof(char *) * 256);
-    char * part_2 = strtok(NULL, "(");
-    char * token = strtok(part_2, ",");
+
+    //char * part_2 = strtok(NULL, "(");
+    //char * token = strtok(part_2, ",");
+
+    char * token = strtok(value_str, ",");
+
     int idx = 0;
+
     while(token){
         values[idx] = malloc(sizeof(char) * 256);
         strcpy(values[idx], token);
+        printf("value: %s\n", token);
         token = strtok(NULL, ",");
         idx++;
     }
+
     // replace the ')' with '\0'
     int num_fields = 0;
     int table_idx = 0;
     values[idx - 1][strcspn(values[idx - 1], ")")] = '\0';
+    printf("part 1: %s\n", values[idx - 1]);
+
     for(int i = 0; i < schema->num_tables; i++){
         if(strcmp(schema->tables[i].name, table_name) == 0){
             num_fields = schema->tables[i].num_attributes;
@@ -255,8 +282,11 @@ bool parse_insert_record(char * command, char *db_loc, Schema *schema, PageBuffe
             }
         }
 
+    printf("parsed all values\n");
+
 
     Record record = create_record(num_fields, values, schema, table_idx);
+    printf("tableName: %s\n", table_name);
     insert_record_into_table_file(db_loc, table_idx, record, schema, table_name, pageBuffer);
     return true;
 

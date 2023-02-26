@@ -11,7 +11,7 @@ Record create_record(int num_fields, char ** values, Schema * schema, int table_
     /**
      * Record should be variable length
      */
-
+    printf("this should be 1: %s\n", values[0]);
     int sum_of_lengths = 0;
     for(int i = 0; i < num_fields; i++){
         sum_of_lengths += strlen(values[i]) + 1;

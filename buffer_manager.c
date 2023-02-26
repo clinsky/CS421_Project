@@ -4,6 +4,7 @@
 #include "buffer_manager.h"
 #include "page.h"
 #include <string.h>
+#include <unistd.h>
 
 PageBuffer createPageBuffer(Schema * schema){
     int num_pages = 0;
@@ -131,7 +132,7 @@ bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_i
 }
 */
 
-void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema, char * table_file, PageBuffer pageBuffer){
+void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema, char * table_name, PageBuffer pageBuffer){
     /*
      * if there are no pages for this table:
      *  make a new file for the table
@@ -151,17 +152,38 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
      *      split the page
      *  end
      */
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    printf("cwd: %s\n", cwd);
     int global_page_size = schema->page_size;
     //FILE * table_file_ptr = get_table_file(db_loc, table_idx);
+
+    /*
     char * path = (char *)malloc(100);
     strcpy(path, db_loc);
     strcat(path, "/tables/");
     strcat(path, table_file);
     FILE * table_file_ptr = fopen(path, "rb");
+     */
+
+    char path[100];
+    strcpy(path, db_loc);
+    strcat(path, "/tables/");
+    strcat(path, table_name);
+    FILE * table_file_ptr = fopen(path, "rb");
+
+
+    printf("Path: %s\n", path);
+
     int * num_pages_ptr;
-    fread(&num_pages_ptr, sizeof(int), 1, table_file_ptr);
+    printf("%s\n", path);
+
+    //check to see if a filename already exists
+    printf("%s\n", table_file_ptr == NULL ? "ptr is null\n" : "ptr is not null\n");
+    //fseek(table_file_ptr, 0L, SEEK_END);
+    //long size = ftell(table_file_ptr);
     // if there are no pages for this table
-    if(!num_pages_ptr){
+    if(!table_file_ptr){
         // make a new file for the table
         Page * newPage = new_page(schema);
         int new_size = 1;
@@ -176,9 +198,17 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         newPage->records -= recordSize;
         *(newPage->records) = rec;
         *(newPage->num_records)++;
+        printf("record inserted\n");
+        printf("path: %s\n", path);
+        printf("table name: %s\n", table_name);
         write_to_file(newPage, schema->tables[table_idx].name, schema, 0, db_loc, table_idx);
+        printf("record written\n");
         return;
     }
+
+
+
+    fread(&num_pages_ptr, sizeof(int), 1, table_file_ptr);
 
     Page * page;
     int inserted = 0;
@@ -201,7 +231,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
             }
         }
         if (overfill) {
-            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file, db_loc, table_idx);
+            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr, table_name, db_loc, table_idx);
         }
         else{
             inserted = 1; // record was inserted
@@ -214,7 +244,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         page = request_page(page_number, schema, schema->tables[table_idx].name, db_loc, table_idx, pageBuffer);
         overfill = insert_at_end_of_page(rec, page, schema, table_idx);
         if(overfill){
-            split_page(&page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file, db_loc, table_idx);
+            split_page(&page, table_file_ptr, schema, page_number, *num_pages_ptr, table_name, db_loc, table_idx);
             page = request_page(page_number, schema, schema->tables[table_idx].name, db_loc, table_idx, pageBuffer);
             insert_at_end_of_page(rec, page, schema, table_idx);
         }
