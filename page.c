@@ -114,7 +114,7 @@ void write_to_file(Page page, char * table_name, Schema * schema, int page_num, 
         current_location += 1;
     }
     for(int i = 0; i < *page.num_records; i++){
-        Record record = *((Record *)page.num_records + page.offsets[i]);
+        Record record = page.records[i];
         //TODO: write record to file
         for(int i = 0; i < *(page.num_records); i++){
             fwrite(record.offsets[i], 4, 1, fp);
