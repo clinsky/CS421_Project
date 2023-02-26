@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "attribute_types.h"
 #include "table.h"
+#include "catalog.h"
 
 struct record {
     int * offsets;
@@ -15,6 +16,8 @@ struct record {
 };
 
 typedef struct record Record;
+
+Record create_record(int num_fields, char ** values, Schema * schema, int table_idx);
 
 
 

@@ -9,9 +9,11 @@
 #include "parse_utils.h"
 #include "record.h"
 #include "table.h"
+#include "record.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
 
 ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
   //  printf("trying to determine %s's type\n", attr);
@@ -215,6 +217,51 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // }
 
   return true;
+}
+
+bool parse_insert_record(char * command, char *db_loc, Schema *schema){
+    char * part_1 = strtok(command, "(");
+
+    // Insert
+    char * tokens = strtok(part_1, " ");
+    // into
+    tokens = strtok(NULL, " ");
+    // table name
+    char * table_name = malloc(sizeof(char) * 256);
+    tokens = strtok(NULL, " ");
+    strcpy(table_name, tokens);
+    // values
+    tokens = strtok(NULL, " ");
+    // tuple
+    char ** values = malloc(sizeof(char *) * 256);
+    char * part_2 = strtok(NULL, "(");
+    char * token = strtok(part_2, ",");
+    int idx = 0;
+    while(token){
+        values[idx] = malloc(sizeof(char) * 256);
+        strcpy(values[idx], token);
+        token = strtok(NULL, ",");
+        idx++;
+    }
+    // replace the ')' with '\0'
+    int num_fields = 0;
+    int table_idx = 0;
+    values[idx - 1][strcspn(values[idx - 1], ")")] = '\0';
+    for(int i = 0; i < schema->num_tables; i++){
+        if(strcmp(schema->tables[i].name, table_name) == 0){
+            num_fields = schema->tables[i].num_attributes;
+            table_idx = i;
+            }
+        }
+
+
+    Record record = create_record(num_fields, values, schema, table_idx);
+
+    int table_idx = get_table_idx(schema, table_name);
+
+    insert_record_into_table_file(db_loc, table_idx, values, schema, table_name);
+    return true;
+
 }
 
 bool parse_tuple(char *tuple, char tuple_parsed[][50], Table *command_table) {

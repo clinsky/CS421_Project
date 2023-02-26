@@ -7,7 +7,7 @@
 
 
 
-Record create_record(int num_fields, char ** values, Schema schems, int table_idx) {
+Record create_record(int num_fields, char ** values, Schema * schema, int table_idx) {
     /**
      * Record should be variable length
      */
