@@ -19,7 +19,7 @@ Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * t
     else if(schema->page_size * pageBuffer.num_pages + schema->page_size < schema->buffer_size) {
         pageBuffer.in_memory[pageBuffer.num_pages] = page_num;
         pageBuffer.modified[pageBuffer.num_pages] = false;
-        pageBuffer.buffer[pageBuffer.num_pages] = read_page_from_disk(page_num, schema, pageBuffer, table_name);
+        pageBuffer.buffer[pageBuffer.num_pages] = read_page_from_disc(page_num, schema, pageBuffer, table_name);
         pageBuffer.num_pages++;
         return pageBuffer.buffer[pageBuffer.num_pages - 1];
     }
