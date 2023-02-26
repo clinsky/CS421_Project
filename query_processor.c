@@ -378,6 +378,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
   Table *table = get_table(schema, table_name);
   if (table == NULL) {
     printf("No such table %s\n", table_name);
+    printf("ERROR\n");
     return false;
   }
   Page *p = find_in_buffer(buffer, table);
@@ -412,9 +413,9 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
 
   token = strtok(NULL, " ");
   strcpy(table_name, token);
-  printf("tableName: %s\n", table_name);
+  //printf("tableName: %s\n", table_name);
   if (strcmp(attributes, "*") == 0) {
-    printf("selecting all from %s ..\n", table_name);
+    //printf("selecting all from %s ..\n", table_name);
     return select_all(table_name, db_loc, schema, buffer);
   }
   return true;
@@ -450,19 +451,15 @@ bool process_display_info(char *command, char *db_loc, Schema *schema) {
   char table_name[50];
   sscanf(command, "display info %s", &table_name);
   Table *table = get_table(schema, &table_name);
-  printf("table %s not null\n", table_name);
   if (table == NULL) {
-    printf("table cant be displayed, was null\n");
+    printf("No such table %s\n", table_name);
+    printf("ERROR\n");
   } else {
     print_table_metadata(table);
   }
 
   return false;
 }
-
-void shut_down_database() { return; }
-
-void purge_page_buffer() {}
 
 void save_catalog(Schema *schema, char *db_loc) {
   char path[100];
