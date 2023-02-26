@@ -420,14 +420,6 @@ void process(char *db_loc, Schema *schema) {
       command_idx++;
       command[command_idx] = '\0';
       if (strcmp(command, "<quit>") == 0) {
-        printf("Safely shutting down the database...\n");
-        shut_down_database();
-        printf("Purging page buffer...\n");
-        purge_page_buffer();
-        printf("Saving catalog...\n");
-        save_catalog(schema, db_loc);
-        printf("\n");
-        printf("Exiting the database...\n");
         return;
       }
     }

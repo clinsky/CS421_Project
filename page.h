@@ -54,4 +54,8 @@ void print_page(Table *table, Page *p);
 
 void print_record(Table *table, Record *record);
 
+bool is_page_overfull(Page *p);
+
+void make_new_page_if_full(Page *p);
+
 #endif
