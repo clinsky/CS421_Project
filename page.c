@@ -1,4 +1,5 @@
 #include "page.h"
+#include "buffer.h"
 
 Record *check_valid_parsed_tuple(Table *table, char (*tuple_parsed)[50]) {
   Record *record = malloc(sizeof(Record));
@@ -304,7 +305,8 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
   fclose(fp);
 }
 
-Page *add_record_to_page(Schema *schema, Table *table, Record *record) {
+Page *add_record_to_page(Schema *schema, Table *table, Record *record,
+                         Bufferm *buffer) {
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
   Page *p;
@@ -349,6 +351,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record) {
     first_page->total_bytes_from_records += record->size;
     p = first_page;
     write_page_to_file(table, p, filepath);
+    // add_to_buffer(b, table, p, );
   }
   return p;
 }
@@ -560,4 +563,44 @@ bool is_page_overfull(Page *p) {
   int total = base + from_records + for_offsets;
   printf("total size is %d and max size is %d\n", total, p->max_size);
   return total > p->max_size;
+}
+
+Bufferm *create_new_bufferm(int max_pages) {
+  Bufferm *b = malloc(sizeof(Bufferm));
+  b->curr_pages = 0;
+  b->max_pages = max_pages;
+  b->entries = malloc(sizeof(Buffer_Entry) * max_pages);
+  return b;
+}
+
+Page *find_in_buffer(Bufferm *b, Table *table) {
+  for (int i = 0; i < b->curr_pages; i++) {
+    if (strcmp(table->name, b->entries[i].table_name) == 0) {
+      printf("found page %s in buffer\n", table->name);
+      return b->entries[i].page;
+    }
+  }
+  return NULL;
+}
+
+void add_to_buffer(Bufferm *b, Table *table, Page *p, char *table_name) {
+  Buffer_Entry *new_entry = malloc(sizeof(Buffer_Entry));
+  if (b->curr_pages + 1 > b->max_pages) {
+    // loop find  lowest last used;
+    int max = 99999999;
+    Buffer_Entry *to_remove = NULL;
+    for (int i = 0; i < b->curr_pages; i++) {
+      if (b->entries[i].last_used < max) {
+        max = b->entries[i].last_used;
+        to_remove = &b->entries[i];
+      }
+    }
+    write_page_to_file(table, to_remove->page, to_remove->file_path);
+
+  } else {
+    new_entry->page = p;
+    new_entry->table_name = malloc(sizeof(char));
+    b->entries[b->curr_pages] = *new_entry;
+    b->curr_pages += 1;
+  }
 }

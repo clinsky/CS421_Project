@@ -3,6 +3,7 @@
 
 #include "query_processor.h"
 #include "attribute_types.h"
+#include "buffer.h"
 #include "catalog.h"
 #include "display.h"
 #include "page.h"
@@ -243,7 +244,8 @@ bool parse_tuple(char *tuple, char tuple_parsed[][50], Table *command_table) {
   return true;
 }
 
-bool process_insert_record(char *command, char *db_loc, Schema *schema) {
+bool process_insert_record(char *command, char *db_loc, Schema *schema,
+                           Bufferm *buffer) {
   // Add a semi-colon at the end of the command
   int command_len = strlen(command);
   command[command_len] = ';';
@@ -314,7 +316,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   // all good, time to add
   for (int i = 0; i < num_values; i++) {
     printf("record size to be added: %d\n", records[i].size);
-    Page *p = add_record_to_page(schema, command_table, &records[i]);
+    Page *p = add_record_to_page(schema, command_table, &records[i], buffer);
     if (p == NULL) {
       return false;
     }
@@ -333,7 +335,8 @@ void display_attributes(Schema *schema) {}
 
 bool select_all(char *table_name, char *db_loc, Schema *schema) { return true; }
 
-bool parse_select(char *command, char *db_loc, Schema *schema) {
+bool parse_select(char *command, char *db_loc, Schema *schema,
+                  Bufferm *buffer) {
   char attributes[256];
   char table_name[256];
   char *token = strtok(command, " ");
@@ -387,14 +390,15 @@ void save_catalog(Schema *schema, char *db_loc) {
   fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
-void parse_command(char *command, char *db_loc, Schema *schema) {
+void parse_command(char *command, char *db_loc, Schema *schema,
+                   Bufferm *buffer) {
   // Self explanatory code.
   if (startsWith(command, "select")) {
-    parse_select(command, db_loc, schema);
+    parse_select(command, db_loc, schema, buffer);
   } else if (startsWith(command, "create")) {
     parse_create_table(command, db_loc, schema);
   } else if (startsWith(command, "insert")) {
-    process_insert_record(command, db_loc, schema);
+    process_insert_record(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display schema")) {
     process_display_schema(command, db_loc, schema);
   } else if (startsWith(command, "display info")) {
@@ -405,7 +409,7 @@ void parse_command(char *command, char *db_loc, Schema *schema) {
   printf("\n");
 }
 
-void process(char *db_loc, Schema *schema) {
+void process(char *db_loc, Schema *schema, Bufferm *bufferm) {
   // Continuously accept commands from a user
   while (1) {
     // Iterate through characters typed by the user
@@ -430,7 +434,7 @@ void process(char *db_loc, Schema *schema) {
     }
 
     // We've read a command from the user. Parse it and take some action
-    parse_command(command, db_loc, schema);
+    parse_command(command, db_loc, schema, bufferm);
 
     // I'm not sure what this does. Jared?
     next_char = getchar();
@@ -445,7 +449,5 @@ void print_command_result(bool success) {
     printf("ERROR\n");
   }
 }
-
-void query_loop(char *db_loc, Schema *schema) { process(db_loc, schema); }
 
 #endif

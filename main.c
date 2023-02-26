@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
     // printf("num tables: %d\n", schema->num_tables);
   }
 
-  process(db_loc, schema);
+  Bufferm *bufferm = create_new_bufferm(buffer_size);
+  process(db_loc, schema, bufferm);
   return 0;
 }

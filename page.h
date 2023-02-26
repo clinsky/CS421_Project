@@ -32,9 +32,28 @@ struct page {
 
 typedef struct page Page;
 
+struct buffer_entry {
+  Page *page;
+  char *table_name;
+  char *file_path;
+  int last_used;
+};
+
+typedef struct buffer_entry Buffer_Entry;
+
+// Schema
+struct bufferm {
+  int max_pages;
+  int curr_pages;
+  Buffer_Entry *entries;
+};
+
+typedef struct bufferm Bufferm;
+
 Record *check_valid_parsed_tuple(Table *table, char (*tuple_parsed)[50]);
 
-Page *add_record_to_page(Schema *schema, Table *table, Record *record);
+Page *add_record_to_page(Schema *schema, Table *table, Record *record,
+                         Bufferm *buffer);
 
 Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                             Record *record);
@@ -56,5 +75,13 @@ void print_record(Table *table, Record *record);
 bool is_page_overfull(Page *p);
 
 void make_new_page_if_full(Page *p);
+
+Bufferm *create_new_bufferm(int max_pages);
+
+Page *search_buffer(Bufferm *b);
+
+Page *find_in_buffer(Bufferm *b, Table *t);
+
+void add_to_buffer(Bufferm *b, Table *table, Page *p, char *table_name);
 
 #endif
