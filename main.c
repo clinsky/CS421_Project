@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
     printf("num tables: %d\n", schema->num_tables);
   }
 
+  create_page_buffer(schema->buffer_size);
+
   process(db_loc, schema);
   return 0;
 }

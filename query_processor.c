@@ -481,7 +481,7 @@ void parse_command(char *command, char *db_loc, Schema *schema) {
   } else if (startsWith(command, "create")) {
     parse_create_table(command, db_loc, schema);
   } else if (startsWith(command, "insert")) {
-    process_insert_record(command, db_loc, schema);
+    parse_insert_record(command, db_loc, schema);
   } else if (startsWith(command, "display schema")) {
     process_display_schema(command, db_loc, schema);
   } else if (startsWith(command, "display info")) {
