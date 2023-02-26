@@ -20,11 +20,4 @@ typedef struct pageBuffer PageBuffer;
 
 void purge_buffer();
 Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name);
-void write_page_LRU();
-Page read_page_from_disc(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name);
-
-
-
-
-
 #endif //CS421_PROJECT_BUFFER_MANAGER_H

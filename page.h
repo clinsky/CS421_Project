@@ -16,7 +16,7 @@ struct page {
 
 typedef struct page Page;
 Page *page_splitting(int *keys, int num_keys, int max_num_records);
-void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location);
+void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location, char * table_name);
 void insert_key_at_end_of_page(Page *page_ptr, int pkey);
 void insert_key_into_page_location(Page *page_ptr, int pkey, int count);
 void insert_key_into_page(Page *page_ptr, int pkey);

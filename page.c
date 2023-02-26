@@ -96,8 +96,13 @@ bool insert_before_current_record(Record rec, Record curr, Page page, int curren
     return false;
 }
 
+void write_to_file(Page page, char * table_file, Schema * schema, int page_num){
 
-void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location){
+
+}
+
+
+void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location, char * table_file){
     /*
      * make a new page
      * remove half the items from the current page
@@ -138,14 +143,15 @@ void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_nu
     page->free_space -= 4*(2*right_num_records);
     *(page->num_records) = left_num_records;
     new_page.num_records = right_num_records;
-    buffer_and_write_page(new_page);
+
+    write_to_file(new_page, schema, page_number, table_file); // write the new page to the table file
     // insert the new page after the current page in the table file
     //fwrite(page, sizeof(page), 1, table_file_ptr);
     // update the schema
     //update_catalog(schema, page_number, page_location);
 }
 
-void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema){
+void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema, char * table_file){
     /*
      * if there are no pages for this table:
      *  make a new file for the table
@@ -185,11 +191,8 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         *(new_page.primary_keys) = get_primary_key(rec);
         new_page.records -= record_size;
         *(new_page.records) = rec;
-
-
         *(new_page.num_records)++;
-        //TODO: implement buffer_and_write_page in memory_manager.c
-        buffer_and_write_page(new_page);
+        write_to_file(new_page, schema, 0, table_file);
         return;
     }
 
@@ -214,7 +217,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
             }
         }
         if (overfill) {
-            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr);
+            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file);
             buffer_and_write_page(page);
         }
         else{
