@@ -188,6 +188,17 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
     return false;
   }
 
+  // CHECK DUPLICATE ATTRIBUTE NAME
+  for (int i = 0; i < table_ptr->num_attributes; i++) {
+    for (int j = i + 1; j < table_ptr->num_attributes; j++) {
+      if (strcmp(table_ptr->attributes[i].name,
+                 table_ptr->attributes[j].name) == 0) {
+        printf("Duplicate attribute name %s", table_ptr->attributes[i].name);
+        return false;
+      }
+    }
+  }
+
   write_catalog(db_loc, table_ptr);
 
   // need to also update schema
