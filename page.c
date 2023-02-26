@@ -4,13 +4,46 @@
 #include <stdio.h>
 #include <string.h>
 
-bool bit_is_on(unsigned int num, int n) {
+bool bit_is_on(unsigned int num, unsigned int n) {
     unsigned int mask = 1u << n;
     return (num & mask) != 0;
 }
 
-int write_page(int page_index, PageBuffer *page_buffer, Schema *schema){
-    return 1;
+unsigned int set_bit(unsigned int num, unsigned int n) {
+    unsigned int mask = 1 << n;
+    return num | mask;
+}
+
+bool file_exists(char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+    bool file_exists = false;
+    if (fp != NULL)
+    {
+        file_exists = true;
+        fclose(fp); // close the file
+    }
+    return file_exists;
+}
+
+int write_page(FILE *fp, Page *page, Schema * schema){
+    // Get table
+    Table *table = get_table(schema, page->table_name); 
+    
+    // Write num records
+    fwrite(&page->num_records, sizeof(int), 1, fp);
+    
+    // First pass: Calculate record length & null bit maps
+    int record_lengths[page->num_records];
+    int attribute_lengths[page->num_records][table->num_attributes];
+    unsigned int null_bit_maps[page->num_records][table->num_attributes];
+    
+    for(int i = 0; i < page->num_records; i++){
+        int record_length = 0;
+        for(int j = 0; j < table->num_attributes;j++){
+            int record_length = 0;
+        }
+    }
 }
 
 int get_page_index(PageBuffer *page_buffer, Schema *schema){
@@ -41,7 +74,8 @@ int read_table(char *table_name, PageBuffer *page_buffer, Schema *schema){
     FILE *fp = fopen(filepath, "rb");
     
     int page_index = 0;
-    while(1){
+    bool pages_left = true;
+    while(pages_left){
         Page *new_page = (Page *)malloc(sizeof(Page));
         new_page->num_bytes = 0;
         new_page->table_name = table_name;
@@ -82,37 +116,56 @@ int read_table(char *table_name, PageBuffer *page_buffer, Schema *schema){
             
             // Iterate through attribute values
             for(int j = 0; j < table->num_attributes; j++){
+                if(!bit_is_on(null_bit_map, j)){
+                    continue;
+                }
                 char *attribute;
-                if(bit_is_on(null_bit_map, j)){
-                    if (table->attributes[i].type == CHAR || table->attributes[i].type == VARCHAR){
-                        attribute = malloc(attribute_offset_length_pairs[j][1]);
-                        fread(attribute, attribute_offset_length_pairs[j][1], 1, fp);
+                if (table->attributes[i].type == CHAR || table->attributes[i].type == VARCHAR){
+                    // Allocate and store
+                    attribute = malloc(attribute_offset_length_pairs[j][1]);
+                    fread(attribute, attribute_offset_length_pairs[j][1], 1, fp);
+                }
+                else if (table->attributes[i].type == INTEGER){
+                    // Read in int attribute
+                    int int_attribute;
+                    fread(&int_attribute, attribute_offset_length_pairs[j][1], 1, fp);
+
+                    // Count number of digits
+                    int num_digits = 1;
+                    int temp = int_attribute;
+                    while (temp /= 10) {
+                        num_digits++;
                     }
-                    else if (table->attributes[i].type == INTEGER){
-                        int int_attribute;
-                        fread(&int_attribute, attribute_offset_length_pairs[j][1], 1, fp);
-                        sprintf(attribute, "%d", int_attribute);
+
+                    // Allocate and store
+                    attribute = malloc(sizeof(char) * (num_digits + 1));
+                    sprintf(attribute, "%d", int_attribute);
+                }
+                else if (table->attributes[i].type == DOUBLE){
+                    // Read in double attribute
+                    double double_attribute;
+                    fread(&double_attribute, attribute_offset_length_pairs[j][1], 1, fp);
+                    int num_digits = snprintf(NULL, 0, "%.3f", double_attribute);
+                    
+                    // Allocate and store
+                    attribute = malloc(sizeof(char) * (num_digits + 1));
+                    snprintf(attribute, num_digits + 1, "%.3f", double_attribute);
+                }
+                else if (table->attributes[i].type == BOOL){
+                    bool bool_attribute;
+                    fread(&bool_attribute, attribute_offset_length_pairs[j][1], 1, fp);
+                    if(bool_attribute){
+                        attribute = "true";
                     }
-                    else if (table->attributes[i].type == DOUBLE){
-                        double double_attribute;
-                        fread(&double_attribute, attribute_offset_length_pairs[j][1], 1, fp);
-                        sprintf(attribute, "%f", double_attribute);
-                    }
-                    else if (table->attributes[i].type == BOOL){
-                        bool bool_attribute;
-                        fread(&bool_attribute, attribute_offset_length_pairs[j][1], 1, fp);
-                        test = malloc(strlen("Hello") + 1); // Allocate memory for the string
-                        strcpy(test, "Hello"); // Copy the characters into the allocated memory
+                    else{
+                        attribute = "false";
                     }
                 }
-                else{
-                
-                }
+                new_page->records[i][j] = attribute;
             }
         }
-        
-        
         // Skip n bytes
         page_index++;
+        pages_left = false;
     }
 }
