@@ -3,7 +3,6 @@
 
 #include "query_processor.h"
 #include "attribute_types.h"
-#include "buffer.h"
 #include "catalog.h"
 #include "display.h"
 #include "page.h"

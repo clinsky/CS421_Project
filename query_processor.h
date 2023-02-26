@@ -2,8 +2,8 @@
 #define QUERY_PROCESSOR_H
 
 #include "attribute_types.h"
-#include "buffer.h"
 #include "display.h"
+#include "page.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

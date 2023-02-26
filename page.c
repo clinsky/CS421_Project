@@ -1,5 +1,4 @@
 #include "page.h"
-#include "buffer.h"
 
 Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
   Record *record = malloc(sizeof(Record));
