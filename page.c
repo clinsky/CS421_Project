@@ -55,6 +55,8 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
       }
     } else if (type == CHAR) {
       if (strlen(v) > table->attributes[i].len) {
+        printf("%s can only accept %d chars\n", table->attributes[i].name,
+               table->attributes[i].len);
         return false;
       }
       values[i].chars_val = malloc(table->attributes[i].len + 1);
@@ -62,6 +64,8 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
       values[i].chars_val[table->attributes[i].len] = '\0';
 
     } else if (type == VARCHAR) {
+      printf("%s can only accept %d chars\n", table->attributes[i].name,
+             table->attributes[i].len);
       if (strlen(v) > table->attributes[i].len) {
         return false;
       }
