@@ -49,6 +49,27 @@ bool record_before_current_record(Record rec, Record current_record) {
     return get_primary_key(rec) < get_primary_key(current_record);
 }
 
+bool insert_at_end_of_page(Record rec, Page page) {
+    int size_of_record = record_size(rec);
+    if(page.records - size_of_record < page.free_space) {
+        return true;
+    }
+    page.free_space += 8;
+    page.primary_keys[page.num_records + 2] = get_primary_key(rec);
+    for(int i = page.num_records - 1; i >= 0; i--){
+        page.primary_keys[i + 2] = page.primary_keys[i];
+    }
+    page.primary_keys += 4;
+    page.offsets[page.num_records + 1] = ((int)((void *)page.records - (void *)&page)) - record_size(rec);
+    for(int i = page.num_records - 1; i >= 0; i--){
+        page.offsets[i + 1] = page.offsets[i];
+    }
+    page.records -= record_size(rec);
+    *page.records = rec;
+    page.num_records++;
+    return false;
+}
+
 bool insert_before_current_record(Record rec, Record curr, Page page, int current_record_idx) {
     int size_of_record = record_size(rec);
     if(page.records - size_of_record < page.free_space) {
@@ -66,7 +87,7 @@ bool insert_before_current_record(Record rec, Record curr, Page page, int curren
     for (int i = page.num_records; i > current_record_idx; i--) {
         page.offsets[i + 1] = page.offsets[i];
     }
-    page.offsets[current_record_idx] = (page.records - &page) - record_size(rec);
+    page.offsets[current_record_idx] = ((int)((void *)page.records - (void *)&page)) - record_size(rec);
     for (int i = current_record_idx - 1; i >= 0; i--) {
         page.offsets[i + 1] = page.offsets[i];
     }
@@ -75,12 +96,6 @@ bool insert_before_current_record(Record rec, Record curr, Page page, int curren
     return false;
 }
 
-
-
-bool page_is_overfull(Page * page, Schema * schema) {
-    int global_page_size = schema->page_size;
-    return sizeof(page) > global_page_size;
-}
 
 void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location){
     /*
@@ -158,10 +173,12 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         return;
     }
 
-    Page * page;
+    Page page;
     int inserted = 0;
+    bool overfill = false;
     // Read each table page in order from the table file
-    for(int page_number = 0; page_number <= *num_pages_ptr; page_number++){
+    int page_number = 0;
+    while(page_number < *num_pages_ptr){
         // read in the page
 
         //page = fseek(table_file_ptr, get_page_number_location(page_number, schema), 0);
@@ -169,26 +186,37 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
 
         // Iterate the records in page
-        bool overfill = false;
+
         for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
             Record current_record = (page->records)[record_idx];
             if (record_before_current_record(rec, current_record)) {
                 overfill = insert_before_current_record(rec, current_record, page, record_idx);
-                inserted = 1;
             }
         }
-        if (page_is_overfull(page, schema)) {
+        if (overfill) {
             split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr);
-
-
+            buffer_and_write_page(page);
         }
-
+        else{
+            inserted = 1; // record was inserted
+            buffer_and_write_page(page);
+        }
+        page_number++;
     }
+
     // if record not inserted, insert into last page of the file
     if(inserted == 0){
-        page->records[page->num_records + 1] = rec;
-        if(page_is_overfull(page, schema)){
+        page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
+        overfill = insert_at_end_of_page(rec, page);
+        if(overfill){
             split_page(page, table_file_ptr, schema, *num_pages_ptr, *num_pages_ptr);
+            buffer_and_write_page(page);
+            page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
+            insert_at_end_of_page(rec, page);
+            buffer_and_write_page(page);
+        }
+        else{
+            buffer_and_write_page(page);
         }
     }
 }
