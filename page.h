@@ -52,7 +52,7 @@ struct bufferm {
 
 typedef struct bufferm Bufferm;
 
-Record *check_valid_parsed_tuple(Table *table, char (*tuple_parsed)[50]);
+Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed);
 
 Page *add_record_to_page(Schema *schema, Table *table, Record *record,
                          Bufferm *buffer);

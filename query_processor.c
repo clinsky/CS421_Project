@@ -212,34 +212,46 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   return true;
 }
 
-bool parse_tuple(char *tuple, char tuple_parsed[][50], Table *command_table) {
+bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index, Table *command_table) {
   // Remove parentheses from tuple
   sscanf(tuple, "(%[^)]", tuple);
+  tuple[strlen(tuple)] = '\n';
 
   // Iterate
   char current_token[50];
   char next_tokens[256];
   strcpy(next_tokens, tuple);
   for (int i = 0; i < command_table->num_attributes; i++) {
+    bool null = false;
     if (command_table->attributes[i].type == CHAR ||
         command_table->attributes[i].type == VARCHAR) {
       if (next_tokens[0] == '"') {
-        sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
+        sscanf(next_tokens, "\"%[^\"]\" %[^\n]", current_token, next_tokens);
         if (strlen(current_token) > command_table->attributes[i].len) {
           printf("Invalid data type, char is too long!");
           return false;
         }
       } else {
-        sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+        sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
+        null = true;
         if (strcmp(current_token, "null") != 0) {
           printf("Invalid data type, chars must be in quotes!");
           return false;
         }
       }
     } else {
-      sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+      sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
+      if (strcmp(current_token, "null") == 0) {
+        null = true;
+      }
     }
-    strcpy(tuple_parsed[i], current_token);
+    if (!null) {
+      values_parsed[tuple_index][i] = (char * ) malloc((strlen(current_token) + 1) * sizeof(char));
+      strcpy(values_parsed[tuple_index][i], current_token);
+    }
+    else{
+      values_parsed[tuple_index][i] = NULL;
+    }
   }
   return true;
 }
@@ -283,18 +295,18 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
 
   // Create the array to be returned
   Table *command_table = get_table(schema, table_name);
-  char values_parsed[num_values][command_table->num_attributes][50];
+  char ***values_parsed;
+  values_parsed = (char ***)malloc(num_values * sizeof(char **));
+  for (int i = 0; i < command_table->num_attributes; i++) {
+    values_parsed[i] = (char **)malloc(command_table->num_attributes * sizeof(char *));
+  }
 
   // Iterate through values
   char *tuple = strtok(values_delimited, ",");
   int tuple_index = 0;
   while (tuple != NULL) {
-    char tuple_parsed[command_table->num_attributes][50];
-    if (!parse_tuple(tuple, tuple_parsed, command_table)) {
+    if (!parse_tuple(tuple, values_parsed, tuple_index, command_table)) {
       return false;
-    }
-    for (int i = 0; i < command_table->num_attributes; i++) {
-      strcpy(values_parsed[tuple_index][i], tuple_parsed[i]);
     }
     tuple = strtok(NULL, ",");
     tuple_index++;
@@ -308,6 +320,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
   for (int i = 0; i < num_values; i++) {
     Record *record = check_valid_parsed_tuple(command_table, values_parsed[i]);
     if (record == NULL) {
+      printf("PROBLEM: Record could not be parsed\n");
       return false;
     }
     records[i] = *record;
