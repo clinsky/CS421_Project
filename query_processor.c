@@ -265,8 +265,10 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
       }
     }
     if (!null) {
-      //values_parsed[tuple_index] = malloc(command_table->num_attributes * sizeof(char *));
-      values_parsed[tuple_index][i] =(char *)malloc((strlen(current_token) + 1) * sizeof(char));
+      // values_parsed[tuple_index] =
+      //     malloc(command_table->num_attributes * sizeof(char*));
+      values_parsed[tuple_index][i] =
+          (char *)malloc((strlen(current_token) + 1) * sizeof(char));
       strcpy(values_parsed[tuple_index][i], current_token);
     } else {
       values_parsed[tuple_index][i] = NULL;
@@ -421,9 +423,9 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
 
   token = strtok(NULL, " ");
   strcpy(table_name, token);
-  //printf("tableName: %s\n", table_name);
+  // printf("tableName: %s\n", table_name);
   if (strcmp(attributes, "*") == 0) {
-    //printf("selecting all from %s ..\n", table_name);
+    // printf("selecting all from %s ..\n", table_name);
     return select_all(table_name, db_loc, schema, buffer);
   }
   return true;
@@ -468,7 +470,8 @@ bool process_display_schema(char *command, char *db_loc, Schema *schema,
   return false;
 }
 
-bool process_display_info(char *command, char *db_loc, Schema *schema) {
+bool process_display_info(char *command, char *db_loc, Schema *schema,
+                          Bufferm *buffer) {
   char table_name[50];
   sscanf(command, "display info %s", &table_name);
   Table *table = get_table(schema, &table_name);
@@ -477,6 +480,28 @@ bool process_display_info(char *command, char *db_loc, Schema *schema) {
     printf("ERROR\n");
   } else {
     print_table_metadata(table);
+    Page *p = find_in_buffer(buffer, table);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+      p = read_page_from_file(schema, table, filepath);
+      if (p != NULL) {
+        add_to_buffer(buffer, table, p, filepath);
+      }
+    }
+    int page_count = 0;
+    int record_count = 0;
+    while (p != NULL) {
+      page_count += 1;
+      record_count += p->num_records;
+      if (p->next_page != NULL) {
+        p = p->next_page;
+      } else {
+        break;
+      }
+    }
+    printf("Pages: %d\n", page_count);
+    printf("Records: %d\n", record_count);
   }
 
   return false;
@@ -502,7 +527,7 @@ void parse_command(char *command, char *db_loc, Schema *schema,
   } else if (startsWith(command, "display schema")) {
     process_display_schema(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display info")) {
-    process_display_info(command, db_loc, schema);
+    process_display_info(command, db_loc, schema, buffer);
   } else {
     printf("Invalid command\n");
   }
