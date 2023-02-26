@@ -2,6 +2,7 @@
 #include "page.h"
 #include "parse_utils.h"
 #include "query_processor.h"
+#include "buffer_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -72,7 +73,8 @@ int main(int argc, char *argv[]) {
     printf("num tables: %d\n", schema->num_tables);
   }
 
-  create_page_buffer(schema->buffer_size);
+  PageBuffer pageBuffer = createPageBuffer(schema);
+
 
   process(db_loc, schema);
   return 0;

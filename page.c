@@ -1,5 +1,7 @@
 #include "page.h"
+#include "buffer_manager.h"
 #include "catalog.h"
+#include "record.h"
 #include <string.h>
 #include <dirent.h>
 
@@ -16,7 +18,7 @@ FILE * get_table_file(char * db_loc, int table_idx){
     return file;
 }
 
-Page new_page(Schema * schema) {
+Page * new_page(Schema * schema) {
     int num_records = 1;
     void *free_space = malloc(schema->page_size);
     free_space += 4;
@@ -25,7 +27,14 @@ Page new_page(Schema * schema) {
     int *offsets = free_space;
     int *primary_keys = free_space;
     Record *records = free_space + (schema->page_size - 4);
-    Page page = {num_records_ptr, offsets, primary_keys, free_space, records};
+    Page * page = malloc(sizeof(Page));
+    page->num_records = num_records_ptr;
+    page->offsets = offsets;
+    page->primary_keys = primary_keys;
+    page->free_space = free_space;
+    page->records = records;
+    return page;
+    // Page page = {num_records_ptr, offsets, primary_keys, free_space, records};
     return page;
 }
 
@@ -41,21 +50,21 @@ void update_catalog(Schema * schema, int page_number, int page_location){
 }
 
 
-ATTRIBUTE_TYPE get_primary_key(Record record){
-    return INTEGER;
+char * get_primary_key(Record record){
+    return record.data[0];
 }
 
 bool record_before_current_record(Record rec, Record current_record) {
     return get_primary_key(rec) < get_primary_key(current_record);
 }
 
-bool insert_at_end_of_page(Record rec, Page page, Schema * schema, int table_idx) {
+bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_idx) {
     int size_of_record = record_size(rec, schema, table_idx);
-    if(page.records - size_of_record < page.free_space) {
+    if(page->records - size_of_record < page->free_space) {
         return true;
     }
-    page.free_space += 8;
-    page.primary_keys[*(page.num_records) + 2] = get_primary_key(rec);
+    page->free_space += 8;
+    page->primary_keys[*(page.num_records) + 2] = get_primary_key(rec);
     for(int i = *(page.num_records) - 1; i >= 0; i--){
         page.primary_keys[i + 2] = page.primary_keys[i];
     }
@@ -129,8 +138,7 @@ void write_to_file(Page page, char * table_name, Schema * schema, int page_num, 
     }
 }
 
-
-void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location, char * table_file){
+void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_number, int page_location, char * table_file, char * db_loc, int table_idx){
     /*
      * make a new page
      * remove half the items from the current page
@@ -139,66 +147,50 @@ void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_nu
      */
     int global_page_size = schema->page_size;
     // make a new page
-    Page new_page = new_page(schema);
+    Page newPage = new_page(schema);
 
     // remove half the items from the current page
     // add the items to the new page
-    int left_num_records = page.num_records / 2;
-    int right_num_records = page.num_records - left_num_records;
+    int left_num_records = *(page->num_records) / 2;
+    int right_num_records = page->num_records - left_num_records;
     for(int idx = 0; idx < right_num_records; idx++){
-        new_page.offsets[idx] = page.offsets[idx + left_num_records];
+        newPage.offsets[idx] = page->offsets[idx + left_num_records];
         //new_page->records[idx - left_num_records] = page->records[idx];
         //new_page->num_records++;
     }
 
 
 
-    new_page.primary_keys += 4*right_num_records;
+    newPage.primary_keys += 4*right_num_records;
 
     for(int idx = 0; idx < right_num_records; idx++){
-        new_page.primary_keys[idx] = page.primary_keys[idx + left_num_records];
+        newPage.primary_keys[idx] = page->primary_keys[idx + left_num_records];
     }
-    new_page.free_space += 4*(2*right_num_records);
+    newPage.free_space += 4*(2*right_num_records);
     for(int idx = 0; idx < right_num_records; idx++){
-        Record * record_ptr = (Record *)((void *)page.num_records + (void *)(page.offsets[idx+left_num_records]));
+        Record * record_ptr = (Record *)(page->num_records + page->offsets[idx+left_num_records]);
         Record record = *record_ptr;
-        new_page.records -= new_page.offsets[idx];
-        new_page.records[0] = record;
+        newPage.records -= newPage.offsets[idx];
+        newPage.records[0] = record;
     }
 
     page -> offsets -= 4*right_num_records;
     page->primary_keys -= 4*right_num_records;
     page->free_space -= 4*(2*right_num_records);
     *(page->num_records) = left_num_records;
-    new_page.num_records = right_num_records;
+    newPage.num_records = right_num_records;
 
-    write_to_file(new_page, schema, page_number, table_file); // write the new page to the table file
+    // void write_to_file(Page page, char * table_name, Schema * schema, int page_num, char * db_loc, int table_idx)
+    write_to_file(newPage, schema->tables[table_idx].name, schema, page_number + 1, db_loc, table_idx);
     // insert the new page after the current page in the table file
     //fwrite(page, sizeof(page), 1, table_file_ptr);
     // update the schema
     //update_catalog(schema, page_number, page_location);
 }
 
-void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema, char * table_file){
-    /*
-     * if there are no pages for this table:
-     *  make a new file for the table
-     *  add this entry to a new page
-     *  insert the page into the table file
-     *  end
-     * Read each table page in order from the table file:
-     *  iterate the records in page:
-     *      if the record belongs before the current record:
-     *          insert the record before it
-     *  if the current page becomes overfull:
-     *      split the page
-     *      end
-     * If the record does not get inserted:
-     *  insert it into the last page of the table file
-     *  if page becomes overfull:
-     *      split the page
-     *  end
-     */
+/*
+void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Schema * schema, char * table_file, PageBuffer pageBuffer){
+
     int global_page_size = schema->page_size;
     FILE * table_file_ptr = get_table_file(db_loc, table_idx);
     int * num_pages_ptr;
@@ -206,21 +198,20 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     // if there are no pages for this table
     if(!num_pages_ptr){
         // make a new file for the table
-        Page new_page = new_page(schema);
+        Page newPage = new_page(schema);
         int new_size = 1;
         //fwrite(&new_size, sizeof(int), 1, table_file_ptr);
         // add this entry to a new page
         //Page * new_page = (Page*)malloc(global_page_size);
-        new_page.free_space += 4;
+        newPage.free_space += 4;
 
-
-        int record_size = record_size(rec, schema, table_idx);
-        *(new_page.offsets) = schema->page_size - record_size;
-        *(new_page.primary_keys) = get_primary_key(rec);
-        new_page.records -= record_size;
-        *(new_page.records) = rec;
-        *(new_page.num_records)++;
-        write_to_file(new_page, schema, 0, table_file);
+        int recordSize = record_size(rec, schema, table_idx);
+        *(newPage.offsets) = schema->page_size - recordSize;
+        *(newPage.primary_keys) = get_primary_key(rec);
+        newPage.records -= recordSize;
+        *(newPage.records) = rec;
+        *(newPage.num_records)++;
+        write_to_file(newPage, schema->tables[table_idx].name, schema, 0, db_loc, table_idx);
         return;
     }
 
@@ -233,41 +224,35 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
         // read in the page
 
         //page = fseek(table_file_ptr, get_page_number_location(page_number, schema), 0);
-        //TODO: implement get_page_from_memory_manager in memory_manager.c
-        page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
+        // Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name, char * db_loc, int table_idx);
+        page = request_page(page_number, schema, pageBuffer, schema->tables[table_idx].name, db_loc, table_idx);
 
         // Iterate the records in page
 
-        for (int record_idx = 0; record_idx < page->num_records; record_idx++) {
-            Record current_record = (page->records)[record_idx];
+        for (int record_idx = 0; record_idx < *(page.num_records); record_idx++) {
+            Record current_record = (page.records)[record_idx];
             if (record_before_current_record(rec, current_record)) {
-                overfill = insert_before_current_record(rec, current_record, page, record_idx);
+                overfill = insert_before_current_record(rec, current_record, page, record_idx, schema, table_idx);
             }
         }
         if (overfill) {
-            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file);
-            buffer_and_write_page(page);
+            split_page(&page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file, db_loc, table_idx);
         }
         else{
             inserted = 1; // record was inserted
-            buffer_and_write_page(page);
         }
         page_number++;
     }
 
     // if record not inserted, insert into last page of the file
     if(inserted == 0){
-        page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
-        overfill = insert_at_end_of_page(rec, page);
+        page = request_page(page_number, schema, pageBuffer, schema->tables[table_idx].name, db_loc, table_idx);
+        overfill = insert_at_end_of_page(rec, page, schema, table_idx);
         if(overfill){
-            split_page(page, table_file_ptr, schema, *num_pages_ptr, *num_pages_ptr);
-            buffer_and_write_page(page);
-            page = get_page_from_memory_manager(table_file_ptr, page_number, schema);
-            insert_at_end_of_page(rec, page);
-            buffer_and_write_page(page);
-        }
-        else{
-            buffer_and_write_page(page);
+            split_page(&page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file, db_loc, table_idx);
+            page = request_page(page_number, schema, pageBuffer, schema->tables[table_idx].name, db_loc, table_idx);
+            insert_at_end_of_page(rec, page, schema, table_idx);
         }
     }
 }
+*/

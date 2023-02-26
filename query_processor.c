@@ -10,6 +10,7 @@
 #include "record.h"
 #include "table.h"
 #include "record.h"
+#include "buffer_manager.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -219,7 +220,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   return true;
 }
 
-bool parse_insert_record(char * command, char *db_loc, Schema *schema){
+bool parse_insert_record(char * command, char *db_loc, Schema *schema, PageBuffer pageBuffer){
     char * part_1 = strtok(command, "(");
 
     // Insert
@@ -256,7 +257,7 @@ bool parse_insert_record(char * command, char *db_loc, Schema *schema){
 
 
     Record record = create_record(num_fields, values, schema, table_idx);
-    insert_record_into_table_file(db_loc, table_idx, values, schema, table_name);
+    insert_record_into_table_file(db_loc, table_idx, record, schema, table_name, pageBuffer);
     return true;
 
 }
@@ -360,14 +361,15 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 void display_attributes(Schema *schema) {}
 
 void display_record(Record record) {
-  int **offset_len_pairs = record.offset_length_pairs;
+  int * offsets = record.offsets;
+  int * lengths = record.lengths;
   // TODO: Find a way to get the number of attributes
   int num_attributes = 3;
   for (int i = 0; i < num_attributes; i += 2) {
-    int offset = offset_len_pairs[i][0];
-    int len = offset_len_pairs[i][1];
-    Attribute attr = record.attributes[offset];
-    printf("%s ", attr.name);
+    int offset = offsets[i];
+    int len = lengths[i];
+    char * attr = record.data[offset];
+    printf("%s ", attr);
   }
 }
 
@@ -474,14 +476,14 @@ void save_catalog(Schema *schema, char *db_loc) {
   fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
-void parse_command(char *command, char *db_loc, Schema *schema) {
+void parse_command(char *command, char *db_loc, Schema *schema, PageBuffer pageBuffer) {
   // Self explanatory code.
   if (startsWith(command, "select")) {
     parse_select(command, db_loc, schema);
   } else if (startsWith(command, "create")) {
     parse_create_table(command, db_loc, schema);
   } else if (startsWith(command, "insert")) {
-    parse_insert_record(command, db_loc, schema);
+    parse_insert_record(command, db_loc, schema, pageBuffer);
   } else if (startsWith(command, "display schema")) {
     process_display_schema(command, db_loc, schema);
   } else if (startsWith(command, "display info")) {
@@ -492,7 +494,7 @@ void parse_command(char *command, char *db_loc, Schema *schema) {
   printf("\n");
 }
 
-void process(char *db_loc, Schema *schema) {
+void process(char *db_loc, Schema *schema, PageBuffer pageBuffer){
   // Continuously accept commands from a user
   while (1) {
     // Iterate through characters typed by the user
@@ -525,7 +527,7 @@ void process(char *db_loc, Schema *schema) {
     }
 
     // We've read a command from the user. Parse it and take some action
-    parse_command(command, db_loc, schema);
+    parse_command(command, db_loc, schema, pageBuffer);
 
     // I'm not sure what this does. Jared?
     next_char = getchar();
@@ -541,6 +543,6 @@ void print_command_result(bool success) {
   }
 }
 
-void query_loop(char *db_loc, Schema *schema) { process(db_loc, schema); }
+void query_loop(char *db_loc, Schema *schema, PageBuffer pageBuffer) { process(db_loc, schema, pageBuffer); }
 
 #endif
