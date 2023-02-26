@@ -323,8 +323,8 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
-  printf("num values: %d\n", num_values);
-  printf("printing values parsed\n");
+  // printf("num values: %d\n", num_values);
+  // printf("printing values parsed\n");
 
   Record *records = malloc(sizeof(Record) * num_values);
 
@@ -407,6 +407,11 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
                             Bufferm *buffer) {
+  printf("Db location: %s\n", db_loc);
+  printf("Page size : %d\n", schema->page_size);
+  printf("Buffer size: %d\n", schema->buffer_size);
+  printf("\n");
+  printf("Tables:\n");
   for (int i = 0; i < schema->num_tables; i++) {
     Page *p = find_in_buffer(buffer, &schema->tables[i]);
     char filepath[100];
@@ -418,7 +423,7 @@ bool process_display_schema(char *command, char *db_loc, Schema *schema,
         add_to_buffer(buffer, &schema->tables[i], p, filepath);
       }
     }
-    printf("Printing table %s\n", schema->tables[i].name);
+    print_table_metadata(&schema->tables[i]);
     if (p != NULL) {
       print_page(&schema->tables[i], p);
     }

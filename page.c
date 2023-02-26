@@ -30,7 +30,7 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
         }
       }
       values[i].int_val = intval;
-      printf("%d was intval..\n", intval);
+      // printf("%d was intval..\n", intval);
     } else if (type == DOUBLE) {
       char *endptr;
       double double_val = strtod(v, &endptr);
