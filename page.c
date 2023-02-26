@@ -428,11 +428,12 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                          record->attr_vals[pkey].chars_val) < 0;
       }
       if (!greater) {
-        printf("was NOT greater than this record at %d\n", i);
-        printf("curr num records: %d\n", curr_page->num_records);
-        printf("curr num records capacity: %d\n", curr_page->record_capacity);
+        // printf("was NOT greater than this record at %d\n", i);
+        // printf("curr num records: %d\n", curr_page->num_records);
+        // printf("curr num records capacity: %d\n",
+        // curr_page->record_capacity);
         if (curr_page->num_records + 1 > curr_page->record_capacity) {
-          printf("reallocing..\n");
+          // printf("reallocing..\n");
           curr_page->records =
               realloc(curr_page->records,
                       sizeof(Record) * (curr_page->num_records * 2));
@@ -454,9 +455,9 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
   }
 
   // insert record into last page (aka prev page)
-  printf("last page num records: %d\n", prev_page->num_records);
+  // printf("last page num records: %d\n", prev_page->num_records);
   if (prev_page->num_records + 1 > prev_page->record_capacity) {
-    printf("reallocing..\n");
+    // printf("reallocing..\n");
     prev_page->records = realloc(prev_page->records,
                                  sizeof(Record) * (prev_page->num_records * 2));
   }
