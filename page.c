@@ -340,7 +340,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
       }
     }
     if (p != NULL) {
-      printf("successfully read page..\n");
+      //printf("successfully read page..\n");
     }
     // flush_buffer(buffer);
     return p;
