@@ -20,7 +20,7 @@ struct attribute_values {
   int int_val;
   char *chars_val; // chars and varchars vals;
   double double_val;
-  bool bool_val;
+  int bool_val;
   bool is_null;
 };
 

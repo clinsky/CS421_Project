@@ -300,21 +300,21 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   printf("num values: %d\n", num_values);
   printf("printing values parsed\n");
 
-  Attribute_Values *attr_vals = malloc(sizeof(Attribute_Values) * num_values);
+  Record *records = malloc(sizeof(Record) * num_values);
 
   // validate
   for (int i = 0; i < num_values; i++) {
-    Attribute_Values *att_val =
-        check_valid_parsed_tuple(command_table, values_parsed[i]);
-    if (att_val == NULL) {
+    Record *record = check_valid_parsed_tuple(command_table, values_parsed[i]);
+    if (record == NULL) {
       return false;
     }
-    attr_vals[i] = *att_val;
+    records[i] = *record;
   }
 
   // all good, time to add
   for (int i = 0; i < num_values; i++) {
-    Page *p = add_record_to_page(schema, command_table, &attr_vals[i]);
+    printf("record size to be added: %d\n", records[i].size);
+    Page *p = add_record_to_page(schema, command_table, &records[i]);
     if (p == NULL) {
       return false;
     }
@@ -331,67 +331,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 
 void display_attributes(Schema *schema) {}
 
-void display_record(Record record) {
-  int **offset_len_pairs = record.offset_length_pairs;
-  // TODO: Find a way to get the number of attributes
-  int num_attributes = 3;
-  for (int i = 0; i < num_attributes; i += 2) {
-    int offset = offset_len_pairs[i][0];
-    int len = offset_len_pairs[i][1];
-    Attribute attr = record.attributes[offset];
-    printf("%s ", attr.name);
-  }
-}
-
-bool select_all(char *table_name, char *db_loc, Schema *schema) {
-  Table *requested_table = NULL;
-  Table *tables = schema->tables;
-  int num_tables = schema->num_tables;
-  printf("num_tables: %d\n", num_tables);
-  for (int i = 0; i < num_tables; i++) {
-    printf("name: %s\n", tables[i].name);
-    if (strcmp(tables[i].name, table_name) == 0) {
-      requested_table = &tables[i];
-      break;
-    }
-  }
-  if (!requested_table) {
-    printf("No such table %s\n", table_name);
-    return false;
-  }
-
-  // TODO: format the attributes as in the writeup
-  int num_atrributes = requested_table->num_attributes;
-  for (int i = 0; i < num_atrributes; i++) {
-    Attribute attr = requested_table->attributes[i];
-    printf("%s ", attr.name);
-  }
-
-  char *filename = strcat(db_loc, table_name);
-  FILE *fp = fopen(filename, "rb");
-  if (fp == NULL) {
-    // printf("No such table %s\n", table_name);
-    return false;
-  }
-
-  // TODO: Use the design shown on the writeup
-
-  display_attributes(schema);
-
-  int *page_locations = schema->page_locations;
-  int num_pages;
-  Page page;
-  fread(&num_pages, sizeof(int), 1, fp);
-  for (int i = 0; i < num_pages; i++) {
-    fseek(fp, page_locations[i], SEEK_SET);
-    fread(&page, sizeof(Page), 1, fp);
-    for (int j = 0; j < page.num_records; j++) {
-      Record record = page.records[j];
-      display_record(record);
-    }
-  }
-  return true;
-}
+bool select_all(char *table_name, char *db_loc, Schema *schema) { return true; }
 
 bool parse_select(char *command, char *db_loc, Schema *schema) {
   char attributes[256];
