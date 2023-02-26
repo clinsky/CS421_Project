@@ -3,6 +3,44 @@
 //
 #include "buffer_manager.h"
 #include "page.h"
+#include <string.h>
+
+Page read_page_from_disk(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name, char * db_loc, int table_idx){
+    Page * page = new_page(schema);
+    char path[256];
+    strcpy(path, db_loc);
+    strcat(path, "/tables/");
+    strcat(path, table_name);
+    FILE * fp = fopen(path, "rb");
+    fseek(fp, schema->tables[table_idx].page_locations[page_num]*schema->page_size, SEEK_SET);
+    int num_records;
+    fread(&num_records, sizeof(int), 1, fp);
+    *(page->num_records) = num_records;
+    for(int i = 0; i < num_records; i++){
+        int offset;
+        fread(&offset, sizeof(int), 1, fp);
+        page->offsets[i] = offset;
+    }
+    page->primary_keys += 4 * num_records;
+    for(int i = 0; i < num_records; i++){
+        int primary_key;
+        fread(&primary_key, sizeof(int), 1, fp);
+        page->primary_keys[i] = primary_key;
+    }
+    page->primary_keys += 4*num_records*2;
+    page->free_space+=4*num_records*2;
+    int min_offset = schema->page_size + 1;
+    for(int i = 0; i < num_records; i++){
+        int current_offset = page->offsets[i];
+        if(current_offset < min_offset){
+            min_offset = current_offset;
+        }
+        fseek(fp, current_offset, SEEK_SET);
+        //TODO: Read in the record from the file
+
+    }
+
+}
 
 Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name){
     /*
@@ -28,25 +66,9 @@ Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * t
         for(int i = 0; i < pageBuffer.num_pages; i++) {
             pageBuffer.buffer[i] = pageBuffer.buffer[i + 1];
         }
-        return read_page_from_disc(page_num, schema, pageBuffer);
-    }
-
-
-
-
-
-
-
-
-
-        }
-        write_page_LRU(pageBuffer);
-        pageBuffer.in_memory[0] = page_num;
+        pageBuffer.buffer[0] = read_page_from_disc(page_num, schema, pageBuffer);
+        pageBuffer.page_numbers[0] = page_num;
         pageBuffer.modified[0] = false;
-        pageBuffer.buffer[0] = load_page_from_disk(page_num, schema);
-        return pageBuffer.buffer[0];
+        pageBuffer.in_memory[page_num] = 0;
     }
-
-
-
 }
