@@ -333,7 +333,25 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
 
 void display_attributes(Schema *schema) {}
 
-bool select_all(char *table_name, char *db_loc, Schema *schema) { return true; }
+bool select_all(char *table_name, char *db_loc, Schema *schema,
+                Bufferm *buffer) {
+  Table *table = get_table(schema, table_name);
+  if (table == NULL) {
+    printf("No such table %s\n", table_name);
+  }
+  Page *p = find_in_buffer(buffer, table);
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+  if (p == NULL) {
+    p = read_page_from_file(schema, table, filepath);
+    add_to_buffer(buffer, table, p, filepath);
+  } else {
+    write_page_to_file(table, p, filepath);
+  }
+  print_page(table, p);
+
+  return true;
+}
 
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
@@ -354,13 +372,30 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
   strcpy(table_name, token);
   printf("tableName: %s\n", table_name);
   if (strcmp(attributes, "*") == 0) {
-    return select_all(table_name, db_loc, schema);
+    printf("selecting all from %s ..\n", table_name);
+    return select_all(table_name, db_loc, schema, buffer);
   }
   return true;
 }
 
-bool process_display_schema(char *command, char *db_loc, Schema *schema) {
-  printf("Display Schema not implemented!");
+bool process_display_schema(char *command, char *db_loc, Schema *schema,
+                            Bufferm *buffer) {
+  for (int i = 0; i < schema->num_tables; i++) {
+    Page *p = find_in_buffer(buffer, &schema->tables[i]);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path,
+             schema->tables[i].name);
+    if (p == NULL) {
+      p = read_page_from_file(schema, &schema->tables[i], filepath);
+      if (p != NULL) {
+        add_to_buffer(buffer, &schema->tables[i], p, filepath);
+      }
+    }
+    printf("Printing table %s\n", schema->tables[i].name);
+    if (p != NULL) {
+      print_page(&schema->tables[i], p);
+    }
+  }
   return false;
 }
 
@@ -400,7 +435,7 @@ void parse_command(char *command, char *db_loc, Schema *schema,
   } else if (startsWith(command, "insert")) {
     process_insert_record(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display schema")) {
-    process_display_schema(command, db_loc, schema);
+    process_display_schema(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display info")) {
     process_display_info(command, db_loc, schema);
   } else {

@@ -36,6 +36,7 @@ struct buffer_entry {
   Page *page;
   char *table_name;
   char *file_path;
+  Table *table;
   int last_used;
 };
 
@@ -46,6 +47,7 @@ struct bufferm {
   int max_pages;
   int curr_pages;
   Buffer_Entry *entries;
+  int counter;
 };
 
 typedef struct bufferm Bufferm;
@@ -82,6 +84,8 @@ Page *search_buffer(Bufferm *b);
 
 Page *find_in_buffer(Bufferm *b, Table *t);
 
-void add_to_buffer(Bufferm *b, Table *table, Page *p, char *table_name);
+void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath);
+
+void flush_buffer(Bufferm *b);
 
 #endif
