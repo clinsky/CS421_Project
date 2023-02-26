@@ -327,7 +327,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
       p = read_page_from_file(schema, table, filepath);
       p = insert_record_to_page(schema, table, p, record);
       add_to_buffer(buffer, table, p, filepath);
-      // print_page(table, p);
+      print_page(table, p);
     }
     if (p != NULL) {
       printf("successfully read page..\n");
@@ -350,10 +350,6 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     Page *first_page = malloc(sizeof(Page));
     first_page->next_page = NULL;
     first_page->max_size = schema->page_size;
-    bool enough_space_to_insert = check_enough_space(table, first_page, record);
-    if (!enough_space_to_insert) {
-      return NULL;
-    }
     first_page->num_records = 1;
     first_page->record_capacity = 20;
     first_page->page_number = 0;
@@ -362,8 +358,10 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     first_page->records[0] = *record;
     first_page->total_bytes_from_records += record->size;
     p = first_page;
-    // write_page_to_file(table, p, filepath);
+    //write_page_to_file(table, p, filepath);
+    //p = read_page_from_file(schema, table, filepath);
     add_to_buffer(buffer, table, p, filepath);
+    print_page(table, p);
   }
   return p;
 }
@@ -468,6 +466,7 @@ void make_new_page_if_full(Page *prev_page) {
 void print_page(Table *table, Page *p) {
   Page *curr_page = p;
   int page_num = 1;
+  printf("in print page..\n");
   while (curr_page != NULL) {
     printf("printing page# %d\n", page_num);
     for (int k = 0; k < curr_page->num_records; k++) {

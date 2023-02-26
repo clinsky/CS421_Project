@@ -353,6 +353,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
     printf("No such table %s\n", table_name);
   }
   Page *p = find_in_buffer(buffer, table);
+  printf("num records of first page: %d\n", p->num_records);
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
   if (p == NULL) {
