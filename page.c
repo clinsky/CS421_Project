@@ -139,18 +139,20 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
           // printf("bool was %d\n", curr_attr->bool_val);
         } else if (type == CHAR) {
           curr_attr->chars_val =
-              malloc(sizeof(char) * table->attributes[i].len);
-          fread(&curr_attr->chars_val, table->attributes[i].len,
+              malloc(sizeof(char) * table->attributes[i].len + 1);
+          fread(curr_attr->chars_val, table->attributes[i].len,
                 table->attributes[i].len, fp);
+          curr_attr->chars_val[table->attributes[i].len + 1] = '\0';
           // printf("char was %s\n", curr_attr->chars_val);
         } else if (type == VARCHAR) {
           int var_len;
           printf("reading var_len at pos %li\n", ftell(fp));
           fread(&var_len, sizeof(int), 1, fp);
-          curr_attr->chars_val = malloc(sizeof(char) * var_len);
+          curr_attr->chars_val = malloc(sizeof(char) * var_len + 1);
           printf("reading varchar at pos %li, var_len was: %d\n", ftell(fp),
                  var_len);
-          fread(&curr_attr->chars_val, sizeof(char), var_len, fp);
+          fread(curr_attr->chars_val, sizeof(char), var_len, fp);
+          curr_attr->chars_val[var_len] = '\0';
           printf("char was %s\n", curr_attr->chars_val);
         }
       }
@@ -286,8 +288,7 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
             printf("writing var char %s at: %li\n",
                    p->records[i].attr_vals[j].chars_val, ftell(fp));
             char *charsval = p->records[i].attr_vals[j].chars_val;
-            int wrote = fwrite(&p->records[i].attr_vals[j].chars_val,
-                               sizeof(char), num_chars, fp);
+            int wrote = fwrite(charsval, sizeof(char), num_chars, fp);
 
             printf("just wrote %d chars of %s\n", wrote, charsval);
             fflush(fp);
