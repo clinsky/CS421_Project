@@ -265,7 +265,7 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
       }
     }
     if (!null) {
-      values_parsed[tuple_index] = malloc(command_table->num_attributes * sizeof(char *));
+      //values_parsed[tuple_index] = malloc(command_table->num_attributes * sizeof(char *));
       values_parsed[tuple_index][i] =(char *)malloc((strlen(current_token) + 1) * sizeof(char));
       strcpy(values_parsed[tuple_index][i], current_token);
     } else {
