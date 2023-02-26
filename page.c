@@ -96,7 +96,7 @@ bool insert_before_current_record(Record rec, Record curr, Page page, int curren
     return false;
 }
 
-void write_to_file(Page page, char * table_name, Schema * schema, int page_num, char * db_loc){
+void write_to_file(Page page, char * table_name, Schema * schema, int page_num, char * db_loc, int table_idx){
     char * path = db_loc;
     path = strcat(path, "/table/");
     path = strcat(path, table_name);
@@ -116,10 +116,18 @@ void write_to_file(Page page, char * table_name, Schema * schema, int page_num, 
     for(int i = 0; i < *page.num_records; i++){
         Record record = *((Record *)page.num_records + page.offsets[i]);
         //TODO: write record to file
-
-
-
-
+        int num_records = schema->tables[table_idx].num_records;
+        for(int i = 0; i < num_recordx; i++){
+            fwrite(record.offsets[i], 4, 1, fp);
+        }
+        for(int i = 0; i < num_records; i++){
+            fwrite(record.lengths[i], 4, 1, fp);
+        }
+        fwrite(record.null_array, 1, 1, fp);
+        for(int i = 0; i < num_records; i++){
+            fwrite(record.data[i], record.lengths[i], 1, fp);
+        }
+        schema->tables[table_idx].page_locations[page_num] = schema->tables[table_idx].num_records;
 
     }
 
