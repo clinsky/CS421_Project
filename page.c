@@ -323,6 +323,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
   int pkey = record->primary_key_index;
   ATTRIBUTE_TYPE type = table->attributes[pkey].type;
   Page *curr_page = p;
+  Page *prev_page = NULL;
   while (curr_page != NULL) {
     for (int i = 0; i < curr_page->num_records; i++) {
       printf("checking record #%d\n", i);
@@ -364,12 +365,21 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
         curr_page->records[i] = *record;
         return curr_page;
       } else {
-        printf("was greater than this record\n");
       }
     }
+    prev_page = curr_page;
     curr_page = curr_page->next_page;
   }
-  printf("inserting a new page..\n");
+
+  // insert record into last page (aka prev page)
+  printf("last page num records: %d\n", prev_page->num_records);
+  if (prev_page->num_records + 1 > prev_page->record_capacity) {
+    printf("reallocing..\n");
+    prev_page->records = realloc(prev_page->records,
+                                 sizeof(Record) * (prev_page->num_records * 2));
+  }
+  prev_page->num_records += 1;
+  prev_page->records[prev_page->num_records - 1] = *record;
   return p;
 }
 
