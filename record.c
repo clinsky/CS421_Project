@@ -34,3 +34,12 @@ Record create_record(int num_fields, char ** values, Schema * schema, int table_
     return record;
 }
 
+int record_size(Record record, Schema * schema, int table_idx) {
+    int size = 0;
+    size += 4 * record.num_fields * 2 + 1;
+    for(int i = 0; i < record.num_fields; i++){
+        size += record.lengths[i];
+    }
+    return size;
+}
+

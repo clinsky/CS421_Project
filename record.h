@@ -18,6 +18,7 @@ struct record {
 typedef struct record Record;
 
 Record create_record(int num_fields, char ** values, Schema * schema, int table_idx);
+int record_size(Record record, Schema * schema, int table_idx);
 
 
 
