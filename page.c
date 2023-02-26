@@ -64,75 +64,75 @@ bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_i
         return true;
     }
     page->free_space += 8;
-    page->primary_keys[*(page.num_records) + 2] = get_primary_key(rec);
-    for(int i = *(page.num_records) - 1; i >= 0; i--){
-        page.primary_keys[i + 2] = page.primary_keys[i];
+    page->primary_keys[*(page->num_records) + 2] = get_primary_key(rec);
+    for(int i = *(page->num_records) - 1; i >= 0; i--){
+        page->primary_keys[i + 2] = page->primary_keys[i];
     }
-    page.primary_keys += 4;
-    page.offsets[*(page.num_records) + 1] = ((int)((void *)page.records - (void *)&page)) - record_size(rec, schema, table_idx);
-    for(int i = *(page.num_records) - 1; i >= 0; i--){
-        page.offsets[i + 1] = page.offsets[i];
+    page->primary_keys += 4;
+    page->offsets[*(page->num_records) + 1] = ((int)((void *)page->records - (void *)&page)) - record_size(rec, schema, table_idx);
+    for(int i = *(page->num_records) - 1; i >= 0; i--){
+        page->offsets[i + 1] = page->offsets[i];
     }
-    page.records -= record_size(rec, schema, table_idx);
-    *page.records = rec;
-    (*page.num_records)++;
+    page->records -= record_size(rec, schema, table_idx);
+    *(page->records) = rec;
+    *(page->num_records)++;
     return false;
 }
 
-bool insert_before_current_record(Record rec, Record curr, Page page, int current_record_idx, Schema * schema, int table_idx) {
+bool insert_before_current_record(Record rec, Record curr, Page * page, int current_record_idx, Schema * schema, int table_idx) {
     int size_of_record = record_size(rec, schema, table_idx);
-    if(page.records - size_of_record < page.free_space) {
+    if(page->records - size_of_record < page->free_space) {
         return true;
     }
-    page.free_space += 8;
-    for (int i = *page.num_records; i > current_record_idx; i--) {
-        page.primary_keys[i + 2] = page.primary_keys[i];
+    page->free_space += 8;
+    for (int i = *(page->num_records); i > current_record_idx; i--) {
+        page->primary_keys[i + 2] = page->primary_keys[i];
     }
-    page.primary_keys[current_record_idx] = get_primary_key(rec);
+    page->primary_keys[current_record_idx] = get_primary_key(rec);
     for (int i = current_record_idx - 1; i >= 0; i--) {
-        page.primary_keys[i + 2] = page.primary_keys[i];
+        page->primary_keys[i + 2] = page->primary_keys[i];
     }
-    page.primary_keys += 4;
-    for (int i = *page.num_records; i > current_record_idx; i--) {
-        page.offsets[i + 1] = page.offsets[i];
+    page->primary_keys += 4;
+    for (int i = *page->num_records; i > current_record_idx; i--) {
+        page->offsets[i + 1] = page->offsets[i];
     }
-    page.offsets[current_record_idx] = ((int)((void *)page.records - (void *)&page)) - record_size(rec, schema, table_idx);
+    page->offsets[current_record_idx] = ((int)((void *)page->records - (void *)&page)) - record_size(rec, schema, table_idx);
     for (int i = current_record_idx - 1; i >= 0; i--) {
-        page.offsets[i + 1] = page.offsets[i];
+        page->offsets[i + 1] = page->offsets[i];
     }
-    page.records -= record_size(rec, schema, table_idx);
-    *page.records = rec;
+    page->records -= record_size(rec, schema, table_idx);
+    *(page->records) = rec;
     return false;
 }
 
-void write_to_file(Page page, char * table_name, Schema * schema, int page_num, char * db_loc, int table_idx){
+void write_to_file(Page * page, char * table_name, Schema * schema, int page_num, char * db_loc, int table_idx){
     char * path = db_loc;
     path = strcat(path, "/table/");
     path = strcat(path, table_name);
     FILE * fp = fopen(path, "rb");
-    fwrite(page.num_records, 4, 1, fp);
-    for(int i = 0; i < *page.num_records; i++){
-        fwrite(page.offsets[i], 4, 1, fp);
+    fwrite(page->num_records, 4, 1, fp);
+    for(int i = 0; i < *(page->num_records); i++){
+        fwrite(page->offsets[i], 4, 1, fp);
     }
-    for(int i = 0; i < *page.num_records; i++){
-        fwrite(page.primary_keys[i], 4, 1, fp);
+    for(int i = 0; i < *page->num_records; i++){
+        fwrite(page->primary_keys[i], 4, 1, fp);
     }
-    void * current_location = page.free_space;
-    while(current_location < page.records){
+    void * current_location = page->free_space;
+    while(current_location < page->records){
         fwrite(current_location, 1, 1, fp);
         current_location += 1;
     }
-    for(int i = 0; i < *page.num_records; i++){
-        Record record = page.records[i];
+    for(int i = 0; i < *(page->num_records); i++){
+        Record record = page->records[i];
         //TODO: write record to file
-        for(int i = 0; i < *(page.num_records); i++){
+        for(int i = 0; i < *(page->num_records); i++){
             fwrite(record.offsets[i], 4, 1, fp);
         }
-        for(int i = 0; i < *(page.num_records); i++){
+        for(int i = 0; i < *(page->num_records); i++){
             fwrite(record.lengths[i], 4, 1, fp);
         }
         fwrite(record.null_array, 1, 1, fp);
-        for(int i = 0; i < *(page.num_records); i++){
+        for(int i = 0; i < *(page->num_records); i++){
             fwrite(record.data[i], record.lengths[i], 1, fp);
         }
     }
@@ -147,38 +147,38 @@ void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_nu
      */
     int global_page_size = schema->page_size;
     // make a new page
-    Page newPage = new_page(schema);
+    Page * newPage = new_page(schema);
 
     // remove half the items from the current page
     // add the items to the new page
     int left_num_records = *(page->num_records) / 2;
     int right_num_records = page->num_records - left_num_records;
     for(int idx = 0; idx < right_num_records; idx++){
-        newPage.offsets[idx] = page->offsets[idx + left_num_records];
+        newPage->offsets[idx] = page->offsets[idx + left_num_records];
         //new_page->records[idx - left_num_records] = page->records[idx];
         //new_page->num_records++;
     }
 
 
 
-    newPage.primary_keys += 4*right_num_records;
+    newPage->primary_keys += 4*right_num_records;
 
     for(int idx = 0; idx < right_num_records; idx++){
-        newPage.primary_keys[idx] = page->primary_keys[idx + left_num_records];
+        newPage->primary_keys[idx] = page->primary_keys[idx + left_num_records];
     }
-    newPage.free_space += 4*(2*right_num_records);
+    newPage->free_space += 4*(2*right_num_records);
     for(int idx = 0; idx < right_num_records; idx++){
         Record * record_ptr = (Record *)(page->num_records + page->offsets[idx+left_num_records]);
         Record record = *record_ptr;
-        newPage.records -= newPage.offsets[idx];
-        newPage.records[0] = record;
+        newPage->records -= newPage->offsets[idx];
+        newPage->records[0] = record;
     }
 
     page -> offsets -= 4*right_num_records;
     page->primary_keys -= 4*right_num_records;
     page->free_space -= 4*(2*right_num_records);
     *(page->num_records) = left_num_records;
-    newPage.num_records = right_num_records;
+    page->num_records = right_num_records;
 
     // void write_to_file(Page page, char * table_name, Schema * schema, int page_num, char * db_loc, int table_idx)
     write_to_file(newPage, schema->tables[table_idx].name, schema, page_number + 1, db_loc, table_idx);

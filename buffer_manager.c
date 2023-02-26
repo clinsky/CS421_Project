@@ -16,7 +16,7 @@ PageBuffer createPageBuffer(Schema * schema){
 }
 
 Page read_page_from_disk(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name, char * db_loc, int table_idx){
-    Page page = new_page(schema);
+    Page * page = new_page(schema);
     char path[256];
     strcpy(path, db_loc);
     strcat(path, "/tables/");
@@ -73,7 +73,7 @@ Page read_page_from_disk(int page_num, Schema * schema, PageBuffer pageBuffer, c
     return *page;
 }
 
-Page request_page(int page_num, Schema * schema, char * table_name, char * db_loc, int table_idx, PageBuffer pageBuffer){
+Page * request_page(int page_num, Schema * schema, char * table_name, char * db_loc, int table_idx, PageBuffer pageBuffer){
     /*
      * If page is in buffer, return it's address
      * Else, if there is space in the buffer, load the page into the buffer and return it's address
@@ -82,7 +82,7 @@ Page request_page(int page_num, Schema * schema, char * table_name, char * db_lo
      */
     int idx = pageBuffer.in_memory[page_num];
     if(idx != -1){
-        return pageBuffer.buffer[idx];
+        return pageBuffer.buffer + sizeof(Page) * idx;
     }
 
     else if(schema->page_size * pageBuffer.num_pages + schema->page_size < schema->buffer_size) {
@@ -91,20 +91,23 @@ Page request_page(int page_num, Schema * schema, char * table_name, char * db_lo
         //read_page_from_disk(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name, char * db_loc, int table_idx){
         pageBuffer.buffer[pageBuffer.num_pages] = read_page_from_disk(page_num, schema, pageBuffer, table_name, db_loc, table_idx);
         pageBuffer.num_pages++;
-        return pageBuffer.buffer[pageBuffer.num_pages - 1];
+        return pageBuffer.buffer + sizeof(Page)*(pageBuffer.num_pages - 1);
     }
     else {
-        write_to_file(pageBuffer.buffer[0], table_name, schema, page_num, db_loc, table_idx);
+        write_to_file(pageBuffer.buffer, table_name, schema, page_num, db_loc, table_idx);
         for(int i = 0; i < pageBuffer.num_pages; i++) {
             pageBuffer.buffer[i] = pageBuffer.buffer[i + 1];
         }
         // read_page_from_disk(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name, char * db_loc, int table_idx)
-        pageBuffer.buffer[0] = read_page_from_disk(page_num, schema, pageBuffer, table_name, db_loc, table_idx);
-        pageBuffer.page_numbers[0] = page_num;
-        pageBuffer.modified[0] = false;
-        pageBuffer.in_memory[page_num] = 0;
+        pageBuffer.buffer[pageBuffer.num_pages - 1] = read_page_from_disk(page_num, schema, pageBuffer, table_name, db_loc, table_idx);
+        pageBuffer.page_numbers[pageBuffer.num_pages - 1] = page_num;
+        pageBuffer.modified[pageBuffer.num_pages - 1] = false;
+        pageBuffer.in_memory[pageBuffer.num_pages - 1] = 0;
+        return pageBuffer.buffer + sizeof(Page)*(pageBuffer.num_pages - 1);
     }
 }
+
+
 
 bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_idx) {
     int size_of_record = record_size(rec, schema, table_idx);
@@ -117,13 +120,13 @@ bool insert_at_end_of_page(Record rec, Page * page, Schema * schema, int table_i
         page->primary_keys[i + 2] = page->primary_keys[i];
     }
     page->primary_keys += 4;
-    page->offsets[*(page.num_records) + 1] = ((int)((void *)page.records - (void *)&page)) - record_size(rec, schema, table_idx);
-    for(int i = *(page.num_records) - 1; i >= 0; i--){
-        page.offsets[i + 1] = page.offsets[i];
+    page->offsets[*(page->num_records) + 1] = ((int)((void *)page->records - (void *)&page)) - record_size(rec, schema, table_idx);
+    for(int i = *(page->num_records) - 1; i >= 0; i--){
+        page->offsets[i + 1] = page->offsets[i];
     }
-    page.records -= record_size(rec, schema, table_idx);
-    *page.records = rec;
-    (*page.num_records)++;
+    page->records -= record_size(rec, schema, table_idx);
+    *page->records = rec;
+    (*page->num_records)++;
     return false;
 }
 
@@ -160,24 +163,24 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     // if there are no pages for this table
     if(!num_pages_ptr){
         // make a new file for the table
-        Page newPage = new_page(schema);
+        Page * newPage = new_page(schema);
         int new_size = 1;
         //fwrite(&new_size, sizeof(int), 1, table_file_ptr);
         // add this entry to a new page
         //Page * new_page = (Page*)malloc(global_page_size);
-        newPage.free_space += 4;
+        newPage->free_space += 4;
 
         int recordSize = record_size(rec, schema, table_idx);
-        *(newPage.offsets) = schema->page_size - recordSize;
-        *(newPage.primary_keys) = get_primary_key(rec);
-        newPage.records -= recordSize;
-        *(newPage.records) = rec;
-        *(newPage.num_records)++;
+        *(newPage->offsets) = schema->page_size - recordSize;
+        *(newPage->primary_keys) = get_primary_key(rec);
+        newPage->records -= recordSize;
+        *(newPage->records) = rec;
+        *(newPage->num_records)++;
         write_to_file(newPage, schema->tables[table_idx].name, schema, 0, db_loc, table_idx);
         return;
     }
 
-    Page page;
+    Page * page;
     int inserted = 0;
     bool overfill = false;
     // Read each table page in order from the table file
@@ -191,14 +194,14 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
 
         // Iterate the records in page
 
-        for (int record_idx = 0; record_idx < *(page.num_records); record_idx++) {
-            Record current_record = (page.records)[record_idx];
+        for (int record_idx = 0; record_idx < *(page->num_records); record_idx++) {
+            Record current_record = (page->records)[record_idx];
             if (record_before_current_record(rec, current_record)) {
                 overfill = insert_before_current_record(rec, current_record, page, record_idx, schema, table_idx);
             }
         }
         if (overfill) {
-            split_page(&page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file, db_loc, table_idx);
+            split_page(page, table_file_ptr, schema, page_number, *num_pages_ptr, table_file, db_loc, table_idx);
         }
         else{
             inserted = 1; // record was inserted
