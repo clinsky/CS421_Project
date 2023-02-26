@@ -1,7 +1,7 @@
 #include "page.h"
 #include "buffer.h"
 
-Record *check_valid_parsed_tuple(Table *table, char (*tuple_parsed)[50]) {
+Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
   Record *record = malloc(sizeof(Record));
   record->bitmap = 0;
 
@@ -10,19 +10,20 @@ Record *check_valid_parsed_tuple(Table *table, char (*tuple_parsed)[50]) {
 
   for (int i = 0; i < table->num_attributes; i++) {
     char *v = tuple_parsed[i];
-    // printf("converting %s\n", v);
     ATTRIBUTE_TYPE type = table->attributes[i].type;
     values[i].type = type;
-    if (strcmp(v, "null") == 0) {
+    if (v == NULL) {
       if (table->attributes[i].is_primary_key) {
+        printf("Primary key is null!\n");
         return NULL;
       }
       values[i].is_null = true;
+      printf("Attribute index %d is null!\n", i);
       continue;
     }
     if (type == INTEGER) {
-      printf("trying to convert %s to integer..\n", v);
-      printf("%lu\n", strlen(v));
+      //printf("trying to convert %s to integer..\n", v);
+      //printf("%lu\n", strlen(v));
       int intval = atoi(v);
       if (intval == 0) {
         if (strcmp(v, "0") != 0) {
