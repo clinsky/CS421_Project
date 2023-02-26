@@ -37,9 +37,28 @@ Page read_page_from_disk(int page_num, Schema * schema, PageBuffer pageBuffer, c
         }
         fseek(fp, current_offset, SEEK_SET);
         //TODO: Read in the record from the file
+        int num_attributes = schema->tables[table_idx].num_attributes;
+        int * offsets = (int *)malloc(4 * num_attributes);
+        for(int j = 0; j < num_attributes; j++){
+            fread(&offsets[i], sizeof(int), 1, fp);
+        }
 
+        int * sizes = (int *)malloc(4 * num_attributes);
+        for(int j = 0; j < num_attributes; j++){
+            fread(&sizes[j], sizeof(int), 1, fp);
+        }
+        char * null_bitmap = (char *)malloc(1);
+        fread(null_bitmap, sizeof(char), 1, fp);
+        char ** attributes = (char **)malloc(8 * num_attributes);
+        for(int j = 0; j < num_attributes; j++){
+            attributes[j] = (char *)malloc(sizes[j]);
+            fread(attributes[j], sizeof(char), sizes[j], fp);
+        }
+        Record record = create_record(num_records, attributes, schema, table_idx);
+        *(Record *)(page->num_records + offsets[i]) = record;
     }
-
+    page->records = (Record *)(page->num_records + min_offset);
+    return *page;
 }
 
 Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name){
