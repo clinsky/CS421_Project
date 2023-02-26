@@ -19,7 +19,6 @@ bool database_exists(char *db_loc) {
 
   struct stat str = {0};
   if (stat(db_loc, &str) == -1) {
-    printf("%s dbloc does not exist\n", db_loc);
     return false;
   }
   return true;
@@ -58,21 +57,27 @@ Schema *restart_database(char *db_loc, int page_size, int buffer_size) {
 }
 
 int main(int argc, char *argv[]) {
+  printf("Welcome to Group8QL\n");
   char *db_loc = argv[1];
   int page_size = atoi(argv[2]);
   int buffer_size = atoi(argv[3]);
   Schema *schema;
-  // printf("db_loc: %s\n", db_loc);
+  printf("Looking at %s for existing db...\n", db_loc);
   if (database_exists(db_loc)) {
-    // printf("%s database exists..\n", db_loc);
+    printf("Database found...\n");
+    printf("Restarting the database...\n");
     schema = restart_database(db_loc, page_size, buffer_size);
   } else {
-    // printf("new database being created..\n");
+    printf("No existing db found\n");
+    printf("Creating new db at %s\n", db_loc);
+    printf("New db created succesfully\n");
     schema = create_new_database(db_loc, page_size, buffer_size);
-    // printf("num tables: %d\n", schema->num_tables);
   }
-
+  printf("Page size: %d\n", page_size);
+  printf("Buffer size: %d\n", buffer_size);
   Bufferm *bufferm = create_new_bufferm(buffer_size);
+    
+  printf("\nPlease enter commands, enter <quit> to shutdown the db\n");
   process(db_loc, schema, bufferm);
   return 0;
 }

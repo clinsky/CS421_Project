@@ -375,8 +375,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
 
 Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                             Record *record) {
-  printf("in insert_record_to_page, num records:%d %d\n", p->num_records,
-         record->size);
+  //printf("in insert_record_to_page, num records:%d %d\n", p->num_records, record->size);
   int pkey = record->primary_key_index;
   ATTRIBUTE_TYPE type = table->attributes[pkey].type;
   Page *first_page = p;
@@ -392,6 +391,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
         if (curr_record->attr_vals[pkey].int_val ==
             record->attr_vals[pkey].int_val) {
           printf("Duplicate primary key %d\n", record->attr_vals[pkey].int_val);
+          printf("ERROR\n");
           return NULL;
         }
         greater = curr_record->attr_vals[pkey].int_val <
@@ -401,6 +401,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
             record->attr_vals[pkey].double_val) {
           printf("Duplicate primary key %f\n",
                  record->attr_vals[pkey].double_val);
+          printf("ERROR\n");
           return NULL;
         }
         greater = curr_record->attr_vals[pkey].double_val <
@@ -410,6 +411,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
             record->attr_vals[pkey].bool_val) {
           printf("Duplicate primary key %d\n",
                  record->attr_vals[pkey].bool_val);
+          printf("ERROR\n");
         }
         greater = curr_record->attr_vals[pkey].bool_val <
                   record->attr_vals[pkey].bool_val;
@@ -418,6 +420,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                    record->attr_vals[pkey].chars_val)) {
           printf("Duplicate primary key %s\n",
                  record->attr_vals[pkey].chars_val);
+          printf("ERROR\n");
         }
         greater = strcmp(curr_record->attr_vals[pkey].chars_val,
                          record->attr_vals[pkey].chars_val) < 0;
@@ -426,6 +429,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                    record->attr_vals[pkey].chars_val)) {
           printf("Duplicate primary key %s\n",
                  record->attr_vals[pkey].chars_val);
+          printf("ERROR\n");
         }
         greater = strcmp(curr_record->attr_vals[pkey].chars_val,
                          record->attr_vals[pkey].chars_val) < 0;
@@ -499,11 +503,11 @@ void make_new_page_if_full(Page *prev_page) {
 void print_page(Table *table, Page *p) {
   Page *curr_page = p;
   int page_num = 1;
-  printf("in print page..\n");
+  //printf("in print page..\n");
   while (curr_page != NULL) {
-    printf("printing page# %d\n", page_num);
+    //printf("printing page# %d\n", page_num);
     for (int k = 0; k < curr_page->num_records; k++) {
-      printf("record #%d of size %d: ", k, curr_page->records[k].size);
+      //printf("record #%d of size %d: ", k, curr_page->records[k].size);
       for (int l = 0; l < table->num_attributes; l++) {
         ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
         if (curr_page->records[k].attr_vals[l].is_null) {

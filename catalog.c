@@ -261,14 +261,15 @@ void write_catalog(char *db_loc, Table *table) {
 void create_catalog(char *db_loc) {
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
-  printf("%s is filepath\n", filepath);
+  //printf("%s is filepath\n", filepath);
   int table_count = 0;
   FILE *fp = fopen(filepath, "wb");
   if (fwrite(&table_count, sizeof(int), 1, fp) != 1) {
-    printf("failed to initialize table count\n");
+    printf("Failed to initialize table count\n");
+    printf("ERROR\n");
   }
   fclose(fp);
-  printf("done creating catalog\n");
+  //printf("done creating catalog\n");
 }
 
 Table *get_table(Schema *db_schema, char *table_name) {
