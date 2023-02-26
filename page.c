@@ -384,9 +384,9 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
   Page *prev_page = NULL;
   while (curr_page != NULL) {
     for (int i = 0; i < curr_page->num_records; i++) {
-      printf("checking record #%d\n", i);
+      // printf("checking record #%d\n", i);
       Record *curr_record = &curr_page->records[i];
-      printf("passeed page record\n");
+      // printf("passeed page record\n");
       bool greater = 0;
       if (type == INTEGER) {
         if (curr_record->attr_vals[pkey].int_val ==
