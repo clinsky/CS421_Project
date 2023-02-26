@@ -364,6 +364,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
   Table *table = get_table(schema, table_name);
   if (table == NULL) {
     printf("No such table %s\n", table_name);
+    return false;
   }
   Page *p = find_in_buffer(buffer, table);
   printf("num records of first page: %d\n", p->num_records);
