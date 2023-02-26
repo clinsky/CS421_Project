@@ -109,17 +109,42 @@ void split_page(Page * page, FILE * table_file_ptr, Schema * schema, int page_nu
      */
     int global_page_size = schema->page_size;
     // make a new page
-    Page * new_page = (Page *)malloc(global_page_size);
-    new_page->num_records = 0;
+    Page new_page = new_page(schema);
+
     // remove half the items from the current page
     // add the items to the new page
-    int left_num_records = page->num_records / 2;
-    int right_num_records = page->num_records - left_num_records;
-    for(int idx = left_num_records; idx < page->num_records; idx++){
-        new_page->records[idx - left_num_records] = page->records[idx];
-        new_page->num_records++;
+    int left_num_records = page.num_records / 2;
+    int right_num_records = page.num_records - left_num_records;
+    for(int idx = 0; idx < right_num_records; idx++){
+        new_page.offsets[idx] = page.offsets[idx + left_num_records];
+        //new_page->records[idx - left_num_records] = page->records[idx];
+        //new_page->num_records++;
     }
-    page->num_records = left_num_records;
+
+
+
+    new_page.primary_keys += 4*right_num_records;
+
+    for(int idx = 0; idx < right_num_records; idx++){
+        new_page.primary_keys[idx] = page.primary_keys[idx + left_num_records];
+    }
+    new_page.free_space += 4*(2*right_num_records);
+    for(int idx = 0; idx < right_num_records; idx++){
+        Record * record_ptr = (Record *)((void *)page.num_records + (void *)(page.offsets[idx+left_num_records]));
+        Record record = *record_ptr;
+        new_page.records -= new_page.offsets[idx];
+        new_page.records[0] = record;
+    }
+
+    page.offsets -= 4*right_num_records;
+    page.primary_keys -= 4*right_num_records;
+    page.free_space -= 4*(2*right_num_records);
+    *(page.num_records) = left_num_records;
+    *(new_page.num_records) = right_num_records;
+    buffer_and_write_page(new_page);
+
+
+
 
     // insert the new page after the current page in the table file
     fwrite(page, sizeof(page), 1, table_file_ptr);
@@ -172,6 +197,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
 
 
         *(new_page.num_records)++;
+        //TODO: implement buffer_and_write_page in memory_manager.c
         buffer_and_write_page(new_page);
         return;
     }
