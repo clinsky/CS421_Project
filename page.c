@@ -329,8 +329,9 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     } else {
       p = read_page_from_file(schema, table, filepath);
       p = insert_record_to_page(schema, table, p, record);
-      add_to_buffer(buffer, table, p, filepath);
-      print_page(table, p);
+      if (p != NULL) {
+        add_to_buffer(buffer, table, p, filepath);
+      }
     }
     if (p != NULL) {
       printf("successfully read page..\n");
@@ -385,19 +386,44 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
       printf("passeed page record\n");
       bool greater = 0;
       if (type == INTEGER) {
-        printf("at %d val is %d\n", i, curr_record->attr_vals[pkey].int_val);
+        if (curr_record->attr_vals[pkey].int_val ==
+            record->attr_vals[pkey].int_val) {
+          printf("Duplicate primary key %d\n", record->attr_vals[pkey].int_val);
+          return NULL;
+        }
         greater = curr_record->attr_vals[pkey].int_val <
                   record->attr_vals[pkey].int_val;
       } else if (type == DOUBLE) {
+        if (curr_record->attr_vals[pkey].double_val ==
+            record->attr_vals[pkey].double_val) {
+          printf("Duplicate primary key %f\n",
+                 record->attr_vals[pkey].double_val);
+          return NULL;
+        }
         greater = curr_record->attr_vals[pkey].double_val <
                   record->attr_vals[pkey].double_val;
       } else if (type == BOOL) {
+        if (curr_record->attr_vals[pkey].bool_val ==
+            record->attr_vals[pkey].bool_val) {
+          printf("Duplicate primary key %d\n",
+                 record->attr_vals[pkey].bool_val);
+        }
         greater = curr_record->attr_vals[pkey].bool_val <
                   record->attr_vals[pkey].bool_val;
       } else if (type == CHAR) {
+        if (strcmp(curr_record->attr_vals[pkey].chars_val,
+                   record->attr_vals[pkey].chars_val)) {
+          printf("Duplicate primary key %s\n",
+                 record->attr_vals[pkey].chars_val);
+        }
         greater = strcmp(curr_record->attr_vals[pkey].chars_val,
                          record->attr_vals[pkey].chars_val) < 0;
       } else if (type == VARCHAR) {
+        if (strcmp(curr_record->attr_vals[pkey].chars_val,
+                   record->attr_vals[pkey].chars_val)) {
+          printf("Duplicate primary key %s\n",
+                 record->attr_vals[pkey].chars_val);
+        }
         greater = strcmp(curr_record->attr_vals[pkey].chars_val,
                          record->attr_vals[pkey].chars_val) < 0;
       }
