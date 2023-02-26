@@ -152,9 +152,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
      *      split the page
      *  end
      */
-    char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
-    printf("cwd: %s\n", cwd);
+    printf("Inserting record into table file\n");
     int global_page_size = schema->page_size;
     //FILE * table_file_ptr = get_table_file(db_loc, table_idx);
 
@@ -184,6 +182,7 @@ void insert_record_into_table_file(char * db_loc, int table_idx, Record rec, Sch
     //long size = ftell(table_file_ptr);
     // if there are no pages for this table
     if(!table_file_ptr){
+        printf("Hello\n");
         // make a new file for the table
         Page * newPage = new_page(schema);
         int new_size = 1;

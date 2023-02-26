@@ -98,6 +98,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
   strncpy(table_ptr->name, table_name, strlen(table_name));
 
+
   // check no table in catalog with same name already
   Table *table_in_catalog = get_table(schema, table_ptr->name);
   if (table_in_catalog != NULL) {
@@ -203,6 +204,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   schema->tables =
       (Table *)realloc(schema->tables, schema->num_tables * sizeof(Table));
   schema->tables[schema->num_tables - 1] = *table_ptr;
+  printf("new table name: %s\n", schema->tables[schema->num_tables - 1].name);
+  printf("old table name: %s\n", schema->tables[0].name);
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
   // printf("the table that was just created: ..\n");
@@ -274,8 +277,10 @@ bool parse_insert_record(char * command, char *db_loc, Schema *schema, PageBuffe
     int table_idx = 0;
     values[idx - 1][strcspn(values[idx - 1], ")")] = '\0';
     printf("part 1: %s\n", values[idx - 1]);
-
+    printf("first table %s\n", schema->tables[0].name);
     for(int i = 0; i < schema->num_tables; i++){
+        printf("Getting table idx\n");
+        printf("Table[i].name %s\n", schema->tables[i].name);
         if(strcmp(schema->tables[i].name, table_name) == 0){
             num_fields = schema->tables[i].num_attributes;
             table_idx = i;
@@ -403,14 +408,18 @@ void display_record(Record record) {
   }
 }
 
-bool select_all(char *table_name, char *db_loc, Schema *schema) {
+bool select_all(char *table_name, char *db_loc, Schema *schema, PageBuffer pageBuffer) {
+  printf("the table name: %s\n", table_name);
   Table *requested_table = NULL;
   Table *tables = schema->tables;
   int num_tables = schema->num_tables;
   printf("num_tables: %d\n", num_tables);
+  int table_idx = 0;
   for (int i = 0; i < num_tables; i++) {
     printf("name: %s\n", tables[i].name);
+    printf("table_name: %s\n", table_name);
     if (strcmp(tables[i].name, table_name) == 0) {
+      table_idx = i;
       requested_table = &tables[i];
       break;
     }
@@ -427,12 +436,12 @@ bool select_all(char *table_name, char *db_loc, Schema *schema) {
     printf("%s ", attr.name);
   }
 
-  char *filename = strcat(db_loc, table_name);
-  FILE *fp = fopen(filename, "rb");
-  if (fp == NULL) {
+  //char *filename = strcat(db_loc, table_name);
+  //FILE *fp = fopen(filename, "rb");
+  //if (fp == NULL) {
     // printf("No such table %s\n", table_name);
-    return false;
-  }
+    //return false;
+  //}
 
   // TODO: Use the design shown on the writeup
 
@@ -440,20 +449,41 @@ bool select_all(char *table_name, char *db_loc, Schema *schema) {
 
   int *page_locations = schema->page_locations;
   int num_pages;
-  Page page;
-  fread(&num_pages, sizeof(int), 1, fp);
+  Page * page;
+  //fread(&num_pages, sizeof(int), 1, fp);
+  //int table_idx = 0;
+
+  /*
+  for(int i = 0; i < schema->num_tables; i++){
+      printf("Getting table idx\n");
+      printf("Table[i].name %s\n", schema->tables[i].name);
+      if(strcmp(schema->tables[i].name, table_name) == 0){
+          table_idx = i;
+        }
+    }
+    */
+
+  printf("requesting pages\n");
   for (int i = 0; i < num_pages; i++) {
-    fseek(fp, page_locations[i], SEEK_SET);
-    fread(&page, sizeof(Page), 1, fp);
-    for (int j = 0; j < page.num_records; j++) {
-      Record record = page.records[j];
-      display_record(record);
+      // Page * request_page(int page_num, Schema * schema, char * table_name, char * db_loc, int table_idx, PageBuffer pageBuffer);
+      printf("calling buffer manager\n");
+      page = request_page(i, schema, table_name, db_loc, table_idx, pageBuffer);
+      printf("page recieved\n");
+
+    //fseek(fp, page_locations[i], SEEK_SET);
+    //fread(&page, sizeof(Page), 1, fp);
+    printf("num records: %d\n", *(page->num_records));
+    for (int j = 0; j < *(page->num_records); j++) {
+        printf("getting record\n");
+        Record record = page->records[j];
+        printf("calling display record\n");
+        display_record(record);
     }
   }
   return true;
 }
 
-bool parse_select(char *command, char *db_loc, Schema *schema) {
+bool parse_select(char *command, char *db_loc, Schema *schema, PageBuffer pageBuffer) {
   char attributes[256];
   char table_name[256];
   char *token = strtok(command, " ");
@@ -471,7 +501,7 @@ bool parse_select(char *command, char *db_loc, Schema *schema) {
   strcpy(table_name, token);
   printf("tableName: %s\n", table_name);
   if (strcmp(attributes, "*") == 0) {
-    return select_all(table_name, db_loc, schema);
+    return select_all(table_name, db_loc, schema, pageBuffer);
   }
   return true;
 }
@@ -509,7 +539,7 @@ void save_catalog(Schema *schema, char *db_loc) {
 void parse_command(char *command, char *db_loc, Schema *schema, PageBuffer pageBuffer) {
   // Self explanatory code.
   if (startsWith(command, "select")) {
-    parse_select(command, db_loc, schema);
+    parse_select(command, db_loc, schema, pageBuffer);
   } else if (startsWith(command, "create")) {
     parse_create_table(command, db_loc, schema);
   } else if (startsWith(command, "insert")) {

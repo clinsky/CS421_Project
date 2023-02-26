@@ -153,6 +153,7 @@ void write_to_file(Page * page, char * table_name, Schema * schema, int page_num
             fwrite(record.data[j], record.lengths[j], 1, fp);
         }
         printf("writing to file 5\n");
+        fclose(fp);
     }
 
 }
