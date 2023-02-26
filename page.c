@@ -63,8 +63,9 @@ Record *check_valid_parsed_tuple(Table *table, char (*tuple_parsed)[50]) {
       if (strlen(v) > table->attributes[i].len) {
         return false;
       }
-      values[i].chars_val = malloc(strlen(v));
+      values[i].chars_val = malloc(strlen(v) + 1);
       strncpy(values[i].chars_val, v, strlen(v));
+      values[i].chars_val[strlen(v)] = '\0';
     }
     record->bitmap |= (1 << i);
 
