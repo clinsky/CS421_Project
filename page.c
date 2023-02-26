@@ -22,8 +22,8 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
       continue;
     }
     if (type == INTEGER) {
-      //printf("trying to convert %s to integer..\n", v);
-      //printf("%lu\n", strlen(v));
+      // printf("trying to convert %s to integer..\n", v);
+      // printf("%lu\n", strlen(v));
       int intval = atoi(v);
       if (intval == 0) {
         if (strcmp(v, "0") != 0) {
@@ -358,8 +358,8 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     first_page->records[0] = *record;
     first_page->total_bytes_from_records += record->size;
     p = first_page;
-    //write_page_to_file(table, p, filepath);
-    //p = read_page_from_file(schema, table, filepath);
+    // write_page_to_file(table, p, filepath);
+    // p = read_page_from_file(schema, table, filepath);
     add_to_buffer(buffer, table, p, filepath);
     print_page(table, p);
   }
@@ -473,6 +473,10 @@ void print_page(Table *table, Page *p) {
       printf("record #%d of size %d: ", k, curr_page->records[k].size);
       for (int l = 0; l < table->num_attributes; l++) {
         ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
+        if (curr_page->records[k].attr_vals->is_null) {
+          printf("null ");
+          continue;
+        }
         if (type == INTEGER) {
           printf("%d ", curr_page->records[k].attr_vals[l].int_val);
         } else if (type == DOUBLE) {
