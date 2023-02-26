@@ -25,6 +25,9 @@ Page request_page(int page_num, Schema * schema, PageBuffer pageBuffer, char * t
     }
     else {
         write_page_LRU(pageBuffer);
+        for(int i = 0; i < pageBuffer.num_pages; i++) {
+            pageBuffer.buffer[i] = pageBuffer.buffer[i + 1];
+        }
         return read_page_from_disc(page_num, schema, pageBuffer);
     }
 
