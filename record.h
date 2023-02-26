@@ -8,8 +8,10 @@
 #include "table.h"
 
 struct record {
-    int * offset_length_pairs[2];
-    Attribute * attributes;
+    int * offsets;
+    int * lengths;
+    char * null_array;
+    char ** data;
 };
 
 typedef struct record Record;
