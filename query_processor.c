@@ -28,7 +28,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
                         "char(")) { // need to check if of the form char(...
     int len;
     if (sscanf(attr, "char(%d)", &len) == 1) {
-      //printf("char len is %d\n", len);
+      // printf("char len is %d\n", len);
       attribute_ptr->type = CHAR;
       attribute_ptr->len = len;
     }
@@ -211,9 +211,9 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   schema->tables[schema->num_tables - 1] = *table_ptr;
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
-  //printf("the table that was just created: ..\n");
-  //Schema *schema2 = read_catalog(db_loc);
-  //for (int i = 0; i < schema2->num_tables; i++) {
+  // printf("the table that was just created: ..\n");
+  // Schema *schema2 = read_catalog(db_loc);
+  // for (int i = 0; i < schema2->num_tables; i++) {
   //  Table *curr_table = &schema2->tables[i];
   //  printf("table #%d name: %s\n", i, curr_table->name);
   //  for (int j = 0; j < curr_table->num_attributes; j++) {
@@ -284,9 +284,11 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
 
   // Parse the table name and values out of the command
   char table_name[50], values[256];
-  int success = sscanf(command, "insert into %s values %[^;]", table_name, values);
-  if(success != 2){
-    printf("Incorrect usage of insert. Please use: insert into TABLE_NAME values (VALUES) (VALUES)...\n");
+  int success =
+      sscanf(command, "insert into %s values %[^;]", table_name, values);
+  if (success != 2) {
+    printf("Incorrect usage of insert. Please use: insert into TABLE_NAME "
+           "values (VALUES) (VALUES)...\n");
     printf("ERROR\n");
     return false;
   }
@@ -316,7 +318,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
 
   // Create the array to be returned
   Table *command_table = get_table(schema, table_name);
-  if(command_table == NULL){
+  if (command_table == NULL) {
     printf("No such table %s\n", table_name);
     printf("ERROR\n");
     return false;
@@ -381,16 +383,22 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
     return false;
   }
   Page *p = find_in_buffer(buffer, table);
-  //printf("num records of first page: %d\n", p->num_records);
+  // printf("num records of first page: %d\n", p->num_records);
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
   if (p == NULL) {
     p = read_page_from_file(schema, table, filepath);
-    add_to_buffer(buffer, table, p, filepath);
+    if (p != NULL) {
+      add_to_buffer(buffer, table, p, filepath);
+    }
   } else {
     write_page_to_file(table, p, filepath);
   }
-  print_page(table, p);
+  if (p != NULL) {
+    print_page(table, p);
+  } else {
+    printf("No pages for %s yet\n", table_name);
+  }
 
   return true;
 }
@@ -439,9 +447,22 @@ bool process_display_schema(char *command, char *db_loc, Schema *schema,
       }
     }
     print_table_metadata(&schema->tables[i]);
-    if (p != NULL) {
-      print_page(&schema->tables[i], p);
+    int page_count = 0;
+    int record_count = 0;
+    while (p != NULL) {
+      page_count += 1;
+      record_count += p->num_records;
+      if (p->next_page != NULL) {
+        p = p->next_page;
+      } else {
+        break;
+      }
     }
+    printf("Pages: %d\n", page_count);
+    printf("Records: %d\n", record_count);
+    // if (p != NULL) {
+    //   print_page(&schema->tables[i], p);
+    // }
   }
   return false;
 }
