@@ -28,7 +28,6 @@ struct page {
   Offset *offsets;
   Record *records;
   struct page *next_page;
-  bool newly_created; // check this to increment # of pages
 };
 
 typedef struct page Page;
