@@ -372,7 +372,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // write_page_to_file(table, p, filepath);
     // p = read_page_from_file(schema, table, filepath);
     add_to_buffer(buffer, table, p, filepath);
-    print_page(table, p);
+    //print_page(table, p);
   }
   return p;
 }
