@@ -127,8 +127,6 @@ void write_to_file(Page page, char * table_name, Schema * schema, int page_num, 
         for(int i = 0; i < num_records; i++){
             fwrite(record.data[i], record.lengths[i], 1, fp);
         }
-        schema->tables[table_idx].page_locations[page_num] = schema->tables[table_idx].num_records;
-
     }
 
 
