@@ -2,43 +2,52 @@
 #define QUERY_PROCESSOR_H
 
 #include "query_processor.h"
+
 #include "attribute_types.h"
+
 #include "catalog.h"
+
 #include "page.h"
+
 #include "display.h"
+
 #include "parse_utils.h"
+
 #include "table.h"
+
 #include <stdbool.h>
+
 #include <stdio.h>
+
 #include <string.h>
 
-ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
+ATTRIBUTE_TYPE parse_attribute_type(char * attr, Attribute * attribute_ptr) {
   //  printf("trying to determine %s's type\n", attr);
   if (strcmp(attr, "integer") == 0) {
-    attribute_ptr->type = INTEGER;
+    attribute_ptr -> type = INTEGER;
     return INTEGER;
   } else if (strcmp(attr, "bool") == 0) {
-    attribute_ptr->type = BOOL;
+    attribute_ptr -> type = BOOL;
     return BOOL;
   } else if (strcmp(attr, "double") == 0) {
-    attribute_ptr->type = DOUBLE;
+    attribute_ptr -> type = DOUBLE;
     return DOUBLE;
   } else if (startsWith(attr,
-                        "char(")) { // need to check if of the form char(...
+      "char(")) { // need to check if of the form char(...
     int len;
-    if (sscanf(attr, "char(%d)", &len) == 1) {
+    if (sscanf(attr, "char(%d)", & len) == 1) {
       printf("char len is %d\n", len);
-      attribute_ptr->type = CHAR;
-      attribute_ptr->len = len;
+      attribute_ptr -> type = CHAR;
+      attribute_ptr -> len = len;
     }
     return CHAR;
   } else if (startsWith(
-                 attr,
-                 "varchar(")) { // need to check if of the form varchar(...
+      attr,
+      "varchar(")) { // need to check if of the form varchar(...
     int len;
-    if (sscanf(attr, "varchar(%d)", &len) == 1) {
-      attribute_ptr->type = VARCHAR;
-      attribute_ptr->len = len;
+    if (sscanf(attr, "varchar(%d)", & len) == 1) {
+      attribute_ptr -> type = VARCHAR;
+      attribute_ptr -> len = len;
     }
     return VARCHAR;
   }
@@ -47,9 +56,9 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
   return INVALID_ATTR;
 }
 
-ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
-                                           int num_last_char_exclude,
-                                           Attribute *attribute_ptr) {
+ATTRIBUTE_TYPE parse_attribute_type_before(char * attr,
+  int num_last_char_exclude,
+  Attribute * attribute_ptr) {
   char temp[strlen(attr) - num_last_char_exclude + 1];
   strncpy(temp, attr, strlen(attr) - num_last_char_exclude);
   return parse_attribute_type(temp, attribute_ptr);
@@ -60,12 +69,12 @@ ATTRIBUTE_TYPE parse_attribute_type_before(char *attr,
  *
  * */
 
-bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer *page_buffer) {
+bool parse_create_table(char * command, char * db_loc, Schema * schema, PageBuffer * page_buffer) {
   bool has_primary_key = false;
   int command_len = strlen(command);
   command[command_len] = ';';
   command[command_len + 1] = '\0';
-  char *token;
+  char * token;
 
   // first token is "create", can skip this
   token = strtok(command, " ");
@@ -78,9 +87,9 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer 
     return false;
   }
 
-  char *table_name = strtok(NULL, " ");
+  char * table_name = strtok(NULL, " ");
 
-  Table *table_ptr = malloc(sizeof(Table));
+  Table * table_ptr = malloc(sizeof(Table));
   if (!endsWith(table_name, "(")) {
     // should follow format create table foo(
     printf("invalid table name\n");
@@ -88,33 +97,33 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer 
   }
 
   // remove the trailing (
-  table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
-  strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
-  table_ptr->name[strlen(table_name) - 1] = '\0';
+  table_ptr -> name = malloc(strlen(table_name)); // no +1 because subtract the (
+  strncpy(table_ptr -> name, table_name, strlen(table_name) - 1);
+  table_ptr -> name[strlen(table_name) - 1] = '\0';
 
   // check no table in catalog with same name already
-  Table *table_in_catalog = get_table(schema, table_ptr->name);
+  Table * table_in_catalog = get_table(schema, table_ptr -> name);
   if (table_in_catalog != NULL) {
-    printf("Table of name %s already exists\n", table_ptr->name);
+    printf("Table of name %s already exists\n", table_ptr -> name);
     return false;
   }
 
-  table_ptr->attributes = malloc(sizeof(Attribute) * 100);
+  table_ptr -> attributes = malloc(sizeof(Attribute) * 100);
 
   // printf("%s (len %lu) is table name \n", table_ptr->name,
   // strlen(table_ptr->name));
 
   // continue with rest of tokens
-  table_ptr->num_attributes = 0;
+  table_ptr -> num_attributes = 0;
   while (1) {
-    table_ptr->num_attributes++;
-    Attribute *attribute_ptr = malloc(sizeof(Attribute));
+    table_ptr -> num_attributes++;
+    Attribute * attribute_ptr = malloc(sizeof(Attribute));
 
     // field name
     token = strtok(NULL, " ");
     //   printf("field name: %s (len %lu)\n", word, strlen(word));
-    attribute_ptr->name = malloc(strlen(token) + 1);
-    strncpy(attribute_ptr->name, token, strlen(token) + 1);
+    attribute_ptr -> name = malloc(strlen(token) + 1);
+    strncpy(attribute_ptr -> name, token, strlen(token) + 1);
 
     // attr type
     token = strtok(NULL, " ");
@@ -122,28 +131,28 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer 
     // last statement
     if (endsWith(token, ");")) {
       ATTRIBUTE_TYPE attr_type =
-          parse_attribute_type_before(token, 2, attribute_ptr);
+        parse_attribute_type_before(token, 2, attribute_ptr);
       if (attr_type == INVALID_ATTR) {
         return false;
       }
-      table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
+      table_ptr -> attributes[table_ptr -> num_attributes - 1] = * attribute_ptr;
       break;
     }
 
     // ends with comma => more statements to follow
     if (endsWith(token, ",")) {
       ATTRIBUTE_TYPE attr_type =
-          parse_attribute_type_before(token, 1, attribute_ptr);
+        parse_attribute_type_before(token, 1, attribute_ptr);
       if (attr_type == INVALID_ATTR) {
         return false;
       }
-      table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
+      table_ptr -> attributes[table_ptr -> num_attributes - 1] = * attribute_ptr;
       continue;
     }
 
     // of the form " ... x int primarykey... "
     ATTRIBUTE_TYPE attr_type =
-        parse_attribute_type_before(token, 0, attribute_ptr);
+      parse_attribute_type_before(token, 0, attribute_ptr);
     if (attr_type == INVALID_ATTR) {
       return false;
     }
@@ -162,17 +171,17 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer 
     }
 
     has_primary_key = true;
-    attribute_ptr->is_primary_key = true;
+    attribute_ptr -> is_primary_key = true;
 
     // last statement of the form num integer primarykey);
     if (endsWith(token, ");")) {
-      table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
+      table_ptr -> attributes[table_ptr -> num_attributes - 1] = * attribute_ptr;
       break;
     }
 
     // ends with comma => more statements to follow
     if (endsWith(token, ",")) {
-      table_ptr->attributes[table_ptr->num_attributes - 1] = *attribute_ptr;
+      table_ptr -> attributes[table_ptr -> num_attributes - 1] = * attribute_ptr;
       continue;
     }
     // shouldn't have anyother options i think...
@@ -188,25 +197,25 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema, PageBuffer 
   write_catalog(db_loc, table_ptr);
 
   // need to also update schema
-  schema->num_tables += 1;
-  schema->tables[schema->num_tables - 1] = *table_ptr;
+  schema -> num_tables += 1;
+  schema -> tables[schema -> num_tables - 1] = * table_ptr;
 
-  Page *new_page = (Page *)malloc(sizeof(Page));
-  new_page->records = NULL;
-  new_page->num_records = 0;
-  new_page->num_bytes = 0;
-  new_page->table_name = table_ptr->name;
-  new_page->page_index = 0;
+  Page * new_page = (Page * ) malloc(sizeof(Page));
+  new_page -> records = NULL;
+  new_page -> num_records = 0;
+  new_page -> num_bytes = 0;
+  new_page -> table_name = table_ptr -> name;
+  new_page -> page_index = 0;
 
   int page_index = get_page_index(page_buffer, schema);
-  page_buffer->pages[page_index] = *new_page;
-  page_buffer->last_used_count++;
-  page_buffer->last_used[page_index] = page_buffer->last_used_count;
-    
+  page_buffer -> pages[page_index] = * new_page;
+  page_buffer -> last_used_count++;
+  page_buffer -> last_used[page_index] = page_buffer -> last_used_count;
+
   return true;
 }
 
-bool parse_tuple(char *tuple, char **tuple_parsed, Table *command_table) {
+bool parse_tuple(char * tuple, char ** tuple_parsed, Table * command_table) {
   // Remove parentheses from tuple
   sscanf(tuple, "(%[^)]", tuple);
 
@@ -214,16 +223,18 @@ bool parse_tuple(char *tuple, char **tuple_parsed, Table *command_table) {
   char current_token[50];
   char next_tokens[256];
   strcpy(next_tokens, tuple);
-  for (int i = 0; i < command_table->num_attributes; i++) {
-    if (command_table->attributes[i].type == CHAR ||
-        command_table->attributes[i].type == VARCHAR) {
+  for (int i = 0; i < command_table -> num_attributes; i++) {
+    bool null = false;
+    if (command_table -> attributes[i].type == CHAR ||
+      command_table -> attributes[i].type == VARCHAR) {
       if (next_tokens[0] == '"') {
         sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
-        if (strlen(current_token) > command_table->attributes[i].len) {
+        if (strlen(current_token) > command_table -> attributes[i].len) {
           printf("Invalid data type, char is too long!");
           return false;
         }
       } else {
+        null = true;
         sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
         if (strcmp(current_token, "null") != 0) {
           printf("Invalid data type, chars must be in quotes!");
@@ -232,14 +243,19 @@ bool parse_tuple(char *tuple, char **tuple_parsed, Table *command_table) {
       }
     } else {
       sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+      if (strcmp(current_token, "null") == 0) {
+        null = true;
+      }
     }
-    tuple_parsed[i] = (char *)malloc((strlen(current_token) + 1) * sizeof(char));
-    strcpy(tuple_parsed[i], current_token);
+    if (!null) {
+      tuple_parsed[i] = (char * ) malloc((strlen(current_token) + 1) * sizeof(char));
+      strcpy(tuple_parsed[i], current_token);
+    }
   }
   return true;
 }
 
-bool process_insert_record(char *command, char *db_loc, Schema *schema, PageBuffer *page_buffer) {
+bool process_insert_record(char * command, char * db_loc, Schema * schema, PageBuffer * page_buffer) {
   // Add a semi-colon at the end of the command
   int command_len = strlen(command);
   command[command_len] = ';';
@@ -250,7 +266,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema, PageBuff
   sscanf(command, "insert into %s values %[^;]", table_name, values);
 
   // Get the table
-  Table *command_table = get_table(schema, table_name);
+  Table * command_table = get_table(schema, table_name);
 
   // Make sure the values are comma delimited with no space
   char values_delimited[256];
@@ -279,34 +295,34 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema, PageBuff
   num_values++;
 
   // Iterate through values
-  char *tuple = strtok(values_delimited, ",");
+  char * tuple = strtok(values_delimited, ",");
   int tuple_index = 0;
   while (tuple != NULL) {
-    char *tuple_parsed[command_table->num_attributes];
+    char * tuple_parsed[command_table -> num_attributes];
     if (!parse_tuple(tuple, tuple_parsed, command_table)) {
       return false;
     }
-    printf("%s %s\n", tuple_parsed[0],tuple_parsed[1]);
+    printf("%s %s\n", tuple_parsed[0], tuple_parsed[1]);
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
   return true;
 }
 
-bool parse_select(char *command, char *db_loc, Schema *schema) {
+bool parse_select(char * command, char * db_loc, Schema * schema) {
   printf("Parse select not implemented!");
   return false;
 }
 
-bool process_display_schema(char *command, char *db_loc, Schema *schema) {
+bool process_display_schema(char * command, char * db_loc, Schema * schema) {
   printf("Display Schema not implemented!");
   return false;
 }
 
-bool process_display_info(char *command, char *db_loc, Schema *schema) {
+bool process_display_info(char * command, char * db_loc, Schema * schema) {
   char table_name[50];
-  sscanf(command, "display info %s", &table_name);
-  Table *table = get_table(schema, &table_name);
+  sscanf(command, "display info %s", & table_name);
+  Table * table = get_table(schema, & table_name);
   if (table == NULL) {
     printf("table cant be displayed, was null\n");
   } else {
@@ -316,19 +332,21 @@ bool process_display_info(char *command, char *db_loc, Schema *schema) {
   return false;
 }
 
-void shut_down_database() { return; }
+void shut_down_database() {
+  return;
+}
 
 void purge_page_buffer() {}
 
-void save_catalog(Schema *schema, char *db_loc) {
+void save_catalog(Schema * schema, char * db_loc) {
   char path[100];
   strcpy(path, db_loc);
   strcat(path, "/catalog");
-  FILE *fp = fopen(path, "wb");
-  fwrite(&(*schema), sizeof(Schema), 1, fp);
+  FILE * fp = fopen(path, "wb");
+  fwrite( & ( * schema), sizeof(Schema), 1, fp);
 }
 
-void parse_command(char *command, char *db_loc, Schema *schema, struct page_buffer *page_buffer) {
+void parse_command(char * command, char * db_loc, Schema * schema, struct page_buffer * page_buffer) {
   // Self explanatory code.
   if (startsWith(command, "select")) {
     parse_select(command, db_loc, schema);
@@ -346,7 +364,7 @@ void parse_command(char *command, char *db_loc, Schema *schema, struct page_buff
   printf("\n");
 }
 
-void process(char *db_loc, Schema *schema, PageBuffer *page_buffer) {
+void process(char * db_loc, Schema * schema, PageBuffer * page_buffer) {
   // Continuously accept commands from a user
   while (1) {
     // Iterate through characters typed by the user
