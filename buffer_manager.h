@@ -21,7 +21,7 @@ typedef struct pageBuffer PageBuffer;
 void purge_buffer();
 void request_page(int page_num);
 void write_page_LRU();
-Page read_page_from_disc(int page_num, Schema * schema, PageBuffer pageBuffer);
+Page read_page_from_disc(int page_num, Schema * schema, PageBuffer pageBuffer, char * table_name);
 
 
 
