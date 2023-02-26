@@ -13,11 +13,12 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
     values[i].type = type;
     if (v == NULL) {
       if (table->attributes[i].is_primary_key) {
-        printf("Primary key is null!\n");
+        printf("Primary key is null\n");
+        printf("ERROR\n");
         return NULL;
       }
       values[i].is_null = true;
-      printf("Attribute index %d is null!\n", i);
+      //printf("Attribute index %d is null!\n", i);
       continue;
     }
     if (type == INTEGER) {
@@ -88,7 +89,7 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
 Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
   if (access(file_path, F_OK) != 0) {
     // file for pages doesn't exist yet
-    printf("%s doesn't exist yet\n", file_path);
+    //printf("%s doesn't exist yet\n", file_path);
     return NULL;
   }
   // printf("reading page from file..\n");
@@ -134,7 +135,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
       for (int i = 0; i < table->num_attributes; i++) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
         if ((record->bitmap & (1 << i)) == 0) {
-          printf("attr %d is null\n", i);
+          //printf("attr %d is null\n", i);
         }
         ATTRIBUTE_TYPE type = table->attributes[i].type;
         if (table->attributes[i].is_primary_key) {
@@ -210,6 +211,7 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
     // printf("write page %d relative start: %d\n", a, RELATIVE_START);
     if (fp == NULL) {
       printf("Error opening %s file\n", file_path);
+      printf("ERROR\n");
       return;
     }
     fseek(fp, RELATIVE_START, SEEK_SET);
@@ -253,7 +255,7 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
         ATTRIBUTE_TYPE type = table->attributes[j].type;
         // write default values
         if (r->attr_vals[j].is_null) {
-          printf("writing defaults for attr #:%d\n", j);
+          //printf("writing defaults for attr #:%d\n", j);
           if (type == INTEGER) {
             int default_int = 0;
             fwrite(&default_int, sizeof(int), 1, fp);
@@ -282,7 +284,8 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
             //        p->records[i].attr_vals[j].int_val);
             if (fwrite(&p->records[i].attr_vals[j].int_val, sizeof(int), 1,
                        fp) != 1) {
-              printf("failed writing int\n");
+              printf("Failed writing int\n");
+              printf("ERROR\n");
             } else {
             }
           } else if (type == DOUBLE) {
@@ -324,10 +327,10 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
   Page *p;
 
   if (access(filepath, F_OK) != -1) {
-    printf("File %s exists\n", filepath);
+    //printf("File %s exists\n", filepath);
     p = find_in_buffer(buffer, table);
     if (p != NULL) {
-      printf("buffer had %s\n", table->name);
+      //printf("buffer had %s\n", table->name);
       p = insert_record_to_page(schema, table, p, record);
     } else {
       p = read_page_from_file(schema, table, filepath);
@@ -345,13 +348,14 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // printf("File %s does not exist\n", filepath);
     FILE *fp = fopen(filepath, "w");
     if (fp != NULL) {
-      printf("File %s created successfully\n", filepath);
+      //printf("File %s created successfully\n", filepath);
       fseek(fp, schema->page_size - 1, SEEK_SET);
       fputc(0, fp);
       fclose(fp);
 
     } else {
       printf("Error creating %s file\n", filepath);
+      printf("ERROR\n");
       return NULL;
     }
     Page *first_page = malloc(sizeof(Page));
@@ -599,9 +603,8 @@ bool check_enough_space(Table *table, Page *p, Record *record) {
                p->total_bytes_from_records;
   int record_size = record->size;
   int total_if_add = so_far + record_size;
-  printf("record to be added is size: %d\n", record_size);
-  printf("after adding this record, the page will have size: %d\n",
-         total_if_add);
+  //printf("record to be added is size: %d\n", record_size);
+  //printf("after adding this record, the page will have size: %d\n", total_if_add);
   if (total_if_add > p->max_size) {
     return false;
   }
@@ -613,7 +616,7 @@ bool is_page_overfull(Page *p) {
   int from_records = p->total_bytes_from_records;
   int for_offsets = p->num_records * 4;
   int total = base + from_records + for_offsets;
-  printf("total size is %d and max size is %d\n", total, p->max_size);
+  //printf("total size is %d and max size is %d\n", total, p->max_size);
   return total > p->max_size;
 }
 
@@ -630,7 +633,7 @@ Page *find_in_buffer(Bufferm *b, Table *table) {
   b->counter += 1;
   for (int i = 0; i < b->curr_pages; i++) {
     if (strcmp(table->name, b->entries[i].table_name) == 0) {
-      printf("found page %s in buffer\n", table->name);
+      //printf("found page %s in buffer\n", table->name);
       b->entries[i].last_used = b->counter;
       return b->entries[i].page;
     }
@@ -663,8 +666,7 @@ void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath) {
     strcpy(new_entry->table_name, table->name);
     b->entries[b->curr_pages] = *new_entry;
     b->curr_pages += 1;
-    printf("adding %s %s to buffer..\n", new_entry->table_name,
-           new_entry->file_path);
+    //printf("adding %s %s to buffer..\n", new_entry->table_name, new_entry->file_path);
   }
 }
 
