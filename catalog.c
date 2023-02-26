@@ -120,12 +120,13 @@ Schema *read_catalog(char *db_loc) {
       }
 
       // actual attribute name
-      char *attr_name = malloc(attr_name_len);
+      char *attr_name = malloc(sizeof(char) * attr_name_len + 1);
       if (fread(attr_name, sizeof(char), attr_name_len, fp) != attr_name_len) {
         printf("failed to read attr #%d attr name from table #%d\n", j, i);
         fclose(fp);
         return NULL;
       }
+      attr_name[attr_name_len] = '\0';
       attribute_ptr->name = attr_name;
 
       // determine what type (integer, bool etc)
