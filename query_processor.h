@@ -3,6 +3,7 @@
 
 #include "attribute_types.h"
 #include "display.h"
+#include "page.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,13 +20,13 @@ void query_loop();
 // looks at first word from stdin
 // delegates to either process_create_table,
 // process_insert_record or process_select
-void process(char * db_loc, Schema * schema);
+void process(char *db_loc, Schema *schema, Bufferm *buffer);
 
 // parses a create table command from stdin
-bool process_create_table(char * command, char * db_loc, Schema * schema);
+bool process_create_table(char *command, char *db_loc, Schema *schema);
 
 // parses an insert into command from stdin
-bool process_insert_record(char * command, char * db_loc, Schema * schema);
+bool process_insert_record(char *command, char *db_loc, Schema *schema);
 
 // parse a select command from stdin
 bool process_select();

@@ -26,7 +26,6 @@ catalog.o: catalog.c catalog.h
 
 
 
-
 clean:
 	rm -f *.o main
 

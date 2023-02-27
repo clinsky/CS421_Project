@@ -6,6 +6,7 @@ struct table {
   char *name;
   Attribute *attributes;
   int num_attributes;
+  int page_count;
 };
 typedef struct table Table;
 

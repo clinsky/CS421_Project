@@ -28,7 +28,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
                         "char(")) { // need to check if of the form char(...
     int len;
     if (sscanf(attr, "char(%d)", &len) == 1) {
-      printf("char len is %d\n", len);
+      // printf("char len is %d\n", len);
       attribute_ptr->type = CHAR;
       attribute_ptr->len = len;
     }
@@ -45,6 +45,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
   }
   // parse failed
   printf("Invalid data type \"%s\"\n", attr);
+  printf("ERROR\n");
   return INVALID_ATTR;
 }
 
@@ -82,9 +83,11 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   char *table_name = strtok(NULL, " ");
 
   Table *table_ptr = malloc(sizeof(Table));
+  table_ptr->attributes = malloc(sizeof(Attribute) * 100);
   if (!endsWith(table_name, "(")) {
     // should follow format create table foo(
-    printf("invalid table name\n");
+    printf("Invalid table name\n");
+    printf("ERROR\n");
     return false;
   }
 
@@ -97,6 +100,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   Table *table_in_catalog = get_table(schema, table_ptr->name);
   if (table_in_catalog != NULL) {
     printf("Table of name %s already exists\n", table_ptr->name);
+    printf("ERROR\n");
     return false;
   }
 
@@ -158,7 +162,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
     // check if already have primarykey
     if (has_primary_key) {
-      printf("multiple primarykeys\n");
+      printf("Multiple primary keys found\n");
+      printf("ERROR\n");
       return false;
     }
 
@@ -183,7 +188,20 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // check has primary key
   if (!has_primary_key) {
     printf("No primary key defined\n");
+    printf("ERROR\n");
     return false;
+  }
+
+  // CHECK DUPLICATE ATTRIBUTE NAME
+  for (int i = 0; i < table_ptr->num_attributes; i++) {
+    for (int j = i + 1; j < table_ptr->num_attributes; j++) {
+      if (strcmp(table_ptr->attributes[i].name,
+                 table_ptr->attributes[j].name) == 0) {
+        printf("Duplicate attribute name %s", table_ptr->attributes[i].name);
+        printf("ERROR\n");
+        return false;
+      }
+    }
   }
 
   write_catalog(db_loc, table_ptr);
@@ -196,54 +214,71 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // printf("the table that was just created: ..\n");
   // Schema *schema2 = read_catalog(db_loc);
   // for (int i = 0; i < schema2->num_tables; i++) {
-  //   Table *curr_table = &schema2->tables[i];
-  //   printf("table #%d name: %s\n", i, curr_table->name);
-  //   for (int j = 0; j < curr_table->num_attributes; j++) {
-  //     printf("attr #%d name: %s , type: %s , len: %d is_primary_key: %d\n",
-  //     j,
-  //            curr_table->attributes[j].name,
-  //            attribute_type_to_string(curr_table->attributes[j].type),
-  //            curr_table->attributes[j].len,
-  //            curr_table->attributes[j].is_primary_key);
-  //   }
-  // }
+  //  Table *curr_table = &schema2->tables[i];
+  //  printf("table #%d name: %s\n", i, curr_table->name);
+  //  for (int j = 0; j < curr_table->num_attributes; j++) {
+  //    printf("attr #%d name: %s , type: %s , len: %d is_primary_key: %d\n", j,
+  //           curr_table->attributes[j].name,
+  //           attribute_type_to_string(curr_table->attributes[j].type),
+  //           curr_table->attributes[j].len,
+  //           curr_table->attributes[j].is_primary_key);
+  //  }
+  //}
 
   return true;
 }
 
-bool parse_tuple(char *tuple, char tuple_parsed[][50], Table *command_table) {
+bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
+                 Table *command_table) {
   // Remove parentheses from tuple
   sscanf(tuple, "(%[^)]", tuple);
+  tuple[strlen(tuple)] = '\n';
 
   // Iterate
   char current_token[50];
   char next_tokens[256];
   strcpy(next_tokens, tuple);
   for (int i = 0; i < command_table->num_attributes; i++) {
+    bool null = false;
     if (command_table->attributes[i].type == CHAR ||
         command_table->attributes[i].type == VARCHAR) {
       if (next_tokens[0] == '"') {
-        sscanf(next_tokens, "\"%[^\"]\" %[^\\0]", current_token, next_tokens);
+        sscanf(next_tokens, "\"%[^\"]\" %[^\n]", current_token, next_tokens);
         if (strlen(current_token) > command_table->attributes[i].len) {
-          printf("Invalid data type, char is too long!");
+          printf("Invalid data type, char is too long");
+          printf("ERROR\n");
           return false;
         }
       } else {
-        sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+        sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
+        null = true;
         if (strcmp(current_token, "null") != 0) {
-          printf("Invalid data type, chars must be in quotes!");
+          printf("Invalid data type, chars must be in quotes");
+          printf("ERROR\n");
           return false;
         }
       }
     } else {
-      sscanf(next_tokens, "%s %[^\\0]", current_token, next_tokens);
+      sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
+      if (strcmp(current_token, "null") == 0) {
+        null = true;
+      }
     }
-    strcpy(tuple_parsed[i], current_token);
+    if (!null) {
+      // values_parsed[tuple_index] =
+      //     malloc(command_table->num_attributes * sizeof(char*));
+      values_parsed[tuple_index][i] =
+          (char *)malloc((strlen(current_token) + 1) * sizeof(char));
+      strcpy(values_parsed[tuple_index][i], current_token);
+    } else {
+      values_parsed[tuple_index][i] = NULL;
+    }
   }
   return true;
 }
 
-bool process_insert_record(char *command, char *db_loc, Schema *schema) {
+bool process_insert_record(char *command, char *db_loc, Schema *schema,
+                           Bufferm *buffer) {
   // Add a semi-colon at the end of the command
   int command_len = strlen(command);
   command[command_len] = ';';
@@ -251,7 +286,14 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 
   // Parse the table name and values out of the command
   char table_name[50], values[256];
-  sscanf(command, "insert into %s values %[^;]", table_name, values);
+  int success =
+      sscanf(command, "insert into %s values %[^;]", table_name, values);
+  if (success != 2) {
+    printf("Incorrect usage of insert. Please use: insert into TABLE_NAME "
+           "values (VALUES) (VALUES)...\n");
+    printf("ERROR\n");
+    return false;
+  }
 
   // Make sure the values are comma delimited with no space
   char values_delimited[256];
@@ -267,9 +309,6 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
   }
   values_delimited[j] = '\0';
 
-  // Print table name and values, sanity check
-  printf("Table Name = %s\nValues = %s\n", table_name, values_delimited);
-
   // Count the number of values the user provided
   int num_values = 0;
   for (int i = 0; i < strlen(values_delimited); i++) {
@@ -281,97 +320,94 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema) {
 
   // Create the array to be returned
   Table *command_table = get_table(schema, table_name);
-  char values_parsed[num_values][command_table->num_attributes][50];
+  if (command_table == NULL) {
+    printf("No such table %s\n", table_name);
+    printf("ERROR\n");
+    return false;
+  }
+  char ***values_parsed;
+  values_parsed = (char ***)malloc(num_values * sizeof(char **));
+  for (int i = 0; i < command_table->num_attributes; i++) {
+    values_parsed[i] =
+        (char **)malloc(command_table->num_attributes * sizeof(char *));
+  }
 
   // Iterate through values
   char *tuple = strtok(values_delimited, ",");
   int tuple_index = 0;
   while (tuple != NULL) {
-    char tuple_parsed[command_table->num_attributes][50];
-    if (!parse_tuple(tuple, tuple_parsed, command_table)) {
+    if (!parse_tuple(tuple, values_parsed, tuple_index, command_table)) {
       return false;
-    }
-    for (int i = 0; i < command_table->num_attributes; i++) {
-      strcpy(values_parsed[tuple_index][i], tuple_parsed[i]);
     }
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
+  // printf("num values: %d\n", num_values);
+  // printf("printing values parsed\n");
 
+  Record *records = malloc(sizeof(Record) * num_values);
+
+  // validate
   for (int i = 0; i < num_values; i++) {
-    for (int j = 0; j < command_table->num_attributes; j++) {
-      printf("%s ", values_parsed[i][j]);
+    Record *record = check_valid_parsed_tuple(command_table, values_parsed[i]);
+    if (record == NULL) {
+      printf("ERROR\n");
+      return false;
     }
-    printf("\n");
+    records[i] = *record;
   }
+
+  // all good, time to add
+  for (int i = 0; i < num_values; i++) {
+    // printf("record size to be added: %d\n", records[i].size);
+    Page *p = add_record_to_page(schema, command_table, &records[i], buffer);
+    if (p == NULL) {
+      return false;
+    }
+  }
+
+  // for (int i = 0; i < num_values; i++) {
+  //   for (int j = 0; j < command_table->num_attributes; j++) {
+  //     printf("%s ", values_parsed[i][j]);
+  //   }
+  //   printf("\n");
+  // }
   return false;
 }
 
 void display_attributes(Schema *schema) {}
 
-void display_record(Record record) {
-  int **offset_len_pairs = record.offset_length_pairs;
-  // TODO: Find a way to get the number of attributes
-  int num_attributes = 3;
-  for (int i = 0; i < num_attributes; i += 2) {
-    int offset = offset_len_pairs[i][0];
-    int len = offset_len_pairs[i][1];
-    Attribute attr = record.attributes[offset];
-    printf("%s ", attr.name);
-  }
-}
-
-bool select_all(char *table_name, char *db_loc, Schema *schema) {
-  Table *requested_table = NULL;
-  Table *tables = schema->tables;
-  int num_tables = schema->num_tables;
-  printf("num_tables: %d\n", num_tables);
-  for (int i = 0; i < num_tables; i++) {
-    printf("name: %s\n", tables[i].name);
-    if (strcmp(tables[i].name, table_name) == 0) {
-      requested_table = &tables[i];
-      break;
-    }
-  }
-  if (!requested_table) {
+bool select_all(char *table_name, char *db_loc, Schema *schema,
+                Bufferm *buffer) {
+  Table *table = get_table(schema, table_name);
+  if (table == NULL) {
     printf("No such table %s\n", table_name);
+    printf("ERROR\n");
     return false;
   }
-
-  // TODO: format the attributes as in the writeup
-  int num_atrributes = requested_table->num_attributes;
-  for (int i = 0; i < num_atrributes; i++) {
-    Attribute attr = requested_table->attributes[i];
-    printf("%s ", attr.name);
-  }
-
-  char *filename = strcat(db_loc, table_name);
-  FILE *fp = fopen(filename, "rb");
-  if (fp == NULL) {
-    // printf("No such table %s\n", table_name);
-    return false;
-  }
-
-  // TODO: Use the design shown on the writeup
-
-  display_attributes(schema);
-
-  int *page_locations = schema->page_locations;
-  int num_pages;
-  Page page;
-  fread(&num_pages, sizeof(int), 1, fp);
-  for (int i = 0; i < num_pages; i++) {
-    fseek(fp, page_locations[i], SEEK_SET);
-    fread(&page, sizeof(Page), 1, fp);
-    for (int j = 0; j < page.num_records; j++) {
-      Record record = page.records[j];
-      display_record(record);
+  Page *p = find_in_buffer(buffer, table);
+  // printf("num records of first page: %d\n", p->num_records);
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+  if (p == NULL) {
+    p = read_page_from_file(schema, table, filepath);
+    if (p != NULL) {
+      add_to_buffer(buffer, table, p, filepath);
     }
+  } else {
+    write_page_to_file(table, p, filepath);
   }
+  if (p != NULL) {
+    print_page(table, p);
+  } else {
+    printf("No pages for %s yet\n", table_name);
+  }
+
   return true;
 }
 
-bool parse_select(char *command, char *db_loc, Schema *schema) {
+bool parse_select(char *command, char *db_loc, Schema *schema,
+                  Bufferm *buffer) {
   char attributes[256];
   char table_name[256];
   char *token = strtok(command, " ");
@@ -387,34 +423,89 @@ bool parse_select(char *command, char *db_loc, Schema *schema) {
 
   token = strtok(NULL, " ");
   strcpy(table_name, token);
-  printf("tableName: %s\n", table_name);
+  // printf("tableName: %s\n", table_name);
   if (strcmp(attributes, "*") == 0) {
-    return select_all(table_name, db_loc, schema);
+    // printf("selecting all from %s ..\n", table_name);
+    return select_all(table_name, db_loc, schema, buffer);
   }
   return true;
 }
 
-bool process_display_schema(char *command, char *db_loc, Schema *schema) {
-  printf("Display Schema not implemented!");
+bool process_display_schema(char *command, char *db_loc, Schema *schema,
+                            Bufferm *buffer) {
+  printf("DB location: %s\n", db_loc);
+  printf("Page Size : %d\n", schema->page_size);
+  printf("Buffer Size: %d\n", schema->buffer_size);
+  printf("\n");
+  printf("Tables:\n");
+  for (int i = 0; i < schema->num_tables; i++) {
+    Page *p = find_in_buffer(buffer, &schema->tables[i]);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path,
+             schema->tables[i].name);
+    if (p == NULL) {
+      p = read_page_from_file(schema, &schema->tables[i], filepath);
+      if (p != NULL) {
+        add_to_buffer(buffer, &schema->tables[i], p, filepath);
+      }
+    }
+    print_table_metadata(&schema->tables[i]);
+    int page_count = 0;
+    int record_count = 0;
+    while (p != NULL) {
+      page_count += 1;
+      record_count += p->num_records;
+      if (p->next_page != NULL) {
+        p = p->next_page;
+      } else {
+        break;
+      }
+    }
+    printf("Pages: %d\n", page_count);
+    printf("Records: %d\n", record_count);
+    // if (p != NULL) {
+    //   print_page(&schema->tables[i], p);
+    // }
+  }
   return false;
 }
 
-bool process_display_info(char *command, char *db_loc, Schema *schema) {
+bool process_display_info(char *command, char *db_loc, Schema *schema,
+                          Bufferm *buffer) {
   char table_name[50];
   sscanf(command, "display info %s", &table_name);
   Table *table = get_table(schema, &table_name);
   if (table == NULL) {
-    printf("table cant be displayed, was null\n");
+    printf("No such table %s\n", table_name);
+    printf("ERROR\n");
   } else {
     print_table_metadata(table);
+    Page *p = find_in_buffer(buffer, table);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+      p = read_page_from_file(schema, table, filepath);
+      if (p != NULL) {
+        add_to_buffer(buffer, table, p, filepath);
+      }
+    }
+    int page_count = 0;
+    int record_count = 0;
+    while (p != NULL) {
+      page_count += 1;
+      record_count += p->num_records;
+      if (p->next_page != NULL) {
+        p = p->next_page;
+      } else {
+        break;
+      }
+    }
+    printf("Pages: %d\n", page_count);
+    printf("Records: %d\n", record_count);
   }
 
   return false;
 }
-
-void shut_down_database() { return; }
-
-void purge_page_buffer() {}
 
 void save_catalog(Schema *schema, char *db_loc) {
   char path[100];
@@ -424,25 +515,26 @@ void save_catalog(Schema *schema, char *db_loc) {
   fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
-void parse_command(char *command, char *db_loc, Schema *schema) {
+void parse_command(char *command, char *db_loc, Schema *schema,
+                   Bufferm *buffer) {
   // Self explanatory code.
   if (startsWith(command, "select")) {
-    parse_select(command, db_loc, schema);
+    parse_select(command, db_loc, schema, buffer);
   } else if (startsWith(command, "create")) {
     parse_create_table(command, db_loc, schema);
   } else if (startsWith(command, "insert")) {
-    process_insert_record(command, db_loc, schema);
+    process_insert_record(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display schema")) {
-    process_display_schema(command, db_loc, schema);
+    process_display_schema(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display info")) {
-    process_display_info(command, db_loc, schema);
+    process_display_info(command, db_loc, schema, buffer);
   } else {
     printf("Invalid command\n");
   }
   printf("\n");
 }
 
-void process(char *db_loc, Schema *schema) {
+void process(char *db_loc, Schema *schema, Bufferm *buffer) {
   // Continuously accept commands from a user
   while (1) {
     // Iterate through characters typed by the user
@@ -458,13 +550,10 @@ void process(char *db_loc, Schema *schema) {
       command[command_idx] = '\0';
       if (strcmp(command, "<quit>") == 0) {
         printf("Safely shutting down the database...\n");
-        shut_down_database();
         printf("Purging page buffer...\n");
-        purge_page_buffer();
         printf("Saving catalog...\n");
-        save_catalog(schema, db_loc);
-        printf("\n");
-        printf("Exiting the database...\n");
+        printf("\nExiting the database...\n");
+        flush_buffer(buffer);
         return;
       }
     }
@@ -475,7 +564,7 @@ void process(char *db_loc, Schema *schema) {
     }
 
     // We've read a command from the user. Parse it and take some action
-    parse_command(command, db_loc, schema);
+    parse_command(command, db_loc, schema, buffer);
 
     // I'm not sure what this does. Jared?
     next_char = getchar();
@@ -490,7 +579,5 @@ void print_command_result(bool success) {
     printf("ERROR\n");
   }
 }
-
-void query_loop(char *db_loc, Schema *schema) { process(db_loc, schema); }
 
 #endif

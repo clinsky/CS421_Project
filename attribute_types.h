@@ -6,7 +6,6 @@
 enum ATTRIBUTE_TYPE { INTEGER, BOOL, DOUBLE, CHAR, VARCHAR, INVALID_ATTR };
 typedef enum ATTRIBUTE_TYPE ATTRIBUTE_TYPE;
 
-
 struct attribute {
   char *name;          // name of attribute
   ATTRIBUTE_TYPE type; // type of attribute
@@ -14,7 +13,17 @@ struct attribute {
   bool is_primary_key; // if is primarykey
 };
 
-
 typedef struct attribute Attribute;
+
+struct attribute_values {
+  ATTRIBUTE_TYPE type; // type of attribute
+  int int_val;
+  char *chars_val; // chars and varchars vals;
+  double double_val;
+  int bool_val;
+  bool is_null;
+};
+
+typedef struct attribute_values Attribute_Values;
 
 #endif

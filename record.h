@@ -1,19 +1,18 @@
 #ifndef RECORD_H
 #define RECORD_H
 
-
-#include <stdio.h>
-#include <stdlib.h>
 #include "attribute_types.h"
 #include "table.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 struct record {
-    int * offset_length_pairs[2];
-    Attribute * attributes;
+  Attribute_Values *attr_vals;
+  int bitmap;
+  int size;
+  int primary_key_index;
 };
 
 typedef struct record Record;
-
-
 
 #endif

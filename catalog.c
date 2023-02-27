@@ -81,12 +81,14 @@ Schema *read_catalog(char *db_loc) {
       return NULL;
     }
 
-    char *table_name = malloc(table_name_len);
+    char *table_name = malloc(sizeof(char) * table_name_len + 1);
     if (fread(table_name, sizeof(char), table_name_len, fp) != table_name_len) {
       printf("failed to read first table name from catalog\n");
       fclose(fp);
       return NULL;
     }
+    table_name[table_name_len] = '\0';
+    // printf("CREATED TABLE NAME: %s %d\n", table_name, table_name_len);
 
     db_schemas->tables[i].name = table_name;
 
@@ -118,12 +120,13 @@ Schema *read_catalog(char *db_loc) {
       }
 
       // actual attribute name
-      char *attr_name = malloc(attr_name_len);
+      char *attr_name = malloc(sizeof(char) * attr_name_len + 1);
       if (fread(attr_name, sizeof(char), attr_name_len, fp) != attr_name_len) {
         printf("failed to read attr #%d attr name from table #%d\n", j, i);
         fclose(fp);
         return NULL;
       }
+      attr_name[attr_name_len] = '\0';
       attribute_ptr->name = attr_name;
 
       // determine what type (integer, bool etc)
@@ -258,14 +261,15 @@ void write_catalog(char *db_loc, Table *table) {
 void create_catalog(char *db_loc) {
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
-  printf("%s is filepath\n", filepath);
+  // printf("%s is filepath\n", filepath);
   int table_count = 0;
   FILE *fp = fopen(filepath, "wb");
   if (fwrite(&table_count, sizeof(int), 1, fp) != 1) {
-    printf("failed to initialize table count\n");
+    printf("Failed to initialize table count\n");
+    printf("ERROR\n");
   }
   fclose(fp);
-  printf("done creating catalog\n");
+  // printf("done creating catalog\n");
 }
 
 Table *get_table(Schema *db_schema, char *table_name) {
