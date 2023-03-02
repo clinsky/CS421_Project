@@ -94,7 +94,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   // remove the trailing (
   table_ptr->name = malloc(strlen(table_name)); // no +1 because subtract the (
   strncpy(table_ptr->name, table_name, strlen(table_name) - 1);
-  table_ptr->name[strlen(table_name) - 1] = '\0';
+  //table_ptr->name[strlen(table_name) - 1] = '\0';
+  printf("table name: %s\n", table_ptr->name);
 
   // check no table in catalog with same name already
   Table *table_in_catalog = get_table(schema, table_ptr->name);
@@ -228,21 +229,39 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   return true;
 }
 
-bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
+bool parse_tuple(char *tuple, char ** values_parsed, int tuple_index,
                  Table *command_table) {
   // Remove parentheses from tuple
-  sscanf(tuple, "(%[^)]", tuple);
-  tuple[strlen(tuple)] = '\n';
+  //sscanf(tuple, "(%[^)]", tuple);
+  tuple[strlen(tuple) - 1] = '\0';
+
+
+
+  printf("tuple: %s\n", tuple);
+
+
+  if(endsWith(tuple, ")") == false) {
+    printf("Invalid tuple, right parenthesis missing\n");
+    printf("ERROR\n");
+    return false;
+  }
 
   // Iterate
   char current_token[50];
-  char next_tokens[256];
-  strcpy(next_tokens, tuple);
+  char * token = strtok(tuple, ",");
+
+   printf("token: %s\n", token);
+    char next_tokens[256];
+    strcpy(next_tokens, token);
   for (int i = 0; i < command_table->num_attributes; i++) {
     bool null = false;
-    if (command_table->attributes[i].type == CHAR ||
+    if (command_table->attributes[i].type == INTEGER){
+        values_parsed[tuple_index] = malloc(strlen(token) + 1);
+        strcpy(values_parsed[tuple_index], token);
+    }
+    else if (command_table->attributes[i].type == CHAR ||
         command_table->attributes[i].type == VARCHAR) {
-      if (next_tokens[0] == '"') {
+      if (next_tokens[0] == '\"') {
         sscanf(next_tokens, "\"%[^\"]\" %[^\n]", current_token, next_tokens);
         if (strlen(current_token) > command_table->attributes[i].len) {
           printf("Invalid data type, char is too long");
@@ -252,27 +271,47 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
       } else {
         sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
         null = true;
-        if (strcmp(current_token, "null") != 0) {
+        printf("current token: %s\n", current_token);
+
+
+        /*
+        if (strcmp(current_token, "") != 0) {
           printf("Invalid data type, chars must be in quotes");
           printf("ERROR\n");
           return false;
         }
+         */
+
+
       }
-    } else {
+    }
+
+    /*
+    else {
       sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
+
+
       if (strcmp(current_token, "null") == 0) {
         null = true;
       }
+
     }
+     */
+
+    /*
     if (!null) {
       // values_parsed[tuple_index] =
       //     malloc(command_table->num_attributes * sizeof(char*));
       values_parsed[tuple_index][i] =
           (char *)malloc((strlen(current_token) + 1) * sizeof(char));
-      strcpy(values_parsed[tuple_index][i], current_token);
+      strcpy(values_parsed[tuple_index][i], token);
     } else {
       values_parsed[tuple_index][i] = NULL;
     }
+     */
+    values_parsed[i] = malloc(strlen(token) + 1);
+    strcpy(values_parsed[i], token);
+    strtok(NULL, ",");
   }
   return true;
 }
@@ -288,6 +327,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
   char table_name[50], values[256];
   int success =
       sscanf(command, "insert into %s values %[^;]", table_name, values);
+  printf("values: %s\n", values);
   if (success != 2) {
     printf("Incorrect usage of insert. Please use: insert into TABLE_NAME "
            "values (VALUES) (VALUES)...\n");
@@ -296,7 +336,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
   }
 
   // Make sure the values are comma delimited with no space
-  char values_delimited[256];
+  char * values_delimited = (char *)malloc(strlen(values) + 1);
   values_delimited[0] = values[0];
   char prev = values[0];
   int j = 1;
@@ -325,39 +365,77 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
     printf("ERROR\n");
     return false;
   }
-  char ***values_parsed;
-  values_parsed = (char ***)malloc(num_values * sizeof(char **));
+
+
+  char **values_parsed;
+  values_parsed = (char **)malloc(num_values * sizeof(char *));
+  /*
   for (int i = 0; i < command_table->num_attributes; i++) {
-    values_parsed[i] =
+    values_parsed =
         (char **)malloc(command_table->num_attributes * sizeof(char *));
   }
+   */
+
+
+
+  /*
+  for(int i = 0; i < command_table->num_attributes; i++){
+      printf("Value %i: %s\n", i, values_parsed[0][i]);
+  }
+  */
 
   // Iterate through values
+  printf("values_delimited: %s\n", values_delimited);
+  if(startsWith(values_delimited, "(") == false) {
+      printf("Invalid tuple, left parenthesis missing\n");
+      printf("ERROR");
+      return false;
+  }
+  if(endsWith(values_delimited, ")") == false) {
+      printf("Invalid tuple, right parenthesis missing\n");
+      printf("ERROR");
+      return false;
+  }
+
+  values_delimited += 1; // remove parenthesis
+  values_delimited[strlen(values_delimited) - 1] = '\0'; // remove parenthesis
+
+
   char *tuple = strtok(values_delimited, ",");
   int tuple_index = 0;
+
   while (tuple != NULL) {
+    /*
     if (!parse_tuple(tuple, values_parsed, tuple_index, command_table)) {
       return false;
     }
+     */
+    values_parsed[tuple_index] = malloc(strlen(tuple) + 1);
+    strcpy(values_parsed[tuple_index], tuple);
+    printf("values_delimited: %s\n", values_delimited);
+
     tuple = strtok(NULL, ",");
     tuple_index++;
   }
   // printf("num values: %d\n", num_values);
   // printf("printing values parsed\n");
 
-  Record *records = malloc(sizeof(Record) * num_values);
+  //Record *records = malloc(sizeof(Record) * num_values);
 
   // validate
-  for (int i = 0; i < num_values; i++) {
-    Record *record = check_valid_parsed_tuple(command_table, values_parsed[i]);
+  //for (int i = 0; i < num_values; i++) {
+    Record *record = check_valid_parsed_tuple(command_table, values_parsed);
+    /*
     if (record == NULL) {
       printf("ERROR\n");
       return false;
     }
     records[i] = *record;
   }
+     */
 
   // all good, time to add
+  /*
   for (int i = 0; i < num_values; i++) {
     // printf("record size to be added: %d\n", records[i].size);
     Page *p = add_record_to_page(schema, command_table, &records[i], buffer);
@@ -365,8 +443,11 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
       return false;
     }
   }
+   */
+  Page *p = add_record_to_page(schema, command_table, record, buffer);
 
-  // for (int i = 0; i < num_values; i++) {
+
+    // for (int i = 0; i < num_values; i++) {
   //   for (int j = 0; j < command_table->num_attributes; j++) {
   //     printf("%s ", values_parsed[i][j]);
   //   }
