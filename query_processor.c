@@ -515,6 +515,106 @@ void save_catalog(Schema *schema, char *db_loc) {
   fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
+bool parse_alter_table(char * command, char * db_loc, Schema * schema, Bufferm * buffer){
+    // Alter table <table_name> add <attr_name> <type>;
+    // Alter table <table_name> add <attr_name> <type> default <value>;
+    // Alter table <table_name> drop <attr_name>;
+
+    command[strlen(command) + 1] = '\0';
+    command[strlen(command)] = ';';
+
+    char * token = strtok(command, " "); // "alter"
+
+    token = strtok(NULL, " "); // "table"
+
+    if(startsWith(token, "table") == false){
+        printf("Error\n");
+        return false;
+    }
+
+    token = strtok(NULL, " "); // <table_name>
+
+    char * table_name = malloc(strlen(token) + 1);
+    strcpy(table_name, token);
+
+    token = strtok(NULL, " "); // "add" or "drop"
+
+    if(strcmp(token, "add") == 0){
+        token = strtok(NULL, " "); // <attr_name>
+        char * attr_name = malloc(strlen(token) + 1);
+        strcpy(attr_name, token);
+        token = strtok(NULL, " "); // <type>
+        char * attr_type = malloc(strlen(token) + 1);
+        strcpy(attr_type, token);
+        Attribute * attr = malloc(sizeof(Attribute));
+        char * default_value = "null"; // default value is null
+        if(attr_type[strlen(attr_type) - 1] == ';') {
+            attr_type[strlen(attr_type) - 1] = '\0';
+            attr->name = malloc(strlen(attr_name) + 1);
+            parse_attribute_type(attr_type, attr); // parse the type
+            attr->is_primary_key = false;
+        }
+        else {
+            token = strtok(NULL, " "); // "default"
+            if (strcmp(token, ";") == 0) {
+                attr->name = malloc(strlen(attr_name) + 1);
+                parse_attribute_type(attr_type, attr); // parse the type
+                attr->is_primary_key = false;
+            } else if (startsWith(token, "default") == true) {
+                token = strtok(NULL, " "); // <value>
+                default_value = malloc(strlen(token) + 1);
+                strcpy(default_value, token);
+            }
+        }
+        Attribute_Values * attr_values_ptr = malloc(sizeof(Attribute_Values));
+
+
+            if(startsWith(default_value, "null")) {
+                Attribute_Values attr_values = {type: attr->type, is_null: true};
+                *attr_values_ptr = attr_values;
+            }
+            else if(startsWith(attr_type, "integer")){
+                int default_int_value;
+                scanf(default_value, "%d", &default_int_value);
+                Attribute_Values attr_values = {type: attr->type, int_val: default_int_value};
+                *attr_values_ptr = attr_values;
+            }
+            else if(startsWith(attr_type, "double")){
+                double default_double_value;
+                scanf(default_value, "%lf", &default_double_value);
+                Attribute_Values attr_values = {type: attr->type, double_val: default_double_value};
+                *attr_values_ptr = attr_values;
+            }
+            else if(startsWith(attr_type, "char")){
+                char * default_char_value = malloc(strlen(default_value) + 1);
+                strcpy(default_char_value, default_value);
+                Attribute_Values attr_values = {type: attr->type, chars_val: default_char_value};
+                *attr_values_ptr = attr_values;
+            }
+            else if(startsWith(attr_type, "varchar")) {
+                char *default_varchar_value = malloc(strlen(default_value) + 1);
+                strcpy(default_varchar_value, default_value);
+                Attribute_Values attr_values = {type: attr->type, chars_val: default_varchar_value};
+                *attr_values_ptr = attr_values;
+            }
+            return insert_new_attribute(schema, buffer, table_name, attr, attr_values_ptr);
+
+        }
+
+
+    else if(strcmp(token, "drop") == 0){
+        token = strtok(NULL, " "); // <attr_name>
+        char * attr_name = malloc(strlen(token) + 1);
+        strcpy(attr_name, token);
+        return drop_attribute(schema, buffer, table_name, attr_name);
+    }
+
+    else{
+        printf("Error\n");
+        return false;
+    }
+}
+
 void parse_command(char *command, char *db_loc, Schema *schema,
                    Bufferm *buffer) {
   // Self explanatory code.
@@ -528,7 +628,11 @@ void parse_command(char *command, char *db_loc, Schema *schema,
     process_display_schema(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display info")) {
     process_display_info(command, db_loc, schema, buffer);
-  } else {
+  }
+    else if (startsWith(command, "alter")){
+        parse_alter_table(command, db_loc, schema, buffer);
+    }
+  else {
     printf("Invalid command\n");
   }
   printf("\n");
