@@ -558,9 +558,7 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       printf("here\n");
       ATTRIBUTE_TYPE t =
           parse_attribute_type(attr_type, attr); // parse the type
-      if (t != INVALID_ATTR) {
-        attr->type = t;
-      } else {
+      if (t == INVALID_ATTR) {
         return false;
       }
       attr->is_primary_key = false;
@@ -569,7 +567,11 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       token = strtok(NULL, " "); // "default"
       if (strcmp(token, ";") == 0) {
         attr->name = malloc(strlen(attr_name) + 1);
-        parse_attribute_type(attr_type, attr); // parse the type
+        ATTRIBUTE_TYPE t =
+            parse_attribute_type(attr_type, attr); // parse the type
+        if (t == INVALID_ATTR) {
+          return false;
+        }
         attr->is_primary_key = false;
       } else if (startsWith(token, "default") == true) {
         token = strtok(NULL, " "); // <value>
