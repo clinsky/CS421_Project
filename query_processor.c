@@ -397,10 +397,13 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
   } else {
     write_page_to_file(table, p, filepath);
   }
+  printf("| ");
+  for (int i = 0; i < table->num_attributes; i++) {
+    printf("%s | ", table->attributes[i].name);
+  }
+  printf("\n");
   if (p != NULL) {
     print_page(table, p);
-  } else {
-    printf("No pages for %s yet\n", table_name);
   }
 
   return true;
