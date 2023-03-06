@@ -580,29 +580,33 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     Attribute_Values *attr_values_ptr = malloc(sizeof(Attribute_Values));
     attr_values_ptr->type = attr->type;
 
-    printf("%s is default_value\n", default_value);
+    printf("%s is default_value to be parsed..\n", default_value);
 
     if (startsWith(default_value, "null")) {
       attr_values_ptr = NULL;
+      printf("default value will be null");
     } else if (startsWith(attr_type, "integer")) {
       int default_int_value;
       scanf(default_value, "%d", &default_int_value);
       attr_values_ptr = malloc(sizeof(Attribute_Values));
       attr_values_ptr->int_val = default_int_value;
+      printf("default int value: %d", attr_values_ptr->int_val);
     } else if (startsWith(attr_type, "double")) {
       double default_double_value;
       scanf(default_value, "%lf", &default_double_value);
       attr_values_ptr->double_val = default_double_value;
+      printf("default double value: %f", attr_values_ptr->double_val);
     } else if (startsWith(attr_type, "char")) {
       char *default_char_value = malloc(strlen(default_value) + 1);
       strcpy(default_char_value, default_value);
       attr_values_ptr->chars_val = default_char_value;
+      printf("default char value: %s", attr_values_ptr->chars_val);
     } else if (startsWith(attr_type, "varchar")) {
       char *default_varchar_value = malloc(strlen(default_value) + 1);
       strcpy(default_varchar_value, default_value);
       attr_values_ptr->chars_val = default_varchar_value;
+      printf("default varchar value: %s", attr_values_ptr->chars_val);
     }
-    // printf("default value: %s", attr_values_ptr->chars_val);
     return true;
   }
 
