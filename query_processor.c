@@ -527,6 +527,7 @@ bool parse_alter_table(char * command, char * db_loc, Schema * schema, Bufferm *
 
     token = strtok(NULL, " "); // "table"
 
+
     if(startsWith(token, "table") == false){
         printf("Error\n");
         return false;
@@ -540,6 +541,7 @@ bool parse_alter_table(char * command, char * db_loc, Schema * schema, Bufferm *
     token = strtok(NULL, " "); // "add" or "drop"
 
     if(strcmp(token, "add") == 0){
+        printf("Adding new attribute\n");
         token = strtok(NULL, " "); // <attr_name>
         char * attr_name = malloc(strlen(token) + 1);
         strcpy(attr_name, token);
@@ -549,12 +551,15 @@ bool parse_alter_table(char * command, char * db_loc, Schema * schema, Bufferm *
         Attribute * attr = malloc(sizeof(Attribute));
         char * default_value = "null"; // default value is null
         if(attr_type[strlen(attr_type) - 1] == ';') {
+            printf("default is null with ; at end of attr_name\n");
             attr_type[strlen(attr_type) - 1] = '\0';
+            printf("setting name\n");
             attr->name = malloc(strlen(attr_name) + 1);
             parse_attribute_type(attr_type, attr); // parse the type
             attr->is_primary_key = false;
         }
         else {
+            printf("default may be null\n");
             token = strtok(NULL, " "); // "default"
             if (strcmp(token, ";") == 0) {
                 attr->name = malloc(strlen(attr_name) + 1);
@@ -566,48 +571,54 @@ bool parse_alter_table(char * command, char * db_loc, Schema * schema, Bufferm *
                 strcpy(default_value, token);
             }
         }
-        Attribute_Values * attr_values_ptr = malloc(sizeof(Attribute_Values));
+        Attribute_Values * attr_values_ptr;
 
 
             if(startsWith(default_value, "null")) {
-                Attribute_Values attr_values = {type: attr->type, is_null: true};
-                *attr_values_ptr = attr_values;
+                attr_values_ptr = NULL;
             }
             else if(startsWith(attr_type, "integer")){
                 int default_int_value;
                 scanf(default_value, "%d", &default_int_value);
+                attr_values_ptr = malloc(sizeof(Attribute_Values));
                 Attribute_Values attr_values = {type: attr->type, int_val: default_int_value};
                 *attr_values_ptr = attr_values;
             }
             else if(startsWith(attr_type, "double")){
                 double default_double_value;
                 scanf(default_value, "%lf", &default_double_value);
+                attr_values_ptr = malloc(sizeof(Attribute_Values));
                 Attribute_Values attr_values = {type: attr->type, double_val: default_double_value};
                 *attr_values_ptr = attr_values;
             }
             else if(startsWith(attr_type, "char")){
                 char * default_char_value = malloc(strlen(default_value) + 1);
                 strcpy(default_char_value, default_value);
+                attr_values_ptr = malloc(sizeof(Attribute_Values));
                 Attribute_Values attr_values = {type: attr->type, chars_val: default_char_value};
                 *attr_values_ptr = attr_values;
             }
             else if(startsWith(attr_type, "varchar")) {
                 char *default_varchar_value = malloc(strlen(default_value) + 1);
                 strcpy(default_varchar_value, default_value);
+                attr_values_ptr = malloc(sizeof(Attribute_Values));
                 Attribute_Values attr_values = {type: attr->type, chars_val: default_varchar_value};
                 *attr_values_ptr = attr_values;
             }
-            return insert_new_attribute(schema, buffer, table_name, attr, attr_values_ptr);
-
+            printf("default value: %s", attr_values_ptr->chars_val);
+            return true;
         }
 
 
+    /*
     else if(strcmp(token, "drop") == 0){
         token = strtok(NULL, " "); // <attr_name>
         char * attr_name = malloc(strlen(token) + 1);
         strcpy(attr_name, token);
-        return drop_attribute(schema, buffer, table_name, attr_name);
+        return true;
     }
+     */
+
 
     else{
         printf("Error\n");
