@@ -605,11 +605,46 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     } else if (startsWith(attr_type, "char")) {
       char *default_char_value = malloc(strlen(default_value) + 1);
       strcpy(default_char_value, default_value);
-      attr_values_ptr->chars_val = default_char_value;
-      printf("default char value: %s\n", attr_values_ptr->chars_val);
+      if(default_char_value[0] != '\"'){
+          printf("Default value missing left quotes\n");
+          printf("Error\n");
+        return false;
+      }
+
+      default_char_value += 1; // remove the first quote
+
+        if(default_char_value[strlen(default_char_value) - 1] == ';') {
+            default_char_value[strlen(default_char_value) - 1] = '\0';
+        }
+        if(default_char_value[strlen(default_char_value) - 1] != '\"'){
+            printf("Default value missing right quotes\n");
+            printf("Error\n");
+            return false;
+        }
+
+        default_char_value[strlen(default_char_value) - 1] = '\0'; // remove the last quote
+        attr_values_ptr->chars_val = default_char_value;
+        printf("default char value: %s\n", attr_values_ptr->chars_val);
+
     } else if (startsWith(attr_type, "varchar")) {
       char *default_varchar_value = malloc(strlen(default_value) + 1);
       strcpy(default_varchar_value, default_value);
+      if(default_varchar_value[0] != '\"'){
+          printf("Default value missing left quotes\n");
+          printf("Error\n");
+        return false;
+      }
+      default_varchar_value += 1; // remove the first quote
+
+      if(default_varchar_value[strlen(default_varchar_value) - 1] == ';') {
+          default_varchar_value[strlen(default_varchar_value) - 1] = '\0';
+      }
+      if(default_varchar_value[strlen(default_varchar_value) - 1] != '\"'){
+        printf("Default value missing right quotes\n");
+        printf("Error\n");
+        return false;
+      }
+      default_varchar_value[strlen(default_varchar_value) - 1] = '\0'; // remove the last quote
       attr_values_ptr->chars_val = default_varchar_value;
       printf("default varchar value: %s\n", attr_values_ptr->chars_val);
     }
