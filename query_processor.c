@@ -566,7 +566,6 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       }
       attr->is_primary_key = false;
     } else {
-      printf("default may be null\n");
       token = strtok(NULL, " "); // "default"
       if (strcmp(token, ";") == 0) {
         attr->name = malloc(strlen(attr_name) + 1);
@@ -592,13 +591,13 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       printf("default value will be null\n");
     } else if (startsWith(attr_type, "integer")) {
       int default_int_value;
-      scanf(default_value, "%d", &default_int_value);
+      sscanf(default_value, "%d", &default_int_value);
       attr_values_ptr = malloc(sizeof(Attribute_Values));
       attr_values_ptr->int_val = default_int_value;
       printf("default int value: %d\n", attr_values_ptr->int_val);
     } else if (startsWith(attr_type, "double")) {
       double default_double_value;
-      scanf(default_value, "%lf", &default_double_value);
+      sscanf(default_value, "%lf", &default_double_value);
       attr_values_ptr->double_val = default_double_value;
       printf("default double value: %f\n", attr_values_ptr->double_val);
     } else if (startsWith(attr_type, "char")) {
@@ -615,14 +614,14 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     return true;
   }
 
-  /*
+
   else if(strcmp(token, "drop") == 0){
       token = strtok(NULL, " "); // <attr_name>
       char * attr_name = malloc(strlen(token) + 1);
       strcpy(attr_name, token);
       return true;
   }
-   */
+
 
   else {
     printf("Error\n");
