@@ -31,6 +31,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
       // printf("char len is %d\n", len);
       attribute_ptr->type = CHAR;
       attribute_ptr->len = len;
+      printf("char len is %d\n", attribute_ptr->len);
     }
     return CHAR;
   } else if (startsWith(
@@ -40,6 +41,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
     if (sscanf(attr, "varchar(%d)", &len) == 1) {
       attribute_ptr->type = VARCHAR;
       attribute_ptr->len = len;
+      printf("varchar len is %d\n", attribute_ptr->len);
     }
     return VARCHAR;
   }
