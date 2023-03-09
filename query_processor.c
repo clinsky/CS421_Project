@@ -524,15 +524,43 @@ bool process_drop_table(char * command, char * db_loc, Schema * schema, Bufferm 
     char * table_name = malloc(strlen(token) + 1);
     strcpy(table_name, token);
     printf("Dropping table %s\n", table_name);
-    return true;
+
+    /*
+     * 1. Remove table from buffer
+     * 2. Remove table from disk
+     * 3. Remove table from schema
+     */
+    Table * table = get_table(schema, table_name);
+    if(table == NULL){
+        printf("No such table %s\n", table_name);
+        return false;
+    }
+    // 1. Remove table from buffer.
+
+    remove_from_buffer(buffer, table);
+
+    // 2. Remove table from disk
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table_name);
+    remove(filepath);
+
+    // 3. Remove table from schema
+    int index = (int) (table - schema->tables);
+    for(int i = index; i < schema->num_tables - 1; i++){
+        schema->tables[i] = schema->tables[i+1];
+    }
+    schema->num_tables -= 1;
+
+    // 3. Remove table from buffer
+    remove_from_buffer(buffer, table);
 }
 
 void save_catalog(Schema *schema, char *db_loc) {
-  char path[100];
-  strcpy(path, db_loc);
-  strcat(path, "/catalog");
-  FILE *fp = fopen(path, "wb");
-  fwrite(&(*schema), sizeof(Schema), 1, fp);
+    char path[100];
+    strcpy(path, db_loc);
+    strcat(path, "/catalog");
+    FILE *fp = fopen(path, "wb");
+    fwrite(&(*schema), sizeof(Schema), 1, fp);
 }
 
 void parse_command(char *command, char *db_loc, Schema *schema,

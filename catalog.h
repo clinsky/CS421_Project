@@ -26,6 +26,7 @@ void write_catalog(char *db_loc, Table *tables);
 void create_catalog(char *db_loc);
 Schema *read_catalog(char *db_loc);
 Table *get_table(Schema *db_schema, char *table_name);
+
 void TESTCATALOG();
 
 #endif

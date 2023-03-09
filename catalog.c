@@ -46,6 +46,7 @@ void increment_table_count(char *db_loc) {
 Schema *read_catalog(char *db_loc) {
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
+  printf("filepath: %s\n", filepath);
   FILE *fp = fopen(filepath, "rb");
   Schema *db_schemas = malloc(sizeof(Schema));
 

@@ -64,6 +64,7 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
       values[i].chars_val[table->attributes[i].len] = '\0';
 
     } else if (type == VARCHAR) {
+        printf("name: %s\n", v);
       printf("%s can only accept %d chars\n", table->attributes[i].name,
              table->attributes[i].len);
       if (strlen(v) > table->attributes[i].len) {
@@ -643,6 +644,22 @@ Page *find_in_buffer(Bufferm *b, Table *table) {
   }
   return NULL;
 }
+
+void remove_from_buffer(Bufferm * b, Table * table){
+    printf("table name: %s\n", table->name);
+    for (int i = 0; i < b->curr_pages; i++) {
+        printf("table name: %s, buffer name: %s\n", table->name, b->entries[i].table_name);
+        if (strcmp(table->name, b->entries[i].table_name) == 0) {
+        printf("found page %s in buffer\n", table->name);
+        b->entries[i].last_used = b->counter;
+        b->entries[i].page = NULL;
+        b->entries[i].table_name = NULL;
+        b->entries[i].file_path = NULL;
+        b->curr_pages -= 1;
+        }
+    }
+}
+
 
 void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath) {
   b->counter += 1;

@@ -88,4 +88,6 @@ void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath);
 
 void flush_buffer(Bufferm *b);
 
+void remove_from_buffer(Bufferm * b, Table * table);
+
 #endif
