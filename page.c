@@ -64,9 +64,9 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
       values[i].chars_val[table->attributes[i].len] = '\0';
 
     } else if (type == VARCHAR) {
-      printf("%s can only accept %d chars\n", table->attributes[i].name,
-             table->attributes[i].len);
       if (strlen(v) > table->attributes[i].len) {
+        printf("%s can only accept %d chars\n", table->attributes[i].name,
+               table->attributes[i].len);
         return false;
       }
       values[i].chars_val = malloc(strlen(v) + 1);
@@ -136,6 +136,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
         if ((record->bitmap & (1 << i)) == 0) {
           // printf("attr %d is null\n", i);
+          curr_attr->is_null = true;
         }
         ATTRIBUTE_TYPE type = table->attributes[i].type;
         if (table->attributes[i].is_primary_key) {
@@ -165,7 +166,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
           fread(&var_len, sizeof(int), 1, fp);
           curr_attr->chars_val = malloc(sizeof(char) * var_len + 1);
           // printf("reading varchar at pos %li, var_len was: %d\n", ftell(fp),
-          // var_len);
+          //        var_len);
           fread(curr_attr->chars_val, sizeof(char), var_len, fp);
           curr_attr->chars_val[var_len] = '\0';
           // printf("char was %s\n", curr_attr->chars_val);
@@ -267,16 +268,13 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
             fwrite(&default_bool, sizeof(int), 1, fp);
           } else if (type == CHAR) {
             int len = table->attributes[j].len;
-            char *default_chars = malloc(len + 1);
+            char *default_chars = malloc(sizeof(char) * len + 1);
             memset(default_chars, '@', len); // fill the string with '@'
             default_chars[len] = '\0';
             fwrite(&default_chars, sizeof(char), len, fp);
           } else if (type == VARCHAR) {
-            // one byte '@' indicating null
-            char *default_chars = malloc(2);
-            memset(default_chars, '@', 2);
-            default_chars[1] = '\0';
-            fwrite(&default_chars, sizeof(char), 1, fp);
+            int zero_len = 0;
+            fwrite(&zero_len, sizeof(int), 1, fp);
           }
         } else {
           if (type == INTEGER) {
@@ -679,5 +677,21 @@ void flush_buffer(Bufferm *b) {
   for (int i = 0; i < b->curr_pages; b++) {
     Page *p = b->entries[i].page;
     write_page_to_file(b->entries[i].table, p, b->entries[i].file_path);
+  }
+}
+
+void remove_from_buffer(Bufferm *b, Table *table) {
+  printf("in remove from buffer\n");
+  b->counter += 1;
+  for (int i = 0; i < b->curr_pages; i++) {
+    if (strcmp(table->name, b->entries[i].table_name) == 0) {
+      Buffer_Entry *last_entry = &b->entries[b->curr_pages - 1];
+      b->entries[i] = *last_entry;
+      Buffer_Entry *null_entry = NULL;
+      b->entries[b->curr_pages - 1] = *null_entry;
+      // printf("found page %s in buffer\n", table->name);
+      b->entries[i].last_used = b->counter;
+      printf("removed %s from buffer..\n", table->name);
+    }
   }
 }

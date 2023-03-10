@@ -1,4 +1,6 @@
 #include "catalog.h"
+#include "page.h"
+#include "record.h"
 
 Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
   Schema *db_schema = read_catalog(db_loc); // this also allocs 100 tables
@@ -172,6 +174,8 @@ Schema *read_catalog(char *db_loc) {
   return db_schemas;
 }
 
+// add a singular table to the catalog
+// starts by incrementing the first byte stored in the catalog file
 void write_catalog(char *db_loc, Table *table) {
 
   increment_table_count(db_loc);
@@ -280,4 +284,123 @@ Table *get_table(Schema *db_schema, char *table_name) {
     }
   }
   return NULL;
+}
+
+bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
+                     char *table_name, Attribute *attr,
+                     Attribute_Values *attr_val) {
+
+  printf("in alter table add\n");
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
+
+  Table *old_table = get_table(db_schema, table_name);
+  if (old_table == NULL) {
+    printf("%s does not exist\n", table_name);
+    return false;
+  } else {
+    printf("updating the %s table\n", table_name);
+  }
+
+  Table *new_table = malloc(sizeof(Table));
+  new_table->name = malloc(strlen(table_name) + 1);
+  strcpy(new_table->name, table_name);
+  new_table->num_attributes = old_table->num_attributes + 1;
+  new_table->attributes = malloc(sizeof(Attribute) * new_table->num_attributes);
+
+  // copy old attributes
+  for (int i = 0; i < old_table->num_attributes; i++) {
+    new_table->attributes[i] = old_table->attributes[i];
+  }
+
+  // insert new attr
+  new_table->attributes[new_table->num_attributes - 1] = *attr;
+
+  printf("printing new table metadata\n");
+  print_table_metadata(new_table);
+
+  Page *p = find_in_buffer(buffer, old_table);
+  if (p == NULL) {
+    printf("%s page was not in the buffer\n", table_name);
+    p = read_page_from_file(db_schema, old_table, filepath);
+  }
+  if (p == NULL) {
+    printf("%s page was null, going to update schema tho!\n", table_name);
+    // no pages for this table
+    // write_schemas_to_catalog()
+    return true;
+  }
+
+  printf("old # attr: %d new # attr:%d\n", old_table->num_attributes,
+         new_table->num_attributes);
+
+  // I NEED TO UPDATE BITMAP
+  // AS WELL AS RECORD SIZE
+  // ALSO COPY PRIMARY KEY INDEX
+  // NEED TO CLONE ATTR_VALS
+  int page_count = 0;
+  if (attr_val != NULL) {
+    // loop through all pages
+    while (p != NULL) {
+      printf("%d num records to update on page: %d\n", p->num_records,
+             ++page_count);
+      for (int i = 0; i < p->num_records; i++) {
+        Record *record = &p->records[i];
+        // make space for new column
+        record->attr_vals =
+            realloc(record->attr_vals,
+                    sizeof(Attribute_Values) * new_table->num_attributes);
+
+        // clone
+        Attribute_Values *new_attr_val = clone_attr_vals(attr_val);
+      }
+      if (p->next_page != NULL) {
+        p = p->next_page;
+      } else {
+        break;
+      }
+    }
+  } else {
+    printf("going to set null\n");
+  }
+
+  return true;
+}
+
+void write_schemas_to_catalog(Schema *db_schema) {
+
+  // clear contents of catalog file
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, "catalog");
+  fclose(fopen(filepath, "w"));
+
+  // insert every table back into catalog file
+  for (int i = 0; i < db_schema->num_tables; i++) {
+    write_catalog(db_schema->db_path, &db_schema->tables[i]);
+  }
+}
+
+Attribute_Values *clone_attr_vals(Attribute_Values *src) {
+  if (src == NULL) {
+    return NULL;
+  }
+  Attribute_Values *attr_val = malloc(sizeof(Attribute_Values));
+  attr_val->type = src->type;
+  ATTRIBUTE_TYPE type = attr_val->type;
+  if (type == INTEGER) {
+    attr_val->int_val = src->int_val;
+  } else if (type == DOUBLE) {
+    attr_val->double_val = src->double_val;
+  } else if (type == BOOL) {
+    attr_val->bool_val = src->bool_val;
+  } else if (type == CHAR) {
+    attr_val->chars_val = malloc(sizeof(char) * strlen(src->chars_val) + 1);
+    strcpy(attr_val->chars_val, src->chars_val);
+  } else if (type == VARCHAR) {
+    attr_val->chars_val = malloc(sizeof(char) * strlen(src->chars_val) + 1);
+    strcpy(attr_val->chars_val, src->chars_val);
+  }
+
+  attr_val->is_null = src->is_null;
+  return attr_val;
 }
