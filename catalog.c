@@ -311,6 +311,14 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
     printf("updating the %s table\n", table_name);
   }
 
+  for (int i = 0; i < old_table->num_attributes; i++) {
+    if (strcmp(old_table->attributes[i].name, attr->name) == 0) {
+      printf("attr name %s already exists for table %s\n", attr->name,
+             table_name);
+      return false;
+    }
+  }
+
   Table *new_table = malloc(sizeof(Table));
   new_table->name = malloc(strlen(table_name) + 1);
   strcpy(new_table->name, table_name);
@@ -529,7 +537,6 @@ void write_schemas_to_catalog(Schema *db_schema) {
 }
 
 Attribute_Values *clone_attr_vals(Attribute_Values *src) {
-  printf("here...");
   if (src == NULL) {
     printf("src was null...");
     return NULL;
