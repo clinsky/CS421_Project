@@ -28,7 +28,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
                         "char(")) { // need to check if of the form char(...
     int len;
     if (sscanf(attr, "char(%d)", &len) == 1) {
-      // printf("char len is %d\n", len);
+       printf("char len is %d\n", len);
       attribute_ptr->type = CHAR;
       attribute_ptr->len = len;
       printf("char len is %d\n", attribute_ptr->len);
@@ -572,10 +572,9 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       }
       attr->is_primary_key = false;
     } else {
+        ATTRIBUTE_TYPE t = parse_attribute_type(attr_type, attr); // parse the type
       token = strtok(NULL, " "); // "default"
       if (strcmp(token, ";") == 0) {
-        ATTRIBUTE_TYPE t =
-            parse_attribute_type(attr_type, attr); // parse the type
         if (t == INVALID_ATTR) {
           return false;
         }
