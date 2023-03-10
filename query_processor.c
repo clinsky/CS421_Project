@@ -28,7 +28,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
                         "char(")) { // need to check if of the form char(...
     int len;
     if (sscanf(attr, "char(%d)", &len) == 1) {
-       printf("char len is %d\n", len);
+      printf("char len is %d\n", len);
       attribute_ptr->type = CHAR;
       attribute_ptr->len = len;
       printf("char len is %d\n", attribute_ptr->len);
@@ -206,11 +206,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
     }
   }
 
-  write_catalog(db_loc, table_ptr);
-
-  // need to also update schema
-  schema->num_tables += 1;
-  schema->tables[schema->num_tables - 1] = *table_ptr;
+  // this updates the schema
+  add_table_to_catalog(schema, table_ptr);
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
   // printf("the table that was just created: ..\n");
@@ -396,8 +393,6 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
     if (p != NULL) {
       add_to_buffer(buffer, table, p, filepath);
     }
-  } else {
-    write_page_to_file(table, p, filepath);
   }
   printf("| ");
   for (int i = 0; i < table->num_attributes; i++) {
@@ -561,6 +556,9 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     if (attr_type[strlen(attr_type) - 1] == ';') {
       printf("default is null with ; at end of attr_name\n");
       attr_type[strlen(attr_type) - 1] = '\0';
+      printf("setting name\n");
+      attr->name = malloc(strlen(attr_name) + 1);
+      strcpy(attr->name, attr_name);
       printf("here\n");
       ATTRIBUTE_TYPE t =
           parse_attribute_type(attr_type, attr); // parse the type
@@ -569,8 +567,9 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       }
       attr->is_primary_key = false;
     } else {
-        ATTRIBUTE_TYPE t = parse_attribute_type(attr_type, attr); // parse the type
-      token = strtok(NULL, " "); // "default"
+      ATTRIBUTE_TYPE t =
+          parse_attribute_type(attr_type, attr); // parse the type
+      token = strtok(NULL, " ");                 // "default"
       if (strcmp(token, ";") == 0) {
         if (t == INVALID_ATTR) {
           return false;
@@ -604,61 +603,63 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     } else if (startsWith(attr_type, "char")) {
       char *default_char_value = malloc(strlen(default_value) + 1);
       strcpy(default_char_value, default_value);
-      if(default_char_value[0] != '\"'){
-          printf("Default value missing left quotes\n");
-          printf("Error\n");
+      if (default_char_value[0] != '\"') {
+        printf("Default value missing left quotes\n");
+        printf("Error\n");
         return false;
       }
 
       default_char_value += 1; // remove the first quote
 
-        if(default_char_value[strlen(default_char_value) - 1] == ';') {
-            default_char_value[strlen(default_char_value) - 1] = '\0';
-        }
-        if(default_char_value[strlen(default_char_value) - 1] != '\"'){
-            printf("Default value missing right quotes\n");
-            printf("Error\n");
-            return false;
-        }
-
-        default_char_value[strlen(default_char_value) - 1] = '\0'; // remove the last quote
-        attr_values_ptr->chars_val = default_char_value;
-        printf("default char value: %s\n", attr_values_ptr->chars_val);
-
-    } else if (startsWith(attr_type, "varchar")) {
-      char *default_varchar_value = malloc(strlen(default_value) + 1);
-      strcpy(default_varchar_value, default_value);
-      if(default_varchar_value[0] != '\"'){
-          printf("Default value missing left quotes\n");
-          printf("Error\n");
-        return false;
+      if (default_char_value[strlen(default_char_value) - 1] == ';') {
+        default_char_value[strlen(default_char_value) - 1] = '\0';
       }
-      default_varchar_value += 1; // remove the first quote
-
-      if(default_varchar_value[strlen(default_varchar_value) - 1] == ';') {
-          default_varchar_value[strlen(default_varchar_value) - 1] = '\0';
-      }
-      if(default_varchar_value[strlen(default_varchar_value) - 1] != '\"'){
+      if (default_char_value[strlen(default_char_value) - 1] != '\"') {
         printf("Default value missing right quotes\n");
         printf("Error\n");
         return false;
       }
-      default_varchar_value[strlen(default_varchar_value) - 1] = '\0'; // remove the last quote
+
+      default_char_value[strlen(default_char_value) - 1] =
+          '\0'; // remove the last quote
+      attr_values_ptr->chars_val = default_char_value;
+      printf("default char value: %s\n", attr_values_ptr->chars_val);
+
+    } else if (startsWith(attr_type, "varchar")) {
+      char *default_varchar_value = malloc(strlen(default_value) + 1);
+      strcpy(default_varchar_value, default_value);
+      if (default_varchar_value[0] != '\"') {
+        printf("Default value missing left quotes\n");
+        printf("Error\n");
+        return false;
+      }
+      default_varchar_value += 1; // remove the first quote
+
+      if (default_varchar_value[strlen(default_varchar_value) - 1] == ';') {
+        default_varchar_value[strlen(default_varchar_value) - 1] = '\0';
+      }
+      if (default_varchar_value[strlen(default_varchar_value) - 1] != '\"') {
+        printf("Default value missing right quotes\n");
+        printf("Error\n");
+        return false;
+      }
+      default_varchar_value[strlen(default_varchar_value) - 1] =
+          '\0'; // remove the last quote
       attr_values_ptr->chars_val = default_varchar_value;
       printf("default varchar value: %s\n", attr_values_ptr->chars_val);
     }
     printf("attribute name: %s\n", attr->name);
+    alter_table_add(schema, buffer, table_name, attr, attr_values_ptr);
+
     return true;
   }
 
-
-  else if(strcmp(token, "drop") == 0){
-      token = strtok(NULL, " "); // <attr_name>
-      char * attr_name = malloc(strlen(token) + 1);
-      strcpy(attr_name, token);
-      return true;
+  else if (strcmp(token, "drop") == 0) {
+    token = strtok(NULL, " "); // <attr_name>
+    char *attr_name = malloc(strlen(token) + 1);
+    strcpy(attr_name, token);
+    return true;
   }
-
 
   else {
     printf("Error\n");
@@ -706,6 +707,9 @@ void process(char *db_loc, Schema *schema, Bufferm *buffer) {
         printf("Purging page buffer...\n");
         printf("Saving catalog...\n");
         printf("\nExiting the database...\n");
+        // save table schemas to catalog
+        write_schemas_to_catalog(schema);
+        // flush page buffer and write to disk
         flush_buffer(buffer);
         return;
       }
