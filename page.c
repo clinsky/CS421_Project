@@ -344,18 +344,18 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     return p;
   } else {
     printf("File %s does not exist for adding record to page\n", filepath);
-    FILE *fp = fopen(filepath, "w");
-    if (fp != NULL) {
-      // printf("File %s created successfully\n", filepath);
-      fseek(fp, schema->page_size - 1, SEEK_SET);
-      fputc(0, fp);
-      fclose(fp);
-
-    } else {
-      printf("Error creating %s file\n", filepath);
-      printf("ERROR\n");
-      return NULL;
-    }
+    // FILE *fp = fopen(filepath, "w");
+    // if (fp != NULL) {
+    //   // printf("File %s created successfully\n", filepath);
+    //   fseek(fp, schema->page_size - 1, SEEK_SET);
+    //   fputc(0, fp);
+    //   fclose(fp);
+    //
+    // } else {
+    //   printf("Error creating %s file\n", filepath);
+    //   printf("ERROR\n");
+    //   return NULL;
+    // }
     Page *first_page = malloc(sizeof(Page));
     first_page->next_page = NULL;
     first_page->max_size = schema->page_size;

@@ -206,11 +206,8 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
     }
   }
 
-  write_catalog(db_loc, table_ptr);
-
-  // need to also update schema
-  schema->num_tables += 1;
-  schema->tables[schema->num_tables - 1] = *table_ptr;
+  // this updates the schema
+  add_table_to_catalog(schema, table_ptr);
 
   // UNCOMMENT THIS ONLY IF U WANT TO TEST AND SEE OUTPUT
   // printf("the table that was just created: ..\n");
@@ -396,8 +393,6 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
     if (p != NULL) {
       add_to_buffer(buffer, table, p, filepath);
     }
-  } else {
-    write_page_to_file(table, p, filepath);
   }
   printf("| ");
   for (int i = 0; i < table->num_attributes; i++) {
@@ -712,6 +707,9 @@ void process(char *db_loc, Schema *schema, Bufferm *buffer) {
         printf("Purging page buffer...\n");
         printf("Saving catalog...\n");
         printf("\nExiting the database...\n");
+        // save table schemas to catalog
+        write_schemas_to_catalog(schema);
+        // flush page buffer and write to disk
         flush_buffer(buffer);
         return;
       }

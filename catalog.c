@@ -263,6 +263,13 @@ void write_catalog(char *db_loc, Table *table) {
   fclose(fp);
 }
 
+void add_table_to_catalog(Schema *db_schema, Table *table) {
+  db_schema->num_tables += 1;
+  db_schema->tables =
+      realloc(db_schema->tables, sizeof(Table) * db_schema->num_tables);
+  db_schema->tables[db_schema->num_tables - 1] = *table;
+}
+
 void create_catalog(char *db_loc) {
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_loc, "catalog");
@@ -335,7 +342,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
       }
     }
     // rewrite entire schemas to catalog file
-    write_schemas_to_catalog(db_schema);
+    // write_schemas_to_catalog(db_schema);
     return true;
   }
 
@@ -429,19 +436,93 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
       db_schema->tables[i] = *new_table;
     }
   }
-  write_schemas_to_catalog(db_schema);
+  // write_schemas_to_catalog(db_schema);
   return true;
 }
 
 void write_schemas_to_catalog(Schema *db_schema) {
 
   // clear contents of catalog file
-  create_catalog(db_schema->db_path);
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, "catalog");
 
-  // insert every table back into catalog file
-  for (int i = 0; i < db_schema->num_tables; i++) {
-    write_catalog(db_schema->db_path, &db_schema->tables[i]);
+  FILE *fp = fopen(filepath, "wb+");
+  if (fwrite(&db_schema->num_tables, sizeof(int), 1, fp) != 1) {
+    printf("failed to increment table count\n");
   }
+
+  for (int t = 0; t < db_schema->num_tables; t++) {
+    Table *table = &db_schema->tables[t];
+    int table_name_len = strlen(table->name);
+    // printf("table name len: %d\n", table_name_len);
+
+    if (fwrite(&table_name_len, sizeof(int), 1, fp) != 1) {
+      printf("failed to write table_name_len\n");
+      fclose(fp);
+      return;
+    }
+
+    // write table name
+    if (fwrite(table->name, sizeof(char), table_name_len, fp) !=
+        table_name_len) {
+      printf("failed to write table_name\n");
+      fclose(fp);
+      return;
+    }
+
+    // write #attributes
+    if (fwrite(&table->num_attributes, sizeof(int), 1, fp) != 1) {
+      printf("failed to write num_attributes\n");
+      fclose(fp);
+      return;
+    }
+
+    for (int i = 0; i < table->num_attributes; i++) {
+      Attribute *curr_attribute = &table->attributes[i];
+      int attr_name_len = strlen(curr_attribute->name);
+      // printf("attr name: %s \n", curr_attribute->name);
+      // printf("attr len: %d \n", attr_name_len);
+      if (fwrite(&attr_name_len, sizeof(int), 1, fp) != 1) {
+        printf("failed to write attr_name_len\n");
+        fclose(fp);
+        return;
+      }
+      if (fwrite(curr_attribute->name, sizeof(char), attr_name_len, fp) !=
+          attr_name_len) {
+        printf("failed to write attr_name\n");
+        fclose(fp);
+        return;
+      }
+
+      int attr_type = attribute_type_to_int(curr_attribute->type);
+      // printf("attr_type is: %d\n", attr_type);
+
+      if (fwrite(&attr_type, sizeof(int), 1, fp) != 1) {
+        printf("failed to write attr_type\n");
+        fclose(fp);
+        return;
+      }
+
+      // char/varchar need to write a byte for len
+      if (attr_type == 3 || attr_type == 4) {
+        if (fwrite(&curr_attribute->len, sizeof(int), 1, fp) != 1) {
+          printf("failed to write attr_len\n");
+          fclose(fp);
+          return;
+        }
+      }
+
+      // write if part of primary key (0 for false, 1 for true)
+      int is_primary_key = curr_attribute->is_primary_key ? 1 : 0;
+      if (fwrite(&is_primary_key, sizeof(int), 1, fp) != 1) {
+        printf("failed to write attr primary_key ness\n");
+        fclose(fp);
+        return;
+      }
+    }
+  }
+
+  fclose(fp);
 }
 
 Attribute_Values *clone_attr_vals(Attribute_Values *src) {
