@@ -555,11 +555,12 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     strcpy(attr_type, token);
     Attribute *attr = malloc(sizeof(Attribute));
     char *default_value = "null"; // default value is null
+    printf("setting name\n");
+    attr->name = malloc(strlen(attr_name) + 1);
+    strcpy(attr->name, attr_name);
     if (attr_type[strlen(attr_type) - 1] == ';') {
       printf("default is null with ; at end of attr_name\n");
       attr_type[strlen(attr_type) - 1] = '\0';
-      printf("setting name\n");
-      attr->name = malloc(strlen(attr_name) + 1);
       printf("here\n");
       ATTRIBUTE_TYPE t =
           parse_attribute_type(attr_type, attr); // parse the type
@@ -570,7 +571,6 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     } else {
       token = strtok(NULL, " "); // "default"
       if (strcmp(token, ";") == 0) {
-        attr->name = malloc(strlen(attr_name) + 1);
         ATTRIBUTE_TYPE t =
             parse_attribute_type(attr_type, attr); // parse the type
         if (t == INVALID_ATTR) {
@@ -648,6 +648,7 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       attr_values_ptr->chars_val = default_varchar_value;
       printf("default varchar value: %s\n", attr_values_ptr->chars_val);
     }
+    printf("attribute name: %s\n", attr->name);
     return true;
   }
 
