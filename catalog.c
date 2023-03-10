@@ -291,6 +291,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
                      Attribute_Values *attr_val) {
 
   printf("in alter table add\n");
+  printf("attr len is %d\n", attr->len);
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
@@ -327,7 +328,12 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
   if (p == NULL) {
     printf("%s page was null, going to update schema tho!\n", table_name);
     // no pages for this table
-    // write_schemas_to_catalog()
+    for (int i = 0; i < db_schema->num_tables; i++) {
+      if (strcmp(db_schema->tables[i].name, table_name) == 0) {
+        db_schema->tables[i] = *new_table;
+      }
+    }
+    write_schemas_to_catalog(db_schema);
     return true;
   }
 
@@ -370,9 +376,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
 void write_schemas_to_catalog(Schema *db_schema) {
 
   // clear contents of catalog file
-  char filepath[100];
-  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, "catalog");
-  fclose(fopen(filepath, "w"));
+  create_catalog(db_schema->db_path);
 
   // insert every table back into catalog file
   for (int i = 0; i < db_schema->num_tables; i++) {
