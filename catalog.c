@@ -1,5 +1,6 @@
 #include "catalog.h"
 #include "page.h"
+#include "parse_utils.h"
 #include "record.h"
 
 Schema *create_schema(char *db_loc, int page_size, int buffer_size) {
@@ -333,6 +334,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
         db_schema->tables[i] = *new_table;
       }
     }
+    // rewrite entire schemas to catalog file
     write_schemas_to_catalog(db_schema);
     return true;
   }
@@ -340,36 +342,94 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
   printf("old # attr: %d new # attr:%d\n", old_table->num_attributes,
          new_table->num_attributes);
 
+  if (attr_val != NULL) {
+    printf("%d is default int_val to be inserted\n", attr_val->int_val);
+  } else {
+    printf("should insert nulls to records\n");
+  }
+
+  // remove old table from buffer
+  remove_from_buffer(buffer, old_table);
+
+  //  remove table file
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
+
+  if (remove(filepath) == 0) {
+    printf("%s was removed\n", filepath);
+  } else {
+    printf("%s was not removed for some reason\n", filepath);
+  }
+
   // I NEED TO UPDATE BITMAP
   // AS WELL AS RECORD SIZE
   // ALSO COPY PRIMARY KEY INDEX
   // NEED TO CLONE ATTR_VALS
+  // NEED TO REMOVE FROM BUFFER AS WELL
   int page_count = 0;
-  if (attr_val != NULL) {
-    // loop through all pages
-    while (p != NULL) {
-      printf("%d num records to update on page: %d\n", p->num_records,
-             ++page_count);
-      for (int i = 0; i < p->num_records; i++) {
-        Record *record = &p->records[i];
-        // make space for new column
-        record->attr_vals =
-            realloc(record->attr_vals,
-                    sizeof(Attribute_Values) * new_table->num_attributes);
+  // loop through all pages
+  while (p != NULL) {
+    printf("%d num records to update on page: %d\n", p->num_records,
+           ++page_count);
+    for (int i = 0; i < p->num_records; i++) {
+      Record *record = &p->records[i];
+      // make space for new column
+      record->attr_vals =
+          realloc(record->attr_vals,
+                  sizeof(Attribute_Values) * new_table->num_attributes);
 
-        // clone
-        Attribute_Values *new_attr_val = clone_attr_vals(attr_val);
-      }
-      if (p->next_page != NULL) {
-        p = p->next_page;
+      Attribute_Values *new_attr_val;
+      if (attr_val == NULL) {
+        new_attr_val = malloc(sizeof(Attribute_Values));
+        new_attr_val->type = attr->type;
+        new_attr_val->is_null = true;
       } else {
-        break;
+        // clone
+        new_attr_val = clone_attr_vals(attr_val);
       }
+      printf("new attr type: %s\n",
+             attribute_type_to_string(new_attr_val->type));
+
+      printf("old record size: %d\n", calculate_record_size(old_table, record));
+      // add new attr_val to record
+      record->attr_vals[new_table->num_attributes - 1] = *new_attr_val;
+      printf("new record size: %d\n", calculate_record_size(new_table, record));
+
+      // set new record size
+      record->size = calculate_record_size(new_table, record);
+
+      // printf("type: %s int_val: %d\n",
+      //        attribute_type_to_string(new_attr_val->type),
+      //        attr_val->int_val);
+
+      // UPDATE BIT MAP
+      if (attr_val != NULL) {
+        record->bitmap |= (1 << old_table->num_attributes);
+      }
+      for (int i = 0; i < new_table->num_attributes; i++) {
+        if ((record->bitmap & (1 << i)) != 0) {
+          printf("1");
+        } else {
+          printf("0");
+        }
+      }
+      printf("\n");
+
+      Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
+      printf("buffer has %d pages\n", buffer->curr_pages);
     }
-  } else {
-    printf("going to set null\n");
+    if (p->next_page != NULL) {
+      p = p->next_page;
+    } else {
+      break;
+    }
   }
 
+  for (int i = 0; i < db_schema->num_tables; i++) {
+    if (strcmp(db_schema->tables[i].name, table_name) == 0) {
+      db_schema->tables[i] = *new_table;
+    }
+  }
+  write_schemas_to_catalog(db_schema);
   return true;
 }
 
@@ -385,12 +445,16 @@ void write_schemas_to_catalog(Schema *db_schema) {
 }
 
 Attribute_Values *clone_attr_vals(Attribute_Values *src) {
+  printf("here...");
   if (src == NULL) {
+    printf("src was null...");
     return NULL;
   }
+  printf("about to clone attr val\n");
   Attribute_Values *attr_val = malloc(sizeof(Attribute_Values));
   attr_val->type = src->type;
   ATTRIBUTE_TYPE type = attr_val->type;
+  printf("set type %s\n", attribute_type_to_string(attr_val->type));
   if (type == INTEGER) {
     attr_val->int_val = src->int_val;
   } else if (type == DOUBLE) {

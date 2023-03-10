@@ -135,7 +135,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
       for (int i = 0; i < table->num_attributes; i++) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
         if ((record->bitmap & (1 << i)) == 0) {
-          // printf("attr %d is null\n", i);
+          printf("attr %d is null\n", i);
           curr_attr->is_null = true;
         }
         ATTRIBUTE_TYPE type = table->attributes[i].type;
@@ -328,7 +328,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // printf("File %s exists\n", filepath);
     p = find_in_buffer(buffer, table);
     if (p != NULL) {
-      // printf("buffer had %s\n", table->name);
+      printf("buffer had %s\n", table->name);
       p = insert_record_to_page(schema, table, p, record);
     } else {
       p = read_page_from_file(schema, table, filepath);
@@ -343,7 +343,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // flush_buffer(buffer);
     return p;
   } else {
-    // printf("File %s does not exist\n", filepath);
+    printf("File %s does not exist for adding record to page\n", filepath);
     FILE *fp = fopen(filepath, "w");
     if (fp != NULL) {
       // printf("File %s created successfully\n", filepath);
@@ -370,7 +370,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // write_page_to_file(table, p, filepath);
     // p = read_page_from_file(schema, table, filepath);
     add_to_buffer(buffer, table, p, filepath);
-    // print_page(table, p);
+    print_page(table, p);
   }
   return p;
 }
@@ -683,15 +683,22 @@ void flush_buffer(Bufferm *b) {
 void remove_from_buffer(Bufferm *b, Table *table) {
   printf("in remove from buffer\n");
   b->counter += 1;
+  printf("buffer has %d pages\n", b->curr_pages);
   for (int i = 0; i < b->curr_pages; i++) {
+    // printf("%s is table im looking for vs curr %s\n", table->name,
+    //        b->entries[i].table_name);
     if (strcmp(table->name, b->entries[i].table_name) == 0) {
       Buffer_Entry *last_entry = &b->entries[b->curr_pages - 1];
       b->entries[i] = *last_entry;
-      Buffer_Entry *null_entry = NULL;
-      b->entries[b->curr_pages - 1] = *null_entry;
       // printf("found page %s in buffer\n", table->name);
       b->entries[i].last_used = b->counter;
       printf("removed %s from buffer..\n", table->name);
+
+      // dont actually "remove" from buffer.
+      // on next buffer entry, it will be placed in last available spot
+      b->curr_pages -= 1;
+      return;
     }
   }
+  printf("%s wasn't in the buffer\n", table->name);
 }
