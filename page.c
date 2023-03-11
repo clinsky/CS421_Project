@@ -539,6 +539,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
             printf("Duplicate unique attribute %d\n",
                    record->attr_vals[unique_attribute_index].bool_val);
             printf("ERROR\n");
+            return NULL;
           }
         } else if (unique_attribute_type == CHAR) {
           if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
@@ -547,6 +548,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
             printf("Duplicate unique attribute %s\n",
                    record->attr_vals[unique_attribute_index].chars_val);
             printf("ERROR\n");
+            return NULL;
           }
         } else if (unique_attribute_type == VARCHAR) {
           if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
@@ -555,6 +557,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
             printf("Duplicate unique attribute %s\n",
                    record->attr_vals[unique_attribute_index].chars_val);
             printf("ERROR\n");
+            return NULL;
           }
         }
       }

@@ -161,7 +161,6 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
     do {
       token = strtok(NULL, " ");
-      printf("Token: %s\n", token);
       if (startsWith(token, "primarykey")) {
         if (has_primary_key) {
           printf("Multiple primary keys found\n");
