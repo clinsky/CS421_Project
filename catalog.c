@@ -166,6 +166,30 @@ Schema *read_catalog(char *db_loc) {
         attribute_ptr->is_primary_key = false;
       }
 
+      int is_notnull;
+      if (fread(&is_notnull, sizeof(int), 1, fp) != 1) {
+        printf("failed to read attr #%d notnull ness from table #%d\n", j, i);
+        fclose(fp);
+        return NULL;
+      }
+      if (is_notnull == 1) {
+        attribute_ptr->notnull = true;
+      } else {
+        attribute_ptr->notnull = false;
+      }
+
+      int is_unique;
+      if (fread(&is_unique, sizeof(int), 1, fp) != 1) {
+        printf("failed to read attr #%d unique ness from table #%d\n", j, i);
+        fclose(fp);
+        return NULL;
+      }
+      if (is_unique == 1) {
+        attribute_ptr->unique = true;
+      } else {
+        attribute_ptr->unique = false;
+      }
+
       // printf("attr #%d name: %s , type: %s , is_primary_key: %d\n", j,
       //        attr_name, attribute_type_to_string(attr_type), is_primary_key);
       db_schemas->tables[i].attributes[j] = *attribute_ptr;
@@ -739,6 +763,22 @@ void write_schemas_to_catalog(Schema *db_schema) {
       int is_primary_key = curr_attribute->is_primary_key ? 1 : 0;
       if (fwrite(&is_primary_key, sizeof(int), 1, fp) != 1) {
         printf("failed to write attr primary_key ness\n");
+        fclose(fp);
+        return;
+      }
+
+      // write if notnull constraint
+      int notnull = curr_attribute->notnull ? 1 : 0;
+      if (fwrite(&notnull, sizeof(int), 1, fp) != 1) {
+        printf("failed to write attr notnull ness\n");
+        fclose(fp);
+        return;
+      }
+
+      // write if unique constraint
+      int unique = curr_attribute->unique ? 1 : 0;
+      if (fwrite(&unique, sizeof(int), 1, fp) != 1) {
+        printf("failed to write attr unique ness\n");
         fclose(fp);
         return;
       }
