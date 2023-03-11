@@ -4,7 +4,8 @@ An implementation of a database management system.
 Compile with make.
 ## Phase 1 Resubmission
 We fixed the following issues with phase 1:
-- "select * from foo" now shows an empty table when empty.
+- "select * from foo" now shows an empty table when foo is empty.
+- Select output is now formatted to see columns.
 - Inserting more than one value at a time now works.
 - A double can no longer be inserted for an int.
 ## Phase 2 Submission Notes
