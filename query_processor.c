@@ -389,6 +389,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
   if (p == NULL) {
+    printf("select all reading from page file\n");
     p = read_page_from_file(schema, table, filepath);
     if (p != NULL) {
       add_to_buffer(buffer, table, p, filepath);

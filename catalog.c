@@ -421,14 +421,14 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
       if (attr_val != NULL) {
         record->bitmap |= (1 << old_table->num_attributes);
       }
-      // for (int i = 0; i < new_table->num_attributes; i++) {
-      //   if ((record->bitmap & (1 << i)) != 0) {
-      //     printf("1");
-      //   } else {
-      //     printf("0");
-      //   }
-      // }
-      // printf("\n");
+      for (int i = 0; i < new_table->num_attributes; i++) {
+        if ((record->bitmap & (1 << i)) != 0) {
+          printf("1");
+        } else {
+          printf("0");
+        }
+      }
+      printf("\n");
 
       Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
       if (new_page == NULL) {
