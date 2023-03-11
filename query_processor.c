@@ -113,6 +113,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
 
   // continue with rest of tokens
   table_ptr->num_attributes = 0;
+  table_ptr->num_unique_attributes = 0;
   while (1) {
     table_ptr->num_attributes++;
     Attribute *attribute_ptr = malloc(sizeof(Attribute));

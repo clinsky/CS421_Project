@@ -11,6 +11,7 @@ struct record {
   int bitmap;
   int size;
   int primary_key_index;
+  int *unique_attribute_indices;
 };
 
 typedef struct record Record;
