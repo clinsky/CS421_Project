@@ -3,7 +3,8 @@
 Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
   Record *record = malloc(sizeof(Record));
   record->bitmap = 0;
-  record->unique_attribute_indices = malloc(sizeof(int) * table->num_unique_attributes);
+  record->unique_attribute_indices =
+      malloc(sizeof(int) * table->num_unique_attributes);
 
   Attribute_Values *values =
       malloc(sizeof(Attribute_Values) * table->num_attributes);
@@ -512,13 +513,15 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                          record->attr_vals[pkey].chars_val) < 0;
       }
 
-      for(int j=0;j < table->num_unique_attributes;j++){
+      for (int j = 0; j < table->num_unique_attributes; j++) {
         int unique_attribute_index = record->unique_attribute_indices[j];
-        ATTRIBUTE_TYPE unique_attribute_type = table->attributes[unique_attribute_index].type;
+        ATTRIBUTE_TYPE unique_attribute_type =
+            table->attributes[unique_attribute_index].type;
         if (unique_attribute_type == INTEGER) {
           if (curr_record->attr_vals[unique_attribute_index].int_val ==
               record->attr_vals[unique_attribute_index].int_val) {
-            printf("Duplicate unique attribute %d\n", record->attr_vals[unique_attribute_index].int_val);
+            printf("Duplicate unique attribute %d\n",
+                   record->attr_vals[unique_attribute_index].int_val);
             printf("ERROR\n");
             return NULL;
           }
@@ -526,7 +529,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
           if (curr_record->attr_vals[unique_attribute_index].double_val ==
               record->attr_vals[unique_attribute_index].double_val) {
             printf("Duplicate unique attribute %f\n",
-                  record->attr_vals[unique_attribute_index].double_val);
+                   record->attr_vals[unique_attribute_index].double_val);
             printf("ERROR\n");
             return NULL;
           }
@@ -534,21 +537,23 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
           if (curr_record->attr_vals[unique_attribute_index].bool_val ==
               record->attr_vals[unique_attribute_index].bool_val) {
             printf("Duplicate unique attribute %d\n",
-                  record->attr_vals[unique_attribute_index].bool_val);
+                   record->attr_vals[unique_attribute_index].bool_val);
             printf("ERROR\n");
           }
         } else if (unique_attribute_type == CHAR) {
           if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
-                    record->attr_vals[unique_attribute_index].chars_val) == 0) {
+                     record->attr_vals[unique_attribute_index].chars_val) ==
+              0) {
             printf("Duplicate unique attribute %s\n",
-                  record->attr_vals[unique_attribute_index].chars_val);
+                   record->attr_vals[unique_attribute_index].chars_val);
             printf("ERROR\n");
           }
         } else if (unique_attribute_type == VARCHAR) {
           if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
-                    record->attr_vals[unique_attribute_index].chars_val) == 0) {
+                     record->attr_vals[unique_attribute_index].chars_val) ==
+              0) {
             printf("Duplicate unique attribute %s\n",
-                  record->attr_vals[unique_attribute_index].chars_val);
+                   record->attr_vals[unique_attribute_index].chars_val);
             printf("ERROR\n");
           }
         }
@@ -599,7 +604,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
 
 void make_new_page_if_full(Page *prev_page) {
   if (is_page_overfull(prev_page)) {
-    printf("WAS OVERFULL...\n");
+    // printf("WAS OVERFULL...\n");
     Page *new_page = malloc(sizeof(Page));
     new_page->max_size = prev_page->max_size;
     new_page->page_number = prev_page->page_number + 1;
@@ -626,8 +631,8 @@ void print_page(Table *table, Page *p) {
   int page_num = 1;
   // printf("in print page..\n");
   while (curr_page != NULL) {
-    printf("printing page# %d with num records: %d\n", page_num,
-           curr_page->num_records);
+    // printf("printing page# %d with num records: %d\n", page_num,
+    //        curr_page->num_records);
     for (int k = 0; k < curr_page->num_records; k++) {
       // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
       printf("| ");
@@ -736,7 +741,7 @@ bool is_page_overfull(Page *p) {
   int from_records = p->total_bytes_from_records;
   int for_offsets = p->num_records * 4;
   int total = base + from_records + for_offsets;
-  printf("total size is %d and max size is %d\n", total, p->max_size);
+  // printf("total size is %d and max size is %d\n", total, p->max_size);
   return total > p->max_size;
 }
 
@@ -776,17 +781,17 @@ void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath) {
     }
     write_page_to_file(table, to_remove->page, to_remove->file_path);
   } else {
-    printf("page added to buffer pos:%d\n", b->curr_pages);
+    // printf("page added to buffer pos:%d\n", b->curr_pages);
     new_entry->page = p;
-    printf("in add to buffer bitmap\n");
-    for (int i = 0; i < table->num_attributes; i++) {
-      if ((p->records[0].bitmap & (1 << i)) != 0) {
-        printf("1");
-      } else {
-        printf("0");
-      }
-    }
-    printf("\n");
+    // printf("in add to buffer bitmap\n");
+    // for (int i = 0; i < table->num_attributes; i++) {
+    //   if ((p->records[0].bitmap & (1 << i)) != 0) {
+    //     printf("1");
+    //   } else {
+    //     printf("0");
+    //   }
+    // }
+    // printf("\n");
     new_entry->table_name = malloc(sizeof(char) * strlen(table->name));
     new_entry->file_path = malloc(sizeof(char) * strlen(filepath));
     new_entry->last_used = b->counter;
@@ -804,35 +809,35 @@ void flush_buffer(Bufferm *b) {
   b->counter += 1;
   for (int i = 0; i < b->curr_pages; b++) {
     Page *p = b->entries[i].page;
-    printf("printing page in flush buffer\n");
-    printf("curr page: %d\n", i);
-    printf("in flush buffer bitmap\n");
-    printf("%d\n", b->entries[i].table->num_attributes);
-    printf("num records in p: %d\n", p->num_records);
-    printf("%d\n", p->records[0].bitmap);
+    // printf("printing page in flush buffer\n");
+    // printf("curr page: %d\n", i);
+    // printf("in flush buffer bitmap\n");
+    // printf("%d\n", b->entries[i].table->num_attributes);
+    // printf("num records in p: %d\n", p->num_records);
+    // printf("%d\n", p->records[0].bitmap);
     if (b->entries[i].table == NULL) {
-      printf("table is null\n");
+      // printf("table is null\n");
     } else {
-      printf("table not null\n");
-      printf("has %d attr\n", b->entries[i].table->num_attributes);
+      // printf("table not null\n");
+      // printf("has %d attr\n", b->entries[i].table->num_attributes);
     }
-    for (int j = 0; j < b->entries[i].table->num_attributes; j++) {
-      if ((p->records[0].bitmap & (1 << j)) != 0) {
-        printf("1");
-      } else {
-        printf("0");
-      }
-    }
-    printf("\n");
-    print_page(b->entries[i].table, p);
+    // for (int j = 0; j < b->entries[i].table->num_attributes; j++) {
+    //   if ((p->records[0].bitmap & (1 << j)) != 0) {
+    //     printf("1");
+    //   } else {
+    //     printf("0");
+    //   }
+    // }
+    // printf("\n");
+    // print_page(b->entries[i].table, p);
     write_page_to_file(b->entries[i].table, p, b->entries[i].file_path);
   }
 }
 
 Page *remove_from_buffer(Bufferm *b, Table *table) {
-  printf("in remove from buffer\n");
+  // printf("in remove from buffer\n");
   b->counter += 1;
-  printf("buffer has %d pages\n", b->curr_pages);
+  // printf("buffer has %d pages\n", b->curr_pages);
   for (int i = 0; i < b->curr_pages; i++) {
     // printf("%s is table im looking for vs curr %s\n", table->name,
     //        b->entries[i].table_name);
@@ -842,7 +847,7 @@ Page *remove_from_buffer(Bufferm *b, Table *table) {
       b->entries[i] = *last_entry;
       // printf("found page %s in buffer\n", table->name);
       b->entries[i].last_used = b->counter;
-      printf("removed %s from buffer..\n", table->name);
+      // printf("removed %s from buffer..\n", table->name);
 
       // dont actually "remove" from buffer.
       // on next buffer entry, it will be placed in last available spot
@@ -850,6 +855,6 @@ Page *remove_from_buffer(Bufferm *b, Table *table) {
       return removed_page;
     }
   }
-  printf("%s wasn't in the buffer\n", table->name);
+  // printf("%s wasn't in the buffer\n", table->name);
   return NULL;
 }

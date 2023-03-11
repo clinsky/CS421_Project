@@ -338,7 +338,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
                      char *table_name, Attribute *attr,
                      Attribute_Values *attr_val) {
 
-  printf("in alter table add\n");
+  // printf("in alter table add\n");
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
@@ -347,7 +347,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
     printf("%s does not exist\n", table_name);
     return false;
   } else {
-    printf("updating the %s table\n", table_name);
+    // printf("updating the %s table\n", table_name);
   }
 
   for (int i = 0; i < old_table->num_attributes; i++) {
@@ -372,16 +372,16 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
   // insert new attr
   new_table->attributes[new_table->num_attributes - 1] = *attr;
 
-  printf("printing new table metadata\n");
-  print_table_metadata(new_table);
+  // printf("printing new table metadata\n");
+  // print_table_metadata(new_table);
 
   Page *p = find_in_buffer(buffer, old_table);
   if (p == NULL) {
-    printf("%s page was not in the buffer\n", table_name);
+    // printf("%s page was not in the buffer\n", table_name);
     p = read_page_from_file(db_schema, old_table, filepath);
   }
   if (p == NULL) {
-    printf("%s page was null, going to update schema tho!\n", table_name);
+    // printf("%s page was null, going to update schema tho!\n", table_name);
     // no pages for this table
     for (int i = 0; i < db_schema->num_tables; i++) {
       if (strcmp(db_schema->tables[i].name, table_name) == 0) {
@@ -514,7 +514,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
 bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
                       char *table_name, char *attr_name) {
 
-  printf("in alter table drop %s for table %s\n", attr_name, table_name);
+  // printf("in alter table drop %s for table %s\n", attr_name, table_name);
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
@@ -523,7 +523,7 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
     printf("%s does not exist\n", table_name);
     return false;
   } else {
-    printf("updating the %s table to drop %s\n", table_name, attr_name);
+    // printf("updating the %s table to drop %s\n", table_name, attr_name);
   }
 
   bool found_attr = false;
@@ -546,7 +546,7 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
     printf("attr: %s is not in table: %s\n", attr_name, table_name);
     return false;
   } else {
-    printf("attr: %s was in table, going to drop it\n", attr_name);
+    // printf("attr: %s was in table, going to drop it\n", attr_name);
   }
 
   Table *new_table = malloc(sizeof(Table));
@@ -566,12 +566,12 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
   }
   Page *p = find_in_buffer(buffer, old_table);
   if (p == NULL) {
-    printf("%s page was not in the buffer\n", table_name);
+    // printf("%s page was not in the buffer\n", table_name);
     p = read_page_from_file(db_schema, old_table, filepath);
   }
   if (p == NULL) {
-    printf("%s page was null, going to update schema to drop tho!\n",
-           table_name);
+    // printf("%s page was null, going to update schema to drop tho!\n",
+    //        table_name);
     // no pages for this table
     for (int i = 0; i < db_schema->num_tables; i++) {
       if (strcmp(db_schema->tables[i].name, table_name) == 0) {
@@ -590,9 +590,9 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
   if (remove(filepath) == 0) {
-    printf("%s was removed\n", filepath);
+    // printf("%s was removed\n", filepath);
   } else {
-    printf("%s was not removed for some reason\n", filepath);
+    // printf("%s was not removed for some reason\n", filepath);
   }
 
   // I NEED TO UPDATE BITMAP
@@ -619,8 +619,8 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
       }
       new_record->size = calculate_record_size(new_table, new_record);
 
-      printf("old record size:%d new record size:%d\n", record->size,
-             new_record->size);
+      // printf("old record size:%d new record size:%d\n", record->size,
+      //        new_record->size);
 
       int new_bitmap = 0;
       for (int attr_index = 0; attr_index < new_table->num_attributes;
@@ -633,14 +633,14 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
 
       new_record->bitmap = new_bitmap;
 
-      for (int i = 0; i < new_table->num_attributes; i++) {
-        if ((new_record->bitmap & (1 << i)) != 0) {
-          printf("1");
-        } else {
-          printf("0");
-        }
-      }
-      printf("\n");
+      // for (int i = 0; i < new_table->num_attributes; i++) {
+      //   if ((new_record->bitmap & (1 << i)) != 0) {
+      //     printf("1");
+      //   } else {
+      //     printf("0");
+      //   }
+      // }
+      // printf("\n");
 
       // UPDATE BIT MAP
       Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
@@ -750,14 +750,14 @@ void write_schemas_to_catalog(Schema *db_schema) {
 
 Attribute_Values *clone_attr_vals(Attribute_Values *src) {
   if (src == NULL) {
-    printf("src was null...");
+    // printf("src was null...");
     return NULL;
   }
-  printf("about to clone attr val\n");
+  // printf("about to clone attr val\n");
   Attribute_Values *attr_val = malloc(sizeof(Attribute_Values));
   attr_val->type = src->type;
   ATTRIBUTE_TYPE type = attr_val->type;
-  printf("set type %s\n", attribute_type_to_string(attr_val->type));
+  // printf("set type %s\n", attribute_type_to_string(attr_val->type));
   if (type == INTEGER) {
     attr_val->int_val = src->int_val;
   } else if (type == DOUBLE) {
