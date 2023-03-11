@@ -658,6 +658,11 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     token = strtok(NULL, " "); // <attr_name>
     char *attr_name = malloc(strlen(token) + 1);
     strcpy(attr_name, token);
+    if(attr_name[strlen(attr_name) - 1] == ';') {
+      attr_name[strlen(attr_name) - 1] = '\0';
+    }
+    printf("attr name: %s\n", attr_name);
+
     return true;
   }
 
