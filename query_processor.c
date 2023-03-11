@@ -381,6 +381,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
   // all good, time to add
   for (int i = 0; i < num_values; i++) {
     // printf("record size to be added: %d\n", records[i].size);
+    // printf("adding %i \n", i);
     Page *p = add_record_to_page(schema, command_table, &records[i], buffer);
     if (p == NULL) {
       return false;
@@ -411,7 +412,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
   if (p == NULL) {
-    printf("select all reading from page file\n");
+    // printf("select all reading from page file\n");
     p = read_page_from_file(schema, table, filepath);
     if (p != NULL) {
       add_to_buffer(buffer, table, p, filepath);
@@ -582,7 +583,7 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
   token = strtok(NULL, " "); // "add" or "drop"
 
   if (strcmp(token, "add") == 0) {
-    printf("Adding new attribute\n");
+    // printf("Adding new attribute\n");
     token = strtok(NULL, " "); // <attr_name>
     char *attr_name = malloc(strlen(token) + 1);
     strcpy(attr_name, token);
@@ -591,16 +592,16 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     strcpy(attr_type, token);
     Attribute *attr = malloc(sizeof(Attribute));
     char *default_value = "null"; // default value is null
-    printf("setting name\n");
+    // printf("setting name\n");
     attr->name = malloc(strlen(attr_name) + 1);
     strcpy(attr->name, attr_name);
     if (attr_type[strlen(attr_type) - 1] == ';') {
-      printf("default is null with ; at end of attr_name\n");
+      // printf("default is null with ; at end of attr_name\n");
       attr_type[strlen(attr_type) - 1] = '\0';
-      printf("setting name\n");
+      // printf("setting name\n");
       attr->name = malloc(strlen(attr_name) + 1);
       strcpy(attr->name, attr_name);
-      printf("here\n");
+      // printf("here\n");
       ATTRIBUTE_TYPE t =
           parse_attribute_type(attr_type, attr); // parse the type
       if (t == INVALID_ATTR) {
@@ -625,22 +626,22 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     Attribute_Values *attr_values_ptr = malloc(sizeof(Attribute_Values));
     attr_values_ptr->type = attr->type;
 
-    printf("%s is default_value to be parsed..\n", default_value);
+    // printf("%s is default_value to be parsed..\n", default_value);
 
     if (startsWith(default_value, "null")) {
       attr_values_ptr = NULL;
-      printf("default value will be null\n");
+      // printf("default value will be null\n");
     } else if (startsWith(attr_type, "integer")) {
       int default_int_value;
       sscanf(default_value, "%d", &default_int_value);
       attr_values_ptr = malloc(sizeof(Attribute_Values));
       attr_values_ptr->int_val = default_int_value;
-      printf("default int value: %d\n", attr_values_ptr->int_val);
+      // printf("default int value: %d\n", attr_values_ptr->int_val);
     } else if (startsWith(attr_type, "double")) {
       double default_double_value;
       sscanf(default_value, "%lf", &default_double_value);
       attr_values_ptr->double_val = default_double_value;
-      printf("default double value: %f\n", attr_values_ptr->double_val);
+      // printf("default double value: %f\n", attr_values_ptr->double_val);
     } else if (startsWith(attr_type, "char")) {
       char *default_char_value = malloc(strlen(default_value) + 1);
       strcpy(default_char_value, default_value);
@@ -701,9 +702,9 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       default_varchar_value[strlen(default_varchar_value) - 1] =
           '\0'; // remove the last quote
       attr_values_ptr->chars_val = default_varchar_value;
-      printf("default varchar value: %s\n", attr_values_ptr->chars_val);
+      // printf("default varchar value: %s\n", attr_values_ptr->chars_val);
     }
-    printf("attribute name: %s\n", attr->name);
+    // printf("attribute name: %s\n", attr->name);
     return alter_table_add(schema, buffer, table_name, attr, attr_values_ptr);
 
   }
@@ -715,7 +716,7 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
     if (attr_name[strlen(attr_name) - 1] == ';') {
       attr_name[strlen(attr_name) - 1] = '\0';
     }
-    printf("attr name: %s\n", attr_name);
+    // printf("attr name: %s\n", attr_name);
     return alter_table_drop(schema, buffer, table_name, attr_name);
   }
 

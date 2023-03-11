@@ -122,7 +122,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
     // printf("has_next_page:%d\n", has_next_page);
     // printf("reading num records at %lu\n", ftell(fp));
     fread(&page->num_records, sizeof(int), 1, fp);
-    printf("num records: %d\n", page->num_records);
+    // printf("num records: %d\n", page->num_records);
     // printf("num records on  page %d: %d\n", x, page->num_records);
     page->records = malloc(sizeof(Record) * page->num_records);
     for (int record_num = 0; record_num < page->num_records; record_num++) {
