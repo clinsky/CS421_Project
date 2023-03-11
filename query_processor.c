@@ -625,20 +625,20 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
 
       default_char_value[strlen(default_char_value) - 1] =
           ' '; // remove the last quote
-      int targetStrLen = attr->len;
-      const char *padding = "x";
-      int padLen = targetStrLen - strlen(default_char_value);
-      if (padLen < 0) {
-        padLen = 0;
-      }
+      // int targetStrLen = attr->len;
+      // const char *padding = "x";
+      // int padLen = targetStrLen - strlen(default_char_value);
+      // if (padLen < 0) {
+      //   padLen = 0;
+      // }
 
       char *temp = malloc(sizeof(char) * attr->len + 1);
       strncpy(temp, default_char_value, strlen(default_char_value));
       temp[attr->len] = '\0';
       attr_values_ptr->chars_val = temp;
-      printf("default char value: %s\n", temp);
-      printf("chars len is : %lu but it should be %d\n", strlen(temp),
-             attr->len);
+      // printf("default char value: %s\n", temp);
+      // printf("chars len is : %lu but it should be %d\n", strlen(temp),
+      //        attr->len);
 
     } else if (startsWith(attr_type, "varchar")) {
       char *default_varchar_value = malloc(strlen(default_value) + 1);
