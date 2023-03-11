@@ -28,10 +28,10 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
                         "char(")) { // need to check if of the form char(...
     int len;
     if (sscanf(attr, "char(%d)", &len) == 1) {
-      printf("char len is %d\n", len);
+      // printf("char len is %d\n", len);
       attribute_ptr->type = CHAR;
       attribute_ptr->len = len;
-      printf("char len is %d\n", attribute_ptr->len);
+      // printf("char len is %d\n", attribute_ptr->len);
     }
     return CHAR;
   } else if (startsWith(
@@ -41,7 +41,7 @@ ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
     if (sscanf(attr, "varchar(%d)", &len) == 1) {
       attribute_ptr->type = VARCHAR;
       attribute_ptr->len = len;
-      printf("varchar len is %d\n", attribute_ptr->len);
+      // printf("varchar len is %d\n", attribute_ptr->len);
     }
     return VARCHAR;
   }
@@ -159,27 +159,27 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
       return false;
     }
 
-    do{
-        token = strtok(NULL, " ");
-        printf("Token: %s\n", token);
-        if (startsWith(token, "primarykey")) {
-          if (has_primary_key) {
-            printf("Multiple primary keys found\n");
-            printf("ERROR\n");
-            return false;
-          }
-          has_primary_key = true;
-          attribute_ptr->is_primary_key = true;
-        } else if (startsWith(token, "notnull")) {
-          attribute_ptr->notnull = true;
-        } else if (startsWith(token, "unique")) {
-          attribute_ptr->unique = true;
-          table_ptr->num_unique_attributes++;
-        } else {
-          printf("Invalid constraint\n");
+    do {
+      token = strtok(NULL, " ");
+      printf("Token: %s\n", token);
+      if (startsWith(token, "primarykey")) {
+        if (has_primary_key) {
+          printf("Multiple primary keys found\n");
           printf("ERROR\n");
           return false;
         }
+        has_primary_key = true;
+        attribute_ptr->is_primary_key = true;
+      } else if (startsWith(token, "notnull")) {
+        attribute_ptr->notnull = true;
+      } else if (startsWith(token, "unique")) {
+        attribute_ptr->unique = true;
+        table_ptr->num_unique_attributes++;
+      } else {
+        printf("Invalid constraint\n");
+        printf("ERROR\n");
+        return false;
+      }
     } while (!(endsWith(token, ");") || endsWith(token, ",")));
 
     // last statement of the form num integer primarykey);
@@ -272,11 +272,10 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
       sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
       if (strcmp(current_token, "null") == 0) {
         null = true;
-      }
-      else{
-        if (command_table->attributes[i].type == INTEGER){
+      } else {
+        if (command_table->attributes[i].type == INTEGER) {
           char *pPosition = strchr(current_token, '.');
-          if(pPosition != NULL){
+          if (pPosition != NULL) {
             printf("Cannot insert double for integer\n");
             printf("ERROR\n");
             return false;
@@ -289,11 +288,11 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
           (char *)malloc((strlen(current_token) + 1) * sizeof(char));
       strcpy(values_parsed[tuple_index][i], current_token);
     } else {
-      if(command_table->attributes[i].notnull){
-          printf("Attribute cannot be null\n");
-          printf("ERROR\n");
-          return false;
-        }
+      if (command_table->attributes[i].notnull) {
+        printf("Attribute cannot be null\n");
+        printf("ERROR\n");
+        return false;
+      }
       values_parsed[tuple_index][i] = NULL;
     }
   }
