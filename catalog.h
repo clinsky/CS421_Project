@@ -37,5 +37,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
                      char *table_name, Attribute *attr,
                      Attribute_Values *attr_val);
 bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name);
+bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
+                      char *table_name, char *attr_name);
 Attribute_Values *clone_attr_vals(Attribute_Values *src);
 #endif
