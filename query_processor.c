@@ -271,11 +271,6 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
     } else {
       sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
       if (strcmp(current_token, "null") == 0) {
-        if(command_table->attributes[i].notnull){
-          printf("Attribute cannot be null\n");
-          printf("ERROR\n");
-          return false;
-        }
         null = true;
       }
       else{
@@ -294,6 +289,11 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
           (char *)malloc((strlen(current_token) + 1) * sizeof(char));
       strcpy(values_parsed[tuple_index][i], current_token);
     } else {
+      if(command_table->attributes[i].notnull){
+          printf("Attribute cannot be null\n");
+          printf("ERROR\n");
+          return false;
+        }
       values_parsed[tuple_index][i] = NULL;
     }
   }

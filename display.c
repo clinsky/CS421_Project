@@ -18,6 +18,12 @@ void print_table_metadata(Table *t) {
     if (t->attributes[i].is_primary_key) {
       printf(" primarykey ");
     }
+    if (t->attributes[i].notnull) {
+      printf(" notnull ");
+    }
+    if (t->attributes[i].unique) {
+      printf(" unique ");
+    }
     printf("\n");
   }
 }
