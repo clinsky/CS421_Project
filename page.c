@@ -44,14 +44,13 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
       }
       values[i].double_val = double_val;
     } else if (type == BOOL) {
-      int intval = atoi(v);
-      if (intval == 0) {
-        if (strcmp(v, "0") != 0) {
-          return false;
-        }
+      if (strcmp(v, "false") == 0) {
         values[i].bool_val = 0;
-      } else {
+      } else if (strcmp(v, "true") == 0) {
         values[i].bool_val = 1;
+      } else {
+        printf("bool value should either be 'true' or 'false'\n");
+        return false;
       }
     } else if (type == CHAR) {
       if (strlen(v) > table->attributes[i].len) {
@@ -115,6 +114,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
     }
     // printf("has_next_page:%d\n", has_next_page);
     fread(&page->num_records, sizeof(int), 1, fp);
+    printf("num records: %d\n", page->num_records);
     // printf("num records on  page %d: %d\n", x, page->num_records);
     page->records = malloc(sizeof(Record) * page->num_records);
     for (int record_num = 0; record_num < page->num_records; record_num++) {
@@ -135,7 +135,7 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
       for (int i = 0; i < table->num_attributes; i++) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
         if ((record->bitmap & (1 << i)) == 0) {
-          printf("attr %d is null\n", i);
+          printf("record# %d attr %d is null\n", record_num, i);
           curr_attr->is_null = true;
         }
         ATTRIBUTE_TYPE type = table->attributes[i].type;
@@ -370,7 +370,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // write_page_to_file(table, p, filepath);
     // p = read_page_from_file(schema, table, filepath);
     add_to_buffer(buffer, table, p, filepath);
-    print_page(table, p);
+    // print_page(table, p);
   }
   return p;
 }

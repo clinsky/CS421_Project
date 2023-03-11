@@ -349,7 +349,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
       }
     }
     // rewrite entire schemas to catalog file
-    // write_schemas_to_catalog(db_schema);
+    write_schemas_to_catalog(db_schema);
     return true;
   }
 
@@ -446,7 +446,7 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
       db_schema->tables[i] = *new_table;
     }
   }
-  // write_schemas_to_catalog(db_schema);
+  write_schemas_to_catalog(db_schema);
   return true;
 }
 
@@ -557,26 +557,36 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
         pos += 1;
       }
       new_record->size = calculate_record_size(new_table, new_record);
-      record->size = calculate_record_size(new_table, record);
 
-      // printf("type: %s int_val: %d\n",
-      //        attribute_type_to_string(new_attr_val->type),
-      //        attr_val->int_val);
+      printf("old record size:%d new record size:%d\n", record->size,
+             new_record->size);
+
+      int new_bitmap = 0;
+      for (int attr_index = 0; attr_index < new_table->num_attributes;
+           attr_index++) {
+        if (new_record->attr_vals[attr_index].is_null) {
+          continue;
+        }
+        new_bitmap |= (1 << attr_index);
+      }
+
+      new_record->bitmap = new_bitmap;
+
+      for (int i = 0; i < new_table->num_attributes; i++) {
+        if ((new_record->bitmap & (1 << i)) != 0) {
+          printf("1");
+        } else {
+          printf("0");
+        }
+      }
+      printf("\n");
 
       // UPDATE BIT MAP
-      Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
-      if (new_page == NULL) {
-        return false;
-      }
+      // Page *new_page = add_record_to_page(db_schema, new_table, record,
+      // buffer); if (new_page == NULL) {
+      //   return false;
+      // }
     }
-    // for (int i = 0; i < new_table->num_attributes; i++) {
-    //   if ((record->bitmap & (1 << i)) != 0) {
-    //     printf("1");
-    //   } else {
-    //     printf("0");
-    //   }
-    // }
-    // printf("\n");
     if (p->next_page != NULL) {
       p = p->next_page;
     } else {
