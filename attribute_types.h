@@ -11,6 +11,8 @@ struct attribute {
   ATTRIBUTE_TYPE type; // type of attribute
   int len;             // len if char/varchar
   bool is_primary_key; // if is primarykey
+  bool notnull; // if cannot be null
+  bool unique; // if must be unique
 };
 
 typedef struct attribute Attribute;
