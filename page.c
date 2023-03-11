@@ -494,7 +494,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                   record->attr_vals[pkey].bool_val;
       } else if (type == CHAR) {
         if (strcmp(curr_record->attr_vals[pkey].chars_val,
-                   record->attr_vals[pkey].chars_val)) {
+                   record->attr_vals[pkey].chars_val) == 0) {
           printf("Duplicate primary key %s\n",
                  record->attr_vals[pkey].chars_val);
           printf("ERROR\n");
@@ -503,7 +503,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
                          record->attr_vals[pkey].chars_val) < 0;
       } else if (type == VARCHAR) {
         if (strcmp(curr_record->attr_vals[pkey].chars_val,
-                   record->attr_vals[pkey].chars_val)) {
+                   record->attr_vals[pkey].chars_val) == 0) {
           printf("Duplicate primary key %s\n",
                  record->attr_vals[pkey].chars_val);
           printf("ERROR\n");
@@ -539,14 +539,14 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
           }
         } else if (unique_attribute_type == CHAR) {
           if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
-                    record->attr_vals[unique_attribute_index].chars_val)) {
+                    record->attr_vals[unique_attribute_index].chars_val) == 0) {
             printf("Duplicate unique attribute %s\n",
                   record->attr_vals[unique_attribute_index].chars_val);
             printf("ERROR\n");
           }
         } else if (unique_attribute_type == VARCHAR) {
           if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
-                    record->attr_vals[unique_attribute_index].chars_val)) {
+                    record->attr_vals[unique_attribute_index].chars_val) == 0) {
             printf("Duplicate unique attribute %s\n",
                   record->attr_vals[unique_attribute_index].chars_val);
             printf("ERROR\n");
