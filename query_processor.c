@@ -116,6 +116,9 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
   while (1) {
     table_ptr->num_attributes++;
     Attribute *attribute_ptr = malloc(sizeof(Attribute));
+    attribute_ptr->is_primary_key = false;
+    attribute_ptr->notnull = false;
+    attribute_ptr->unique = false;
 
     // field name
     token = strtok(NULL, " ");
@@ -168,7 +171,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
       printf("ERROR\n");
       return false;
     }
-
+    printf("%s is primary key!\n", attribute_ptr->name);
     has_primary_key = true;
     attribute_ptr->is_primary_key = true;
 
@@ -244,7 +247,7 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
       if (next_tokens[0] == '"') {
         sscanf(next_tokens, "\"%[^\"]\" %[^\n]", current_token, next_tokens);
         if (strlen(current_token) > command_table->attributes[i].len) {
-          printf("Invalid data type, char is too long");
+          printf("Invalid data type, char is too long\n");
           printf("ERROR\n");
           return false;
         }
@@ -252,7 +255,7 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
         sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
         null = true;
         if (strcmp(current_token, "null") != 0) {
-          printf("Invalid data type, chars must be in quotes");
+          printf("Invalid data type, chars must be in quotes\n");
           printf("ERROR\n");
           return false;
         }
@@ -260,12 +263,25 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
     } else {
       sscanf(next_tokens, "%s %[^\n]", current_token, next_tokens);
       if (strcmp(current_token, "null") == 0) {
+        if(command_table->attributes[i].notnull){
+          printf("Attribute cannot be null\n");
+          printf("ERROR\n");
+          return false;
+        }
         null = true;
+      }
+      else{
+        if (command_table->attributes[i].type == INTEGER){
+          char *pPosition = strchr(current_token, '.');
+          if(pPosition != NULL){
+            printf("Cannot insert double for integer\n");
+            printf("ERROR\n");
+            return false;
+          }
+        }
       }
     }
     if (!null) {
-      // values_parsed[tuple_index] =
-      //     malloc(command_table->num_attributes * sizeof(char*));
       values_parsed[tuple_index][i] =
           (char *)malloc((strlen(current_token) + 1) * sizeof(char));
       strcpy(values_parsed[tuple_index][i], current_token);
