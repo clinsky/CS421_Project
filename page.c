@@ -3,10 +3,11 @@
 Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
   Record *record = malloc(sizeof(Record));
   record->bitmap = 0;
+  record->unique_attribute_indices = malloc(sizeof(int) * table->num_unique_attributes);
 
   Attribute_Values *values =
       malloc(sizeof(Attribute_Values) * table->num_attributes);
-
+  int unique_attribute_count = 0;
   for (int i = 0; i < table->num_attributes; i++) {
     char *v = tuple_parsed[i];
     ATTRIBUTE_TYPE type = table->attributes[i].type;
@@ -78,6 +79,9 @@ Record *check_valid_parsed_tuple(Table *table, char **tuple_parsed) {
     // store which attr # is the primary key
     if (table->attributes[i].is_primary_key) {
       record->primary_key_index = i;
+    } else if (table->attributes[i].unique) {
+      record->unique_attribute_indices[unique_attribute_count] = i;
+      unique_attribute_count++;
     }
   }
   record->attr_vals = values;
@@ -437,6 +441,49 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
         greater = strcmp(curr_record->attr_vals[pkey].chars_val,
                          record->attr_vals[pkey].chars_val) < 0;
       }
+
+      for(int j=0;j < table->num_unique_attributes;j++){
+        int unique_attribute_index = record->unique_attribute_indices[j];
+        ATTRIBUTE_TYPE unique_attribute_type = table->attributes[unique_attribute_index].type;
+        if (unique_attribute_type == INTEGER) {
+          if (curr_record->attr_vals[unique_attribute_index].int_val ==
+              record->attr_vals[unique_attribute_index].int_val) {
+            printf("Duplicate unique attribute %d\n", record->attr_vals[unique_attribute_index].int_val);
+            printf("ERROR\n");
+            return NULL;
+          }
+        } else if (unique_attribute_type == DOUBLE) {
+          if (curr_record->attr_vals[unique_attribute_index].double_val ==
+              record->attr_vals[unique_attribute_index].double_val) {
+            printf("Duplicate unique attribute %f\n",
+                  record->attr_vals[unique_attribute_index].double_val);
+            printf("ERROR\n");
+            return NULL;
+          }
+        } else if (unique_attribute_type == BOOL) {
+          if (curr_record->attr_vals[unique_attribute_index].bool_val ==
+              record->attr_vals[unique_attribute_index].bool_val) {
+            printf("Duplicate unique attribute %d\n",
+                  record->attr_vals[unique_attribute_index].bool_val);
+            printf("ERROR\n");
+          }
+        } else if (unique_attribute_type == CHAR) {
+          if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
+                    record->attr_vals[unique_attribute_index].chars_val)) {
+            printf("Duplicate unique attribute %s\n",
+                  record->attr_vals[unique_attribute_index].chars_val);
+            printf("ERROR\n");
+          }
+        } else if (unique_attribute_type == VARCHAR) {
+          if (strcmp(curr_record->attr_vals[unique_attribute_index].chars_val,
+                    record->attr_vals[unique_attribute_index].chars_val)) {
+            printf("Duplicate unique attribute %s\n",
+                  record->attr_vals[unique_attribute_index].chars_val);
+            printf("ERROR\n");
+          }
+        }
+      }
+
       if (!greater) {
         // printf("was NOT greater than this record at %d\n", i);
         // printf("curr num records: %d\n", curr_page->num_records);
