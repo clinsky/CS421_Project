@@ -174,6 +174,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
           attribute_ptr->notnull = true;
         } else if (startsWith(token, "unique")) {
           attribute_ptr->unique = true;
+          table_ptr->num_unique_attributes++;
         } else {
           printf("Invalid constraint\n");
           printf("ERROR\n");
