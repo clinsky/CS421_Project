@@ -143,11 +143,8 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
       for (int i = 0; i < table->num_attributes; i++) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
         if ((record->bitmap & (1 << i)) == 0) {
-<<<<<<< HEAD
-          printf("record# %d attr %d is null\n", record_num, i);
-=======
+          // printf("record# %d attr %d is null\n", record_num, i);
           // printf("attr %d is null\n", i);
->>>>>>> 2db2a0f04412db5287624fbf9e013e667170caa8
           curr_attr->is_null = true;
         }
         ATTRIBUTE_TYPE type = table->attributes[i].type;

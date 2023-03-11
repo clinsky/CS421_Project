@@ -603,10 +603,10 @@ bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
       printf("\n");
 
       // UPDATE BIT MAP
-      // Page *new_page = add_record_to_page(db_schema, new_table, record,
-      // buffer); if (new_page == NULL) {
-      //   return false;
-      // }
+      Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
+      if (new_page == NULL) {
+        return false;
+      }
     }
     if (p->next_page != NULL) {
       p = p->next_page;
