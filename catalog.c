@@ -299,7 +299,6 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
                      Attribute_Values *attr_val) {
 
   printf("in alter table add\n");
-  // printf("attr len is %d\n", attr->len);
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
@@ -448,6 +447,148 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
     }
   }
   // write_schemas_to_catalog(db_schema);
+  return true;
+}
+
+bool alter_table_drop(Schema *db_schema, struct bufferm *buffer,
+                      char *table_name, char *attr_name) {
+
+  printf("in alter table drop %s for table %s\n", attr_name, table_name);
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
+
+  Table *old_table = get_table(db_schema, table_name);
+  if (old_table == NULL) {
+    printf("%s does not exist\n", table_name);
+    return false;
+  } else {
+    printf("updating the %s table to drop %s\n", table_name, attr_name);
+  }
+
+  bool found_attr = false;
+  int index_of_attr_to_drop = 0;
+  // check if attr_name actually exists in table and track index
+  for (int i = 0; i < old_table->num_attributes; i++) {
+    if (strcmp(old_table->attributes[i].name, attr_name) == 0) {
+      // check if attempting to drop primary key
+      if (old_table->attributes[i].is_primary_key == true) {
+        printf("Cannot drop primary key %s from %s\n", attr_name, table_name);
+        return false;
+      }
+      found_attr = true;
+      index_of_attr_to_drop = i;
+      break;
+    }
+  }
+
+  if (!found_attr) {
+    printf("attr: %s is not in table: %s\n", attr_name, table_name);
+    return false;
+  } else {
+    printf("attr: %s was in table, going to drop it\n", attr_name);
+  }
+
+  Table *new_table = malloc(sizeof(Table));
+  new_table->name = malloc(strlen(table_name) + 1);
+  strcpy(new_table->name, table_name);
+  new_table->num_attributes = old_table->num_attributes - 1;
+  new_table->attributes = malloc(sizeof(Attribute) * new_table->num_attributes);
+
+  // copy old attributes except the one to drop
+  int j = 0;
+  for (int i = 0; i < old_table->num_attributes; i++) {
+    if (i == index_of_attr_to_drop) {
+      continue;
+    }
+    new_table->attributes[j] = old_table->attributes[i];
+    j += 1;
+  }
+  Page *p = find_in_buffer(buffer, old_table);
+  if (p == NULL) {
+    printf("%s page was not in the buffer\n", table_name);
+    p = read_page_from_file(db_schema, old_table, filepath);
+  }
+  if (p == NULL) {
+    printf("%s page was null, going to update schema to drop tho!\n",
+           table_name);
+    // no pages for this table
+    for (int i = 0; i < db_schema->num_tables; i++) {
+      if (strcmp(db_schema->tables[i].name, table_name) == 0) {
+        db_schema->tables[i] = *new_table;
+      }
+    }
+    // rewrite entire schemas to catalog file
+    // write_schemas_to_catalog(db_schema);
+    return true;
+  }
+
+  // remove old table from buffer
+  remove_from_buffer(buffer, old_table);
+
+  //  remove table file
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
+
+  if (remove(filepath) == 0) {
+    printf("%s was removed\n", filepath);
+  } else {
+    printf("%s was not removed for some reason\n", filepath);
+  }
+
+  // I NEED TO UPDATE BITMAP
+  // AS WELL AS RECORD SIZE
+  // ALSO COPY PRIMARY KEY INDEX
+  // NEED TO CLONE ATTR_VALS
+  // NEED TO REMOVE FROM BUFFER AS WELL
+  int page_count = 0;
+  // loop through all pages
+  while (p != NULL) {
+    for (int i = 0; i < p->num_records; i++) {
+      Record *record = &p->records[i];
+      Record *new_record = malloc(sizeof(Record));
+      new_record->attr_vals =
+          malloc(sizeof(Attribute_Values) * new_table->num_attributes);
+      int pos = 0;
+
+      for (int j = 0; j < old_table->num_attributes; j++) {
+        if (j == index_of_attr_to_drop) {
+          continue;
+        }
+        new_record->attr_vals[pos] = record->attr_vals[j];
+        pos += 1;
+      }
+      new_record->size = calculate_record_size(new_table, new_record);
+      record->size = calculate_record_size(new_table, record);
+
+      // printf("type: %s int_val: %d\n",
+      //        attribute_type_to_string(new_attr_val->type),
+      //        attr_val->int_val);
+
+      // UPDATE BIT MAP
+      Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
+      if (new_page == NULL) {
+        return false;
+      }
+    }
+    // for (int i = 0; i < new_table->num_attributes; i++) {
+    //   if ((record->bitmap & (1 << i)) != 0) {
+    //     printf("1");
+    //   } else {
+    //     printf("0");
+    //   }
+    // }
+    // printf("\n");
+    if (p->next_page != NULL) {
+      p = p->next_page;
+    } else {
+      break;
+    }
+  }
+
+  for (int i = 0; i < db_schema->num_tables; i++) {
+    if (strcmp(db_schema->tables[i].name, table_name) == 0) {
+      db_schema->tables[i] = *new_table;
+    }
+  }
   return true;
 }
 

@@ -649,9 +649,8 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       printf("default varchar value: %s\n", attr_values_ptr->chars_val);
     }
     printf("attribute name: %s\n", attr->name);
-    alter_table_add(schema, buffer, table_name, attr, attr_values_ptr);
+    return alter_table_add(schema, buffer, table_name, attr, attr_values_ptr);
 
-    return true;
   }
 
   else if (strcmp(token, "drop") == 0) {
@@ -662,8 +661,7 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       attr_name[strlen(attr_name) - 1] = '\0';
     }
     printf("attr name: %s\n", attr_name);
-
-    return true;
+    return alter_table_drop(schema, buffer, table_name, attr_name);
   }
 
   else {
