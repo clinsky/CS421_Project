@@ -348,7 +348,7 @@ bool process_insert_record(char *command, char *db_loc, Schema *schema,
   }
   char ***values_parsed;
   values_parsed = (char ***)malloc(num_values * sizeof(char **));
-  for (int i = 0; i < command_table->num_attributes; i++) {
+  for (int i = 0; i < num_values; i++) {
     values_parsed[i] =
         (char **)malloc(command_table->num_attributes * sizeof(char *));
   }
