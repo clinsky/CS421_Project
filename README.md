@@ -14,7 +14,7 @@ Please use create table in the following manner:
 create table foo(\
 baz integer primarykey,\
 bar double notnull,\
-bazzle char(10) unique notnull);\
+bazzle char(10) unique notnull);
 
 Where attributes are seperated by commas, constraints are not seperated by commas, and the closing parentheses and semi-colon appear on the same line as the last attribute. 
 ### insert
@@ -22,8 +22,8 @@ Please use insert in the following manner:
 
 insert into foo values\
 (20 2.2 "hi"),\
-(21 12.2 "hi");\
+(21 12.2 "hi");
 
 Where records are seperated by commas, attributes are not seperated by commas, and the semi-colon appears on the same line as the last record.
 ### Submission Problems
-All phase1 and phase1 features are implemented except we have a bug that prevents from handling single attribute tables.
+All phase 1 and phase 2 features are implemented except we have a bug that prevents from handling single attribute tables.
