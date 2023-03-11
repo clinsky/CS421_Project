@@ -612,19 +612,33 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
 
       default_char_value += 1; // remove the first quote
 
-      if (default_char_value[strlen(default_char_value) - 1] == ';') {
-        default_char_value[strlen(default_char_value) - 1] = '\0';
+      int orig_len = strlen(default_char_value);
+
+      if (default_char_value[orig_len - 1] == ';') {
+        default_char_value[orig_len - 1] = '\0';
       }
-      if (default_char_value[strlen(default_char_value) - 1] != '\"') {
+      if (default_char_value[orig_len - 2] != '\"') {
         printf("Default value missing right quotes\n");
         printf("Error\n");
         return false;
       }
 
       default_char_value[strlen(default_char_value) - 1] =
-          '\0'; // remove the last quote
-      attr_values_ptr->chars_val = default_char_value;
-      printf("default char value: %s\n", attr_values_ptr->chars_val);
+          ' '; // remove the last quote
+      int targetStrLen = attr->len;
+      const char *padding = "x";
+      int padLen = targetStrLen - strlen(default_char_value);
+      if (padLen < 0) {
+        padLen = 0;
+      }
+
+      char *temp = malloc(sizeof(char) * attr->len + 1);
+      strncpy(temp, default_char_value, strlen(default_char_value));
+      temp[attr->len] = '\0';
+      attr_values_ptr->chars_val = temp;
+      printf("default char value: %s\n", temp);
+      printf("chars len is : %lu but it should be %d\n", strlen(temp),
+             attr->len);
 
     } else if (startsWith(attr_type, "varchar")) {
       char *default_varchar_value = malloc(strlen(default_value) + 1);

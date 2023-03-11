@@ -84,7 +84,7 @@ Page *find_in_buffer(Bufferm *b, Table *t);
 
 void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath);
 
-void remove_from_buffer(Bufferm *b, Table *table);
+Page *remove_from_buffer(Bufferm *b, Table *table);
 
 void flush_buffer(Bufferm *b);
 
