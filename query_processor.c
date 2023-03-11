@@ -532,6 +532,24 @@ bool process_display_info(char *command, char *db_loc, Schema *schema,
   return false;
 }
 
+bool process_drop_table(char *command, char *db_loc, Schema *schema,
+                        Bufferm *buffer) {
+  /*
+   * drop table <table_name>
+   */
+  char *token = strtok(command, " ");
+  token = strtok(NULL, " ");
+  if (strcmp(token, "table") != 0) {
+    printf("Syntax Error\n");
+    return false;
+  }
+  token = strtok(NULL, " ");
+  char *table_name = malloc(strlen(token) + 1);
+  strcpy(table_name, token);
+  printf("Dropping table %s\n", table_name);
+  return drop_table(schema, buffer, table_name);
+}
+
 void save_catalog(Schema *schema, char *db_loc) {
   char path[100];
   strcpy(path, db_loc);
@@ -688,16 +706,19 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
       printf("default varchar value: %s\n", attr_values_ptr->chars_val);
     }
     printf("attribute name: %s\n", attr->name);
-    alter_table_add(schema, buffer, table_name, attr, attr_values_ptr);
+    return alter_table_add(schema, buffer, table_name, attr, attr_values_ptr);
 
-    return true;
   }
 
   else if (strcmp(token, "drop") == 0) {
     token = strtok(NULL, " "); // <attr_name>
     char *attr_name = malloc(strlen(token) + 1);
     strcpy(attr_name, token);
-    return true;
+    if (attr_name[strlen(attr_name) - 1] == ';') {
+      attr_name[strlen(attr_name) - 1] = '\0';
+    }
+    printf("attr name: %s\n", attr_name);
+    return alter_table_drop(schema, buffer, table_name, attr_name);
   }
 
   else {
@@ -719,6 +740,8 @@ void parse_command(char *command, char *db_loc, Schema *schema,
     process_display_schema(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display info")) {
     process_display_info(command, db_loc, schema, buffer);
+  } else if (startsWith(command, "drop")) {
+    process_drop_table(command, db_loc, schema, buffer);
   } else if (startsWith(command, "alter")) {
     parse_alter_table(command, db_loc, schema, buffer);
   } else {
