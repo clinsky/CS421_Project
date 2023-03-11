@@ -152,29 +152,34 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
       continue;
     }
 
-    // of the form " ... x int primarykey... "
+    // contains constraints
     ATTRIBUTE_TYPE attr_type =
         parse_attribute_type_before(token, 0, attribute_ptr);
     if (attr_type == INVALID_ATTR) {
       return false;
     }
 
-    // 3RD WORD IF EXISTS SHOULD BE PRIMARYKEY
-    token = strtok(NULL, " ");
-
-    if (!startsWith(token, "primarykey")) {
-      return false;
-    }
-
-    // check if already have primarykey
-    if (has_primary_key) {
-      printf("Multiple primary keys found\n");
-      printf("ERROR\n");
-      return false;
-    }
-    printf("%s is primary key!\n", attribute_ptr->name);
-    has_primary_key = true;
-    attribute_ptr->is_primary_key = true;
+    do{
+        token = strtok(NULL, " ");
+        printf("Token: %s\n", token);
+        if (startsWith(token, "primarykey")) {
+          if (has_primary_key) {
+            printf("Multiple primary keys found\n");
+            printf("ERROR\n");
+            return false;
+          }
+          has_primary_key = true;
+          attribute_ptr->is_primary_key = true;
+        } else if (startsWith(token, "notnull")) {
+          attribute_ptr->notnull = true;
+        } else if (startsWith(token, "unique")) {
+          attribute_ptr->unique = true;
+        } else {
+          printf("Invalid constraint\n");
+          printf("ERROR\n");
+          return false;
+        }
+    } while (!(endsWith(token, ");") || endsWith(token, ",")));
 
     // last statement of the form num integer primarykey);
     if (endsWith(token, ");")) {
