@@ -11,10 +11,10 @@ We fixed the following issues with phase 1:
 ### create table
 Please use create table in the following manner:
 
-create table foo(
-baz integer primarykey,
+"""create table foo(
+baz integer primarykeys,
 bar double notnull,
-bazzle char(10) unique notnull);
+bazzle char(10) unique notnull);"""
 
 Where attributes are seperated by commas, constraints are not seperated by commas, and the closing parentheses and semi-colon appear on the same line as the last attribute. 
 ### insert
