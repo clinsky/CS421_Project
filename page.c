@@ -106,13 +106,16 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
     page->total_bytes_from_records = 0;
     page->record_capacity = 20;
     int has_next_page;
+    // printf("reading has_next_page at pos %lu\n", ftell(fp));
     fread(&has_next_page, sizeof(int), 1, fp);
+    // printf("has_next_page was: %d\n", has_next_page);
     if (has_next_page != 1) {
       still_go = false;
     } else {
       page->next_page = malloc(sizeof(Page));
     }
     // printf("has_next_page:%d\n", has_next_page);
+    // printf("reading num records at %lu\n", ftell(fp));
     fread(&page->num_records, sizeof(int), 1, fp);
     printf("num records: %d\n", page->num_records);
     // printf("num records on  page %d: %d\n", x, page->num_records);
@@ -121,8 +124,13 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
       // read offset for the x+1th record
       Record *record = malloc(sizeof(Record));
       fseek(fp, RELATIVE_START + 4 + (4 * (record_num + 1)), SEEK_SET);
-      int offset;
-      fread(&offset, sizeof(int), 1, fp);
+      // printf("fp before offset: %d\n",
+      //        RELATIVE_START + 4 + (4 * (record_num + 1)));
+      int offset = 0;
+      if (fread(&offset, sizeof(int), 1, fp) != 1) {
+        // printf("failed to read byte for offset\n");
+      }
+      // offset = 11;
       // printf("offset is: %d\n", offset);
       fseek(fp, RELATIVE_START + offset, SEEK_SET);
       // printf("at pos %ld\n", ftell(fp));
@@ -135,7 +143,11 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
       for (int i = 0; i < table->num_attributes; i++) {
         Attribute_Values *curr_attr = &record->attr_vals[i];
         if ((record->bitmap & (1 << i)) == 0) {
+<<<<<<< HEAD
           printf("record# %d attr %d is null\n", record_num, i);
+=======
+          // printf("attr %d is null\n", i);
+>>>>>>> 2db2a0f04412db5287624fbf9e013e667170caa8
           curr_attr->is_null = true;
         }
         ATTRIBUTE_TYPE type = table->attributes[i].type;
@@ -156,9 +168,18 @@ Page *read_page_from_file(Schema *schema, Table *table, char *file_path) {
         } else if (type == CHAR) {
           curr_attr->chars_val =
               malloc(sizeof(char) * table->attributes[i].len + 1);
-          fread(curr_attr->chars_val, table->attributes[i].len,
-                table->attributes[i].len, fp);
-          curr_attr->chars_val[table->attributes[i].len + 1] = '\0';
+          // printf("about to read chars at %lu\n", ftell(fp));
+          int charsread = fread(curr_attr->chars_val, sizeof(char),
+                                table->attributes[i].len, fp);
+          curr_attr->chars_val[table->attributes[i].len] = '\0';
+          if (charsread != table->attributes[i].len) {
+            // printf("failed to read %d chars, read %d instead\n",
+            //        table->attributes[i].len, charsread);
+          } else {
+            // printf("%s was read with %d chars of len %lu\n",
+            //        curr_attr->chars_val, charsread,
+            //        strlen(curr_attr->chars_val));
+          }
           // printf("char was %s\n", curr_attr->chars_val);
         } else if (type == VARCHAR) {
           int var_len;
@@ -220,10 +241,11 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
       int np = 1;
       fwrite(&np, sizeof(int), 1, fp);
     } else {
-      int np = 0;
+      int np = 37;
       fwrite(&np, sizeof(int), 1, fp);
     }
     // printf("%d is num recs\n", p->num_records);
+    // printf("writing num recs at pos %lu\n", ftell(fp));
     if (fwrite(&p->num_records, sizeof(int), 1, fp) != 1) {
       // printf("wtf didn't write to file\n");
     } else {
@@ -241,7 +263,10 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
       // printf("place #%d : %d\n", i, place);
       // 4 for # records, 4 for each offset
       fseek(fp, RELATIVE_START + 4 + (4 * (i + 1)), SEEK_SET);
-      fwrite(&place, sizeof(int), 1, fp);
+      // printf("writing place at %ld\n", ftell(fp));
+      if (fwrite(&place, sizeof(int), 1, fp) != 1) {
+        // printf("didnt write place for some reason\n");
+      }
       fseek(fp, RELATIVE_START + place, SEEK_SET);
       // printf("writing record at pos %li\n", ftell(fp));
 
@@ -251,6 +276,14 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
       if (fwrite(&(p->records[i].bitmap), sizeof(int), 1, fp) != 1) {
         // printf("bitmap wasn't 1 for somereason\n");
       }
+      // for (int b = 0; b < table->num_attributes; b++) {
+      //   if ((p->records[i].bitmap & (1 << b)) != 0) {
+      //     printf("1");
+      //   } else {
+      //     printf("0");
+      //   }
+      // }
+      // printf("\n");
       // // write each attribute
       for (int j = 0; j < table->num_attributes; j++) {
         ATTRIBUTE_TYPE type = table->attributes[j].type;
@@ -282,8 +315,8 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
             //        p->records[i].attr_vals[j].int_val);
             if (fwrite(&p->records[i].attr_vals[j].int_val, sizeof(int), 1,
                        fp) != 1) {
-              printf("Failed writing int\n");
-              printf("ERROR\n");
+              // printf("Failed writing int\n");
+              // printf("ERROR\n");
             } else {
             }
           } else if (type == DOUBLE) {
@@ -292,9 +325,24 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
           } else if (type == BOOL) {
             fwrite(&p->records[i].attr_vals[j].bool_val, sizeof(double), 1, fp);
           } else if (type == CHAR) {
+            // printf("writing chars at pos %lu\n", ftell(fp));
+
+            char *temp = malloc(sizeof(char) * table->attributes[j].len + 1);
+            strncpy(temp, p->records[i].attr_vals[j].chars_val,
+                    strlen(p->records[i].attr_vals[j].chars_val));
+            for (int t = strlen(p->records[i].attr_vals[j].chars_val);
+                 t < table->attributes[j].len; t++) {
+              temp[t] = ' '; // padd with space
+            }
+            temp[table->attributes[j].len] = '\0';
+            // printf("temp is %s with len %lu\n", temp, strlen(temp));
             // fixed chars to read for CHAR type
-            fwrite(&p->records[i].attr_vals[j].chars_val, sizeof(char),
-                   table->attributes[j].len, fp);
+            int charswrite =
+                fwrite(temp, sizeof(char), table->attributes[j].len, fp);
+            // printf(
+            //     "wrote %s with %d chars of len %lu, should of wrote %d
+            //     chars\n", temp, charswrite, strlen(temp),
+            //     table->attributes[j].len);
           } else if (type == VARCHAR) {
             // write how many cahrs to read for varchar
             int num_chars = strlen(p->records[i].attr_vals[j].chars_val);
@@ -303,10 +351,14 @@ void write_page_to_file(Table *table, Page *p, char *file_path) {
             // printf("writing var char %s at: %li\n",
             // p->records[i].attr_vals[j].chars_val, ftell(fp));
             char *charsval = p->records[i].attr_vals[j].chars_val;
-            fwrite(charsval, sizeof(char), num_chars, fp);
+            if (fwrite(charsval, sizeof(char), num_chars, fp) != num_chars) {
+              // printf("didn't write %d num chars\n", num_chars);
+            } else {
 
-            // printf("just wrote %d chars of %s\n", wrote, charsval);
-            fflush(fp);
+              // printf("wrote %d num chars\n", num_chars);
+            }
+
+            // printf("just wrote chars of %s\n", charsval);
           }
         }
         // update end pointer
@@ -328,7 +380,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // printf("File %s exists\n", filepath);
     p = find_in_buffer(buffer, table);
     if (p != NULL) {
-      printf("buffer had %s\n", table->name);
+      // printf("buffer had %s\n", table->name);
       p = insert_record_to_page(schema, table, p, record);
     } else {
       p = read_page_from_file(schema, table, filepath);
@@ -356,21 +408,42 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     //   printf("ERROR\n");
     //   return NULL;
     // }
-    Page *first_page = malloc(sizeof(Page));
-    first_page->next_page = NULL;
-    first_page->max_size = schema->page_size;
-    first_page->num_records = 1;
-    first_page->record_capacity = 20;
-    first_page->page_number = 0;
-    first_page->offsets = malloc(sizeof(Offset) * first_page->record_capacity);
-    first_page->records = malloc(sizeof(Record) * first_page->record_capacity);
-    first_page->records[0] = *record;
-    first_page->total_bytes_from_records += record->size;
-    p = first_page;
-    // write_page_to_file(table, p, filepath);
-    // p = read_page_from_file(schema, table, filepath);
-    add_to_buffer(buffer, table, p, filepath);
-    // print_page(table, p);
+    p = find_in_buffer(buffer, table);
+    if (p != NULL) {
+      printf("buffer had %s\n", table->name);
+      p = insert_record_to_page(schema, table, p, record);
+    } else {
+      Page *first_page = malloc(sizeof(Page));
+      first_page->next_page = NULL;
+      first_page->max_size = schema->page_size;
+      first_page->num_records = 1;
+      first_page->record_capacity = 20;
+      first_page->page_number = 0;
+      first_page->offsets =
+          malloc(sizeof(Offset) * first_page->record_capacity);
+      first_page->records =
+          malloc(sizeof(Record) * first_page->record_capacity);
+      first_page->records[0] = *record;
+      // printf("printing bitmap in add record\n");
+      // for (int i = 0; i < table->num_attributes; i++) {
+      //   if ((record->bitmap & (1 << i)) != 0) {
+      //     printf("1");
+      //   } else {
+      //     printf("0");
+      //   }
+      // }
+      // printf("\n");
+      first_page->total_bytes_from_records += record->size;
+      if (is_page_overfull(first_page)) {
+        // printf("RECORD IS LARGER THAN PAGE SIZE...\n");
+        return NULL;
+      }
+      p = first_page;
+      write_page_to_file(table, p, filepath);
+      // p = read_page_from_file(schema, table, filepath);
+      add_to_buffer(buffer, table, p, filepath);
+    }
+    print_page(table, p);
   }
   return p;
 }
@@ -482,6 +555,7 @@ Page *insert_record_to_page(Schema *schema, Table *table, Page *p,
 
 void make_new_page_if_full(Page *prev_page) {
   if (is_page_overfull(prev_page)) {
+    printf("WAS OVERFULL...\n");
     Page *new_page = malloc(sizeof(Page));
     new_page->max_size = prev_page->max_size;
     new_page->page_number = prev_page->page_number + 1;
@@ -508,9 +582,10 @@ void print_page(Table *table, Page *p) {
   int page_num = 1;
   // printf("in print page..\n");
   while (curr_page != NULL) {
-    // printf("printing page# %d\n", page_num);
+    printf("printing page# %d with num records: %d\n", page_num,
+           curr_page->num_records);
     for (int k = 0; k < curr_page->num_records; k++) {
-      // printf("record #%d of size %d: ", k, curr_page->records[k].size);
+      // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
       printf("| ");
       for (int l = 0; l < table->num_attributes; l++) {
         ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
@@ -613,11 +688,11 @@ bool check_enough_space(Table *table, Page *p, Record *record) {
 }
 
 bool is_page_overfull(Page *p) {
-  int base = 4;
+  int base = 4 + 4;
   int from_records = p->total_bytes_from_records;
   int for_offsets = p->num_records * 4;
   int total = base + from_records + for_offsets;
-  // printf("total size is %d and max size is %d\n", total, p->max_size);
+  printf("total size is %d and max size is %d\n", total, p->max_size);
   return total > p->max_size;
 }
 
@@ -656,9 +731,18 @@ void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath) {
       }
     }
     write_page_to_file(table, to_remove->page, to_remove->file_path);
-
   } else {
+    printf("page added to buffer pos:%d\n", b->curr_pages);
     new_entry->page = p;
+    printf("in add to buffer bitmap\n");
+    for (int i = 0; i < table->num_attributes; i++) {
+      if ((p->records[0].bitmap & (1 << i)) != 0) {
+        printf("1");
+      } else {
+        printf("0");
+      }
+    }
+    printf("\n");
     new_entry->table_name = malloc(sizeof(char) * strlen(table->name));
     new_entry->file_path = malloc(sizeof(char) * strlen(filepath));
     new_entry->last_used = b->counter;
@@ -676,11 +760,32 @@ void flush_buffer(Bufferm *b) {
   b->counter += 1;
   for (int i = 0; i < b->curr_pages; b++) {
     Page *p = b->entries[i].page;
+    printf("printing page in flush buffer\n");
+    printf("curr page: %d\n", i);
+    printf("in flush buffer bitmap\n");
+    printf("%d\n", b->entries[i].table->num_attributes);
+    printf("num records in p: %d\n", p->num_records);
+    printf("%d\n", p->records[0].bitmap);
+    if (b->entries[i].table == NULL) {
+      printf("table is null\n");
+    } else {
+      printf("table not null\n");
+      printf("has %d attr\n", b->entries[i].table->num_attributes);
+    }
+    for (int j = 0; j < b->entries[i].table->num_attributes; j++) {
+      if ((p->records[0].bitmap & (1 << j)) != 0) {
+        printf("1");
+      } else {
+        printf("0");
+      }
+    }
+    printf("\n");
+    print_page(b->entries[i].table, p);
     write_page_to_file(b->entries[i].table, p, b->entries[i].file_path);
   }
 }
 
-void remove_from_buffer(Bufferm *b, Table *table) {
+Page *remove_from_buffer(Bufferm *b, Table *table) {
   printf("in remove from buffer\n");
   b->counter += 1;
   printf("buffer has %d pages\n", b->curr_pages);
@@ -688,6 +793,7 @@ void remove_from_buffer(Bufferm *b, Table *table) {
     // printf("%s is table im looking for vs curr %s\n", table->name,
     //        b->entries[i].table_name);
     if (strcmp(table->name, b->entries[i].table_name) == 0) {
+      Page *removed_page = b->entries[i].page;
       Buffer_Entry *last_entry = &b->entries[b->curr_pages - 1];
       b->entries[i] = *last_entry;
       // printf("found page %s in buffer\n", table->name);
@@ -697,8 +803,9 @@ void remove_from_buffer(Bufferm *b, Table *table) {
       // dont actually "remove" from buffer.
       // on next buffer entry, it will be placed in last available spot
       b->curr_pages -= 1;
-      return;
+      return removed_page;
     }
   }
   printf("%s wasn't in the buffer\n", table->name);
+  return NULL;
 }

@@ -363,15 +363,15 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
   // }
 
   // remove old table from buffer
-  remove_from_buffer(buffer, old_table);
+  Page *old_page = remove_from_buffer(buffer, old_table);
 
   //  remove table file
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
   if (remove(filepath) == 0) {
-    printf("%s was removed\n", filepath);
+    // printf("%s was removed\n", filepath);
   } else {
-    printf("%s was not removed for some reason\n", filepath);
+    // printf("%s was not removed for some reason\n", filepath);
   }
 
   // I NEED TO UPDATE BITMAP
@@ -382,14 +382,20 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
   int page_count = 0;
   // loop through all pages
   while (p != NULL) {
-    printf("%d num records to update on page: %d\n", p->num_records,
-           ++page_count);
+    // printf("%d num records to update on page: %d\n", p->num_records,
+    //        ++page_count);
     for (int i = 0; i < p->num_records; i++) {
       Record *record = &p->records[i];
       // make space for new column
-      record->attr_vals =
-          realloc(record->attr_vals,
-                  sizeof(Attribute_Values) * new_table->num_attributes);
+      // record->attr_vals =
+      //     realloc(record->attr_vals,
+      //             sizeof(Attribute_Values) * new_table->num_attributes);
+
+      Record *new_record = malloc(sizeof(Record));
+      new_record->attr_vals =
+          malloc(sizeof(Attribute_Values) * new_table->num_attributes);
+      new_record->primary_key_index = record->primary_key_index;
+      new_record->bitmap = record->bitmap;
 
       Attribute_Values *new_attr_val;
       if (attr_val == NULL) {
@@ -405,12 +411,19 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
 
       // printf("old record size: %d\n", calculate_record_size(old_table,
       // record)); add new attr_val to record
-      record->attr_vals[new_table->num_attributes - 1] = *new_attr_val;
+      for (int old_i = 0; old_i < old_table->num_attributes; old_i++) {
+        new_record->attr_vals[old_i] = record->attr_vals[old_i];
+      }
+
+      new_record->attr_vals[new_table->num_attributes - 1] = *new_attr_val;
       // printf("new record size: %d\n", calculate_record_size(new_table,
       // record));
 
       // set new record size
-      record->size = calculate_record_size(new_table, record);
+      new_record->size = calculate_record_size(new_table, new_record);
+
+      // printf("new record size: %d, page max size: %d\n", new_record->size,
+      //        db_schema->page_size);
 
       // printf("type: %s int_val: %d\n",
       //        attribute_type_to_string(new_attr_val->type),
@@ -418,10 +431,10 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
 
       // UPDATE BIT MAP
       if (attr_val != NULL) {
-        record->bitmap |= (1 << old_table->num_attributes);
+        new_record->bitmap |= (1 << old_table->num_attributes);
       }
       // for (int i = 0; i < new_table->num_attributes; i++) {
-      //   if ((record->bitmap & (1 << i)) != 0) {
+      //   if ((new_record->bitmap & (1 << i)) != 0) {
       //     printf("1");
       //   } else {
       //     printf("0");
@@ -429,8 +442,16 @@ bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
       // }
       // printf("\n");
 
-      Page *new_page = add_record_to_page(db_schema, new_table, record, buffer);
+      Page *new_page =
+          add_record_to_page(db_schema, new_table, new_record, buffer);
       if (new_page == NULL) {
+        printf("failed to insert new attr %s\n", attr->name);
+        if (old_page != NULL) {
+          char filepath[100];
+          snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path,
+                   old_table->name);
+          add_to_buffer(buffer, old_table, old_page, filepath);
+        }
         return false;
       }
     }
