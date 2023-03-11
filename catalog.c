@@ -294,6 +294,46 @@ Table *get_table(Schema *db_schema, char *table_name) {
   return NULL;
 }
 
+bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name) {
+  Table *old_table = get_table(db_schema, table_name);
+  if (old_table == NULL) {
+    printf("%s does not exist\n", table_name);
+    return false;
+  } else {
+    printf("dropping the %s table\n", table_name);
+  }
+
+  // remove from buffer
+  Page *old_page = remove_from_buffer(buffer, old_table);
+
+  char filepath[100];
+  //  remove table file
+  snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
+
+  if (remove(filepath) == 0) {
+    printf("%s was removed\n", filepath);
+  } else {
+    printf("%s was not removed for some reason\n", filepath);
+  }
+
+  // update schema
+  int table_index = 0;
+  for (int i = 0; i < db_schema->num_tables; i++) {
+    if (strcmp(db_schema->tables[i].name, table_name) == 0) {
+      table_index = i;
+      break;
+    }
+  }
+
+  // move last table to index of table that is going to be removed
+  db_schema->tables[table_index] = db_schema->tables[db_schema->num_tables - 1];
+  db_schema->num_tables -= 1;
+  db_schema->tables =
+      realloc(db_schema->tables, sizeof(Table) * db_schema->num_tables);
+
+  return true;
+}
+
 bool alter_table_add(Schema *db_schema, struct bufferm *buffer,
                      char *table_name, Attribute *attr,
                      Attribute_Values *attr_val) {

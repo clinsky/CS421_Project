@@ -508,6 +508,24 @@ bool process_display_info(char *command, char *db_loc, Schema *schema,
   return false;
 }
 
+bool process_drop_table(char *command, char *db_loc, Schema *schema,
+                        Bufferm *buffer) {
+  /*
+   * drop table <table_name>
+   */
+  char *token = strtok(command, " ");
+  token = strtok(NULL, " ");
+  if (strcmp(token, "table") != 0) {
+    printf("Syntax Error\n");
+    return false;
+  }
+  token = strtok(NULL, " ");
+  char *table_name = malloc(strlen(token) + 1);
+  strcpy(table_name, token);
+  printf("Dropping table %s\n", table_name);
+  return drop_table(schema, buffer, table_name);
+}
+
 void save_catalog(Schema *schema, char *db_loc) {
   char path[100];
   strcpy(path, db_loc);
@@ -695,6 +713,8 @@ void parse_command(char *command, char *db_loc, Schema *schema,
     process_display_schema(command, db_loc, schema, buffer);
   } else if (startsWith(command, "display info")) {
     process_display_info(command, db_loc, schema, buffer);
+  } else if (startsWith(command, "drop")) {
+    process_drop_table(command, db_loc, schema, buffer);
   } else if (startsWith(command, "alter")) {
     parse_alter_table(command, db_loc, schema, buffer);
   } else {
