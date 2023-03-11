@@ -397,7 +397,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // flush_buffer(buffer);
     return p;
   } else {
-    printf("File %s does not exist for adding record to page\n", filepath);
+    // printf("File %s does not exist for adding record to page\n", filepath);
     // FILE *fp = fopen(filepath, "w");
     // if (fp != NULL) {
     //   // printf("File %s created successfully\n", filepath);
@@ -412,7 +412,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // }
     p = find_in_buffer(buffer, table);
     if (p != NULL) {
-      printf("buffer had %s\n", table->name);
+      // printf("buffer had %s\n", table->name);
       p = insert_record_to_page(schema, table, p, record);
     } else {
       Page *first_page = malloc(sizeof(Page));
@@ -445,7 +445,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
       // p = read_page_from_file(schema, table, filepath);
       add_to_buffer(buffer, table, p, filepath);
     }
-    print_page(table, p);
+    // print_page(table, p);
   }
   return p;
 }
