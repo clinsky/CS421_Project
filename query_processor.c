@@ -193,6 +193,7 @@ bool parse_create_table(char *command, char *db_loc, Schema *schema) {
       continue;
     }
     // shouldn't have anyother options i think...
+    printf("ERROR ERROR ERROR\n");
     return false;
   }
 
