@@ -8,7 +8,6 @@ We fixed the following issues with phase 1:
 - Select output is now formatted to see columns.
 - Inserting more than one value at a time now works.
 - A double can no longer be inserted for an int.
-- Can no longer insert extra attributes
 ## Phase 2 Submission Notes
 ### create table
 Please use create table in the following manner:

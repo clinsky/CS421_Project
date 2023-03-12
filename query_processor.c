@@ -295,11 +295,6 @@ bool parse_tuple(char *tuple, char ***values_parsed, int tuple_index,
       values_parsed[tuple_index][i] = NULL;
     }
   }
-  if(strcmp(current_token, next_tokens) != 0){
-    printf("Too many attributes provided\n");
-    printf("ERROR\n");
-    return false;
-  }
   return true;
 }
 
