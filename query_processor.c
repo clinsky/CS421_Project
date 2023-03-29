@@ -432,26 +432,77 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
 
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
+    /*
+     * SELECT <attrs> FROM <table_name> WHERE <conditionals>
+     */
   char attributes[256];
   char table_name[256];
-  char *token = strtok(command, " ");
-  token = strtok(NULL, " ");
+  char *token = strtok(command, " "); // select
+  token = strtok(NULL, " "); // attrs
 
   strcpy(attributes, token);
 
-  token = strtok(NULL, " ");
+  token = strtok(NULL, " "); // from
   if (strcmp(token, "from") != 0) {
     printf("Syntax Error\n");
     return false;
   }
 
-  token = strtok(NULL, " ");
+  token = strtok(NULL, " "); // table_name
   strcpy(table_name, token);
   // printf("tableName: %s\n", table_name);
-  if (strcmp(attributes, "*") == 0) {
+
+    token = strtok(NULL, " "); // where
+    char * condition = malloc(250);
+    // If no where clause, condition is true
+    if(!token || endsWith(token, ";") != 0) {
+        // parse semicolon
+        if (table_name[strlen(table_name) - 1] == ';') {
+            table_name[strlen(table_name) - 1] = '\0';
+        }
+        condition[0] = '\0';
+        strcat(condition, "true");
+        printf("table name: %s\n", table_name);
+        printf("condition: %s\n", condition);
+        return true;
+    }
+
+    else if(strcmp(token, "where") != 0){
+        printf("Syntax Error");
+        return false;
+    }
+
+    token = strtok(NULL, " "); // <condition>
+
+
+    // condition is true if there is no condition
+    if(endsWith(token, ";") == true){
+        condition[0] = '\0';
+        strcat(condition, "true");
+    }
+
+    // parse condition
+    while (token != NULL && token[strlen(token) - 1] != ';') {
+        strcat(condition, token);
+        condition[strlen(condition) + 1] = '\0';
+        condition[strlen(condition)] = ' ';
+        token = strtok(NULL, " ");
+    }
+
+    // parse semicolon
+    if(condition[strlen(condition) - 1] == ';'){
+        condition[strlen(condition) - 1] = '\0';
+    }
+
+    printf("Condition: %s\n", condition);
+
+    if (strcmp(attributes, "*") == 0) {
     // printf("selecting all from %s ..\n", table_name);
     return select_all(table_name, db_loc, schema, buffer);
   }
+
+
+
   return true;
 }
 
