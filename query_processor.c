@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "conditional_parser.h";
 
 ATTRIBUTE_TYPE parse_attribute_type(char *attr, Attribute *attribute_ptr) {
   //  printf("trying to determine %s's type\n", attr);
@@ -751,9 +752,11 @@ void parse_command(char *command, char *db_loc, Schema *schema,
 
 void process(char *db_loc, Schema *schema, Bufferm *buffer) {
   // Continuously accept commands from a user
+  parseConditional("x=3 and y=2 or a=5");
   while (1) {
     // Iterate through characters typed by the user
     // Stop iterating if the user enters <quit> or a semi-colon
+
     printf(">");
     char command[500];
     command[0] = '\0';
