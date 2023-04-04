@@ -752,7 +752,6 @@ void parse_command(char *command, char *db_loc, Schema *schema,
 
 void process(char *db_loc, Schema *schema, Bufferm *buffer) {
   // Continuously accept commands from a user
-  parseConditional("x=3 and y=2 or a=5");
   while (1) {
     // Iterate through characters typed by the user
     // Stop iterating if the user enters <quit> or a semi-colon
