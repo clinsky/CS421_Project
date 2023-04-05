@@ -9,7 +9,6 @@
 #include "parse_utils.h"
 #include "record.h"
 #include "table.h"
-#include "conditional_parser.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -433,71 +432,78 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
 
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
-    char table_name[256];
-    char *token = strtok(command, " "); // SELECT
-    char ** attributes = malloc(sizeof(char *) * 256);
-    int num_attributes = 0;
-    token = strtok(NULL, " "); // <attr1>
-    while(strcmp(token, "from") != 0){
-        attributes[num_attributes] = malloc(256);
-        attributes[num_attributes][0] = '\0';
-        strcpy(attributes[num_attributes], token);
-        token = strtok(NULL, " ");
-        num_attributes++;
-    }
-    // Remove the commas from the attribute names
-    for(int i = 0; i < num_attributes; i++){
-        if(attributes[i][strlen(attributes[i]) - 1] == ','){
-            attributes[i][strlen(attributes[i]) - 1] = '\0';
+    /*
+     * SELECT <attrs> FROM <table_name> WHERE <conditionals>
+     */
+  char attributes[256];
+  char table_name[256];
+  char *token = strtok(command, " "); // select
+  token = strtok(NULL, " "); // attrs
+
+  strcpy(attributes, token);
+
+  token = strtok(NULL, " "); // from
+  if (strcmp(token, "from") != 0) {
+    printf("Syntax Error\n");
+    return false;
+  }
+
+  token = strtok(NULL, " "); // table_name
+  strcpy(table_name, token);
+  // printf("tableName: %s\n", table_name);
+
+    token = strtok(NULL, " "); // where
+    char * condition = malloc(250);
+    // If no where clause, condition is true
+    if(!token || endsWith(token, ";") != 0) {
+        // parse semicolon
+        if (table_name[strlen(table_name) - 1] == ';') {
+            table_name[strlen(table_name) - 1] = '\0';
         }
+        condition[0] = '\0';
+        strcat(condition, "true");
+        printf("table name: %s\n", table_name);
+        printf("condition: %s\n", condition);
+        return true;
     }
 
-    if (strcmp(token, "from") != 0) {
-        printf("Syntax Error\n");
+    else if(strcmp(token, "where") != 0){
+        printf("Syntax Error");
         return false;
     }
 
-    token = strtok(NULL, " "); // group
-    strcpy(table_name, token);
+    token = strtok(NULL, " "); // <condition>
 
-    token = strtok(NULL, " "); // groupby
-    if(token != NULL && token[strlen(token) - 1] != ';'){
-        if(startsWith(token, "groupby") == true){
-            token = strtok(NULL, " "); // <groupby_attr>
-            char * groupby_attr = malloc(250);
-            strcpy(groupby_attr, token);
-            printf("Group By: %s\n", groupby_attr);
-            token = strtok(NULL, " "); // orderby
-        }
+
+    // condition is true if there is no condition
+    if(endsWith(token, ";") == true){
+        condition[0] = '\0';
+        strcat(condition, "true");
     }
 
-    if(token != NULL && token[strlen(token) - 1] != ';'){
-        if(startsWith(token, "orderby") == true){
-            token = strtok(NULL, " "); // <orderby_attr>
-            char * groupby_attr = malloc(250);
-            strcpy(groupby_attr, token);
-            printf("Order By: %s\n", groupby_attr);
-            token = strtok(NULL, " ");
-        }
-        else{
-            printf("Syntax Error\n");
-            return false;
-        }
-
+    // parse condition
+    while (token != NULL && token[strlen(token) - 1] != ';') {
+        strcat(condition, token);
+        condition[strlen(condition) + 1] = '\0';
+        condition[strlen(condition)] = ' ';
+        token = strtok(NULL, " ");
     }
 
-
-    // printf("tableName: %s\n", table_name);
-    if (strcmp(attributes[0], "*") == 0) {
-        // printf("selecting all from %s ..\n", table_name);
-        return select_all(table_name, db_loc, schema, buffer);
+    // parse semicolon
+    if(condition[strlen(condition) - 1] == ';'){
+        condition[strlen(condition) - 1] = '\0';
     }
 
-    printf("Table Name: %s\n", table_name);
-    for(int i = 0; i < num_attributes; i++){
-        printf("Attr %d: %s\n", i, attributes[i]);
-    }
-    return true;
+    printf("Condition: %s\n", condition);
+
+    if (strcmp(attributes, "*") == 0) {
+    // printf("selecting all from %s ..\n", table_name);
+    return select_all(table_name, db_loc, schema, buffer);
+  }
+
+
+
+  return true;
 }
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
@@ -771,142 +777,6 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
   }
 }
 
-bool parse_update_table(char * command, char * db_loc, Schema * schema, Bufferm * buffer){
-    /*
-     * update <table_name> set <column_1> = <value> where <condition>;
-     */
-
-    char * token = strtok(command, " "); // update
-    token = strtok(NULL, " "); // <table_name>
-    char * table_name = malloc(strlen(token) + 1);
-    strcpy(table_name, token);
-    token = strtok(NULL, " "); // set
-    if(strcmp(token, "set") != 0){
-        printf("Syntax Error\n");
-        return false;
-    }
-
-    token = strtok(NULL, " "); // <column_1>
-    char * column = malloc(strlen(token) + 1);
-    strcpy(column, token);
-
-    token = strtok(NULL, " "); // =
-    if(strcmp(token, "=") != 0){
-        printf("Syntax Error\n");
-        return false;
-    }
-
-    token = strtok(NULL, " ");
-    char * value = malloc(strlen(token) + 1);
-    strcpy(value, token);
-
-    token = strtok(NULL, " "); // where
-
-    char * condition = malloc(256);
-    // condition is true if no where clause
-    if(!token || endsWith(token, ";")){
-        // parse semicolon from value
-        if(value[strlen(value)- 1] == ';') {
-            value[strlen(value) - 1] = '\0';
-        }
-        condition[0] = '\0';
-        strcat(condition, "true");
-        printf("table name: %s\n", table_name);
-        printf("column: %s\n", column);
-        printf("value: %s\n", value);
-        printf("condition: %s\n", condition);
-        return true;
-    }
-    else if(strcmp(token, "where") != 0){
-        printf("Syntax Error\n");
-        return false;
-    }
-    token = strtok(NULL, " "); // <condition>
-
-    condition[0] = '\0';
-    while(token && endsWith(token, ";") == false){
-        strcat(condition, token);
-        condition[strlen(condition) + 1] = '\0';
-        condition[strlen(condition)] = ' ';
-        token = strtok(NULL, " ");
-    }
-
-    if(condition[strlen(condition) - 1] == ';'){
-        condition[strlen(condition) - 1] = '\0';
-    }
-    printf("table name: %s\n", table_name);
-    printf("column: %s\n", column);
-    printf("value: %s\n", value);
-    printf("condition: %s\n", condition);
-    return true;
-}
-
-bool parse_delete(char * command, char * db_loc, Schema * schema, Bufferm * buffer){
-    /*
-     * delete from <table_name> where <condition>;
-     */
-    char * token = strtok(command, " "); // delete
-    token = strtok(NULL, " "); // from
-    if(strcmp(token, "from") != 0){
-        printf("Syntax Error");
-        return false;
-    }
-    token = strtok(NULL, " "); // <table_name>
-    char * table_name = malloc(strlen(token) + 1);
-    strcpy(table_name, token);
-    token = strtok(NULL, " "); // where
-    char * condition = malloc(250);
-    // If no where clause, condition is true
-    if(!token || endsWith(token, ";") != 0){
-        // parse semicolon
-        if(table_name[strlen(table_name) - 1] == ';'){
-            table_name[strlen(table_name) - 1] = '\0';
-        }
-        condition[0] = '\0';
-        strcat(condition, "true");
-        // For Testing
-        printf("table name: %s\n", table_name);
-        printf("condition: %s\n", condition);
-        return true;
-    }
-    else if(strcmp(token, "where") != 0){
-        printf("Syntax Error");
-        return false;
-    }
-    token = strtok(NULL, " "); // <condition>
-    // condition is true if there is no condition
-    if(endsWith(token, ";") == true){
-        condition[0] = '\0';
-        strcat(condition, "true");
-    }
-    // parse condition
-    while (token != NULL && token[strlen(token) - 1] != ';') {
-        strcat(condition, token);
-        condition[strlen(condition) + 1] = '\0';
-        condition[strlen(condition)] = ' ';
-        token = strtok(NULL, " ");
-    }
-    // parse semicolon
-    if(condition[strlen(condition) - 1] == ';'){
-        condition[strlen(condition) - 1] = '\0';
-    }
-    // For Testing
-    printf("table name: %s\n", table_name);
-    printf("condition: %s\n", condition);
-    //char * conditionCopy = malloc(strlen(condition)+1);
-    if(condition[strlen(condition) - 1] == '\n'){
-        condition[strlen(condition) - 1] = '\0';
-    }
-    //strcpy(conditionCopy, condition);
-    //condition[strlen(condition)] = '\0';
-    ConditionalParseTree * conditionTree = parseConditional(condition);
-    printf("Conditional Parse Tree:\n");
-    printConditionalParseTree(conditionTree);
-    return true;
-}
-
-
-
 void parse_command(char *command, char *db_loc, Schema *schema,
                    Bufferm *buffer) {
   // Self explanatory code.
@@ -924,12 +794,7 @@ void parse_command(char *command, char *db_loc, Schema *schema,
     process_drop_table(command, db_loc, schema, buffer);
   } else if (startsWith(command, "alter")) {
     parse_alter_table(command, db_loc, schema, buffer);
-  } else if (startsWith(command, "update")) {
-    parse_update_table(command, db_loc, schema, buffer);
-  } else if (startsWith(command, "delete")) {
-      parse_delete(command, db_loc, schema, buffer);
-  }
-  else {
+  } else {
     printf("Invalid command\n");
   }
   printf("\n");
