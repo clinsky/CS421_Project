@@ -533,9 +533,12 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         return select_all(table_name, db_loc, schema, buffer);
     }
 
+    printf("Table Name: %s\n", table_name);
+    for(int i = 0; i < num_attributes; i++){
+        printf("Attr %d: %s\n", i, attributes[i]);
+    }
 
-
-  return true;
+    return true;
 }
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
