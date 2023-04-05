@@ -489,9 +489,7 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
     }
 
     printf("Condition: %s\n", condition);
-
     ConditionalParseTree * conditionTree = parseConditional(condition);
-    printf("First Test: %s\n", conditionTree->left->type);
     printf("Conditional Parse Tree:\n");
     printConditionalParseTree(conditionTree);
 

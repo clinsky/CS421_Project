@@ -341,8 +341,6 @@ ConditionalParseTree * parseAndConditional(Stack * tokens){
     ConditionalParseTree * testTree = parseTestConditional(tokens);
 
     if(stackIsEmpty(tokens)){
-        printf("Test Tree Type: %s\n", testTree->type);
-        printf("Test Tree Val: %s\n", testTree->val);
         return testTree;
     }
 
