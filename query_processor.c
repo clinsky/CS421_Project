@@ -943,6 +943,8 @@ void parse_command(char *command, char *db_loc, Schema *schema,
     parse_alter_table(command, db_loc, schema, buffer);
   } else if (startsWith(command, "delete")) {
       parse_delete(command, db_loc, schema, buffer);
+  } else if (startsWith(command, "update")) {
+      parse_update_table(command, db_loc, schema, buffer);
   } else {
     printf("Invalid command\n");
   }
