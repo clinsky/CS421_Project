@@ -173,11 +173,16 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
                 break;
             case ('\"'):
                 if (parsingString) {
-                    currentToken[currentTokenIdx] = '\"';
                     currentToken[currentTokenIdx + 1] = '\0';
-                    char *copyToken = malloc(strlen(currentToken) + 1);
-                    strcpy(copyToken, currentToken);
-                    push(tokens, (void *)&copyToken);
+                    currentToken[currentTokenIdx] = '\"';
+                    char ** ptr = malloc(sizeof(char *));
+                    *ptr = malloc(strlen(currentToken) + 1);
+                    strcpy(*ptr, currentToken);
+                    (*ptr)[strlen(currentToken)] = '\0';
+                    push(tokens, (void *)ptr);
+                    //char *copyToken = malloc(strlen(currentToken) + 1);
+                    //strcpy(copyToken, currentToken);
+                    //push(tokens, (void *)&copyToken);
                     num_tokens++;
                     currentTokenIdx = 0;
                     parsingString = false;
