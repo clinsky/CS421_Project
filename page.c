@@ -667,6 +667,48 @@ void print_page(Table *table, Page *p) {
   }
 }
 
+void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalParseTree) {
+    Page *curr_page = p;
+    int page_num = 1;
+    // printf("in print page..\n");
+    while (curr_page != NULL) {
+        // printf("printing page# %d with num records: %d\n", page_num,
+        //        curr_page->num_records);
+        for (int k = 0; k < curr_page->num_records; k++) {
+            // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
+            if(evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table)) {
+                printf("| ");
+                for (int l = 0; l < table->num_attributes; l++) {
+                    ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
+                    if (curr_page->records[k].attr_vals[l].is_null) {
+                        printf("null ");
+                        continue;
+                    }
+                    if (type == INTEGER) {
+                        printf("%d | ", curr_page->records[k].attr_vals[l].int_val);
+                    } else if (type == DOUBLE) {
+                        printf("%f | ", curr_page->records[k].attr_vals[l].double_val);
+                    } else if (type == BOOL) {
+                        printf("%d | ", curr_page->records[k].attr_vals[l].bool_val);
+                    } else if (type == CHAR) {
+                        printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
+                    } else if (type == VARCHAR) {
+                        printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
+                    }
+                }
+            }
+            printf("\n");
+        }
+        if (curr_page->next_page == NULL) {
+            break;
+        }
+        curr_page = curr_page->next_page;
+        page_num += 1;
+    }
+
+}
+
+
 void print_record(Table *table, Record *record) {
   printf("printing record: ");
   for (int l = 0; l < table->num_attributes; l++) {
