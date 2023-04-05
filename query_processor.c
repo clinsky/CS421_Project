@@ -461,19 +461,67 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
     return false;
   }
 
-  token = strtok(NULL, " ");
+  token = strtok(NULL, " "); // table_name
   strcpy(table_name, token);
   // printf("tableName: %s\n", table_name);
-  if (strcmp(attributes[0], "*") == 0) {
-    // printf("selecting all from %s ..\n", table_name);
-    return select_all(table_name, db_loc, schema, buffer);
-  }
 
-  printf("Table Name: %s\n", table_name);
-  for(int i = 0; i < num_attributes; i++){
-      printf("Attr %d: %s\n", i, attributes[i]);
-  }
-  return true;
+
+      token = strtok(NULL, " "); // where
+      char *condition = malloc(250);
+      // If no where clause, condition is true
+      if (!token || endsWith(token, ";") != 0) {
+          // parse semicolon
+          if (table_name[strlen(table_name) - 1] == ';') {
+              table_name[strlen(table_name) - 1] = '\0';
+          }
+          condition[0] = '\0';
+          strcat(condition, "true");
+          printf("table name: %s\n", table_name);
+          printf("condition: %s\n", condition);
+          //return true;
+      } else if (strcmp(token, "where") != 0) {
+          printf("Syntax Error");
+          return false;
+      }
+
+      token = strtok(NULL, " "); // <condition>
+
+
+      // condition is true if there is no condition
+      if (endsWith(token, ";") == true) {
+          condition[0] = '\0';
+          strcat(condition, "true");
+      }
+
+      // parse condition
+      while (token != NULL && token[strlen(token) - 1] != ';') {
+          strcat(condition, token);
+          condition[strlen(condition) + 1] = '\0';
+          condition[strlen(condition)] = ' ';
+          token = strtok(NULL, " ");
+      }
+
+      // parse semicolon
+      if (condition[strlen(condition) - 1] == ';') {
+          condition[strlen(condition) - 1] = '\0';
+      }
+
+      printf("Condition: %s\n", condition);
+
+      printf("First Attribute: %s\n", attributes[0]);
+
+      if (strcmp(attributes[0], "*") == 0) {
+
+          // printf("selecting all from %s ..\n", table_name);
+          return select_all(table_name, db_loc, schema, buffer);
+      }
+
+
+      printf("Table Name: %s\n", table_name);
+      for (int i = 0; i < num_attributes; i++) {
+          printf("Attr %d: %s\n", i, attributes[i]);
+      }
+      return true;
 }
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
