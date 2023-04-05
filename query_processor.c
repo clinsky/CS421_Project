@@ -920,6 +920,10 @@ bool parse_update_table(char * command, char * db_loc, Schema * schema, Bufferm 
     printf("column: %s\n", column);
     printf("value: %s\n", value);
     printf("condition: %s\n", condition);
+
+    ConditionalParseTree * conditionTree = parseConditional(condition);
+    printf("Conditional Parse Tree:\n");
+    printConditionalParseTree(conditionTree);
     return true;
 }
 
