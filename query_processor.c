@@ -432,14 +432,25 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
 
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
-  char attributes[256];
+
   char table_name[256];
-  char *token = strtok(command, " "); // select
-  token = strtok(NULL, " "); // attrs
-
-  strcpy(attributes, token);
-
-  token = strtok(NULL, " "); // from
+  char *token = strtok(command, " "); // SELECT
+  char ** attributes = malloc(sizeof(char *) * 256);
+  int num_attributes = 0;
+  token = strtok(NULL, " "); // <attr1>
+    while(strcmp(token, "from") != 0){
+        attributes[num_attributes] = malloc(256);
+        attributes[num_attributes][0] = '\0';
+        strcpy(attributes[num_attributes], token);
+        token = strtok(NULL, " ");
+        num_attributes++;
+    }
+    // Remove the commas from the attribute names
+    for(int i = 0; i < num_attributes; i++){
+        if(attributes[i][strlen(attributes[i]) - 1] == ','){
+            attributes[i][strlen(attributes[i]) - 1] = '\0';
+        }
+    }
   if (strcmp(token, "from") != 0) {
     printf("Syntax Error\n");
     return false;
@@ -462,11 +473,15 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
   }
 
   // printf("tableName: %s\n", table_name);
-  if (strcmp(attributes, "*") == 0) {
+  if (strcmp(attributes[0], "*") == 0) {
     // printf("selecting all from %s ..\n", table_name);
     return select_all(table_name, db_loc, schema, buffer);
   }
 
+    printf("Table Name: %s\n", table_name);
+    for(int i = 0; i < num_attributes; i++){
+        printf("Attr %d: %s\n", i, attributes[i]);
+    }
 
   return true;
 }
