@@ -432,57 +432,26 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
 
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
-
+  char attributes[256];
   char table_name[256];
-  char *token = strtok(command, " "); // SELECT
-  char ** attributes = malloc(sizeof(char *) * 256);
-  int num_attributes = 0;
-  token = strtok(NULL, " "); // <attr1>
-    while(strcmp(token, "from") != 0){
-        attributes[num_attributes] = malloc(256);
-        attributes[num_attributes][0] = '\0';
-        strcpy(attributes[num_attributes], token);
-        token = strtok(NULL, " ");
-        num_attributes++;
-    }
-    // Remove the commas from the attribute names
-    for(int i = 0; i < num_attributes; i++){
-        if(attributes[i][strlen(attributes[i]) - 1] == ','){
-            attributes[i][strlen(attributes[i]) - 1] = '\0';
-        }
-    }
+  char *token = strtok(command, " ");
+  token = strtok(NULL, " ");
+
+  strcpy(attributes, token);
+
+  token = strtok(NULL, " ");
   if (strcmp(token, "from") != 0) {
     printf("Syntax Error\n");
     return false;
   }
 
-  token = strtok(NULL, " "); // table_name
+  token = strtok(NULL, " ");
   strcpy(table_name, token);
-
-
-  token = strtok(NULL, " "); // groupby
-  if(token != NULL && token[strlen(token) - 1] != ';'){
-      if(startsWith(token, "groupby") != true){
-          printf("Syntax Error");
-          return false;
-      }
-      token = strtok(NULL, " "); // groupby_attr
-      char * groupby_attr = malloc(250);
-      strcpy(groupby_attr, token);
-      printf("Group By: %s\n", groupby_attr);
-  }
-
   // printf("tableName: %s\n", table_name);
-  if (strcmp(attributes[0], "*") == 0) {
+  if (strcmp(attributes, "*") == 0) {
     // printf("selecting all from %s ..\n", table_name);
     return select_all(table_name, db_loc, schema, buffer);
   }
-
-    printf("Table Name: %s\n", table_name);
-    for(int i = 0; i < num_attributes; i++){
-        printf("Attr %d: %s\n", i, attributes[i]);
-    }
-
   return true;
 }
 
