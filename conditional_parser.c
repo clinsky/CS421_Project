@@ -271,6 +271,10 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     (tree->val)[strlen(relToken)] = '\0';
     tree->right = initConditionalParseTree();
     if (next_token[0] == '\"') {
+        // remove quotes
+        next_token = next_token + 1;
+        next_token[strlen(next_token) - 1] = '\0';
+
         ((tree->right)->type)[0] = '\0';
         strcpy((tree->right)->type, "const");
         ((tree->right)->type)[5] = '\0';
@@ -297,6 +301,9 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     printf("Current Token: %s\n", next_token);
     tree->left = initConditionalParseTree();
     if (next_token[0] == '\"') {
+        next_token = next_token + 1;
+        next_token[strlen(next_token) - 1] = '\0';
+
         if (strcmp((tree->right)->type, "attr") == 0) {
             printf("Syntax Error\n");
             return NULL;
