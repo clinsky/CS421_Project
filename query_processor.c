@@ -432,27 +432,71 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
 
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
-  char attributes[256];
-  char table_name[256];
-  char *token = strtok(command, " ");
-  token = strtok(NULL, " ");
+    char table_name[256];
+    char *token = strtok(command, " "); // SELECT
+    char ** attributes = malloc(sizeof(char *) * 256);
+    int num_attributes = 0;
+    token = strtok(NULL, " "); // <attr1>
+    while(strcmp(token, "from") != 0){
+        attributes[num_attributes] = malloc(256);
+        attributes[num_attributes][0] = '\0';
+        strcpy(attributes[num_attributes], token);
+        token = strtok(NULL, " ");
+        num_attributes++;
+    }
+    // Remove the commas from the attribute names
+    for(int i = 0; i < num_attributes; i++){
+        if(attributes[i][strlen(attributes[i]) - 1] == ','){
+            attributes[i][strlen(attributes[i]) - 1] = '\0';
+        }
+    }
 
-  strcpy(attributes, token);
+    if (strcmp(token, "from") != 0) {
+        printf("Syntax Error\n");
+        return false;
+    }
 
-  token = strtok(NULL, " ");
-  if (strcmp(token, "from") != 0) {
-    printf("Syntax Error\n");
-    return false;
-  }
+    token = strtok(NULL, " "); // group
+    strcpy(table_name, token);
 
-  token = strtok(NULL, " ");
-  strcpy(table_name, token);
-  // printf("tableName: %s\n", table_name);
-  if (strcmp(attributes, "*") == 0) {
-    // printf("selecting all from %s ..\n", table_name);
-    return select_all(table_name, db_loc, schema, buffer);
-  }
-  return true;
+    token = strtok(NULL, " "); // groupby
+    if(token != NULL && token[strlen(token) - 1] != ';'){
+        if(startsWith(token, "groupby") == true){
+            token = strtok(NULL, " "); // <groupby_attr>
+            char * groupby_attr = malloc(250);
+            strcpy(groupby_attr, token);
+            printf("Group By: %s\n", groupby_attr);
+            token = strtok(NULL, " "); // orderby
+        }
+    }
+
+    if(token != NULL && token[strlen(token) - 1] != ';'){
+        if(startsWith(token, "orderby") == true){
+            token = strtok(NULL, " "); // <orderby_attr>
+            char * groupby_attr = malloc(250);
+            strcpy(groupby_attr, token);
+            printf("Order By: %s\n", groupby_attr);
+            token = strtok(NULL, " ");
+        }
+        else{
+            printf("Syntax Error\n");
+            return false;
+        }
+
+    }
+
+
+    // printf("tableName: %s\n", table_name);
+    if (strcmp(attributes[0], "*") == 0) {
+        // printf("selecting all from %s ..\n", table_name);
+        return select_all(table_name, db_loc, schema, buffer);
+    }
+
+    printf("Table Name: %s\n", table_name);
+    for(int i = 0; i < num_attributes; i++){
+        printf("Attr %d: %s\n", i, attributes[i]);
+    }
+    return true;
 }
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
