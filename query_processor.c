@@ -726,6 +726,77 @@ bool parse_alter_table(char *command, char *db_loc, Schema *schema,
   }
 }
 
+bool parse_update_table(char * command, char * db_loc, Schema * schema, Bufferm * buffer){
+    /*
+     * update <table_name> set <column_1> = <value> where <condition>;
+     */
+
+    char * token = strtok(command, " "); // update
+    token = strtok(NULL, " "); // <table_name>
+    char * table_name = malloc(strlen(token) + 1);
+    strcpy(table_name, token);
+    token = strtok(NULL, " "); // set
+    if(strcmp(token, "set") != 0){
+        printf("Syntax Error\n");
+        return false;
+    }
+
+    token = strtok(NULL, " "); // <column_1>
+    char * column = malloc(strlen(token) + 1);
+    strcpy(column, token);
+
+    token = strtok(NULL, " "); // =
+    if(strcmp(token, "=") != 0){
+        printf("Syntax Error\n");
+        return false;
+    }
+
+    token = strtok(NULL, " ");
+    char * value = malloc(strlen(token) + 1);
+    strcpy(value, token);
+
+    token = strtok(NULL, " "); // where
+
+    char * condition = malloc(256);
+    // condition is true if no where clause
+    if(!token || endsWith(token, ";")){
+        // parse semicolon from value
+        if(value[strlen(value)- 1] == ';') {
+            value[strlen(value) - 1] = '\0';
+        }
+        condition[0] = '\0';
+        strcat(condition, "true");
+        printf("table name: %s\n", table_name);
+        printf("column: %s\n", column);
+        printf("value: %s\n", value);
+        printf("condition: %s\n", condition);
+        return true;
+    }
+    else if(strcmp(token, "where") != 0){
+        printf("Syntax Error\n");
+        return false;
+    }
+    token = strtok(NULL, " "); // <condition>
+
+    condition[0] = '\0';
+    while(token && endsWith(token, ";") == false){
+        strcat(condition, token);
+        condition[strlen(condition) + 1] = '\0';
+        condition[strlen(condition)] = ' ';
+        token = strtok(NULL, " ");
+    }
+
+    if(condition[strlen(condition) - 1] == ';'){
+        condition[strlen(condition) - 1] = '\0';
+    }
+    printf("table name: %s\n", table_name);
+    printf("column: %s\n", column);
+    printf("value: %s\n", value);
+    printf("condition: %s\n", condition);
+    return true;
+}
+
+
 void parse_command(char *command, char *db_loc, Schema *schema,
                    Bufferm *buffer) {
   // Self explanatory code.
@@ -743,7 +814,10 @@ void parse_command(char *command, char *db_loc, Schema *schema,
     process_drop_table(command, db_loc, schema, buffer);
   } else if (startsWith(command, "alter")) {
     parse_alter_table(command, db_loc, schema, buffer);
-  } else {
+  } else if (startsWith(command, "update")) {
+    parse_update_table(command, db_loc, schema, buffer);
+  }
+  else {
     printf("Invalid command\n");
   }
   printf("\n");
