@@ -36,5 +36,6 @@ typedef struct conditionalParseTree ConditionalParseTree;
 Stack * getTokensFromConditionalString(char * conditionalString);
 ConditionalParseTree * initConditionalParseTree();
 ConditionalParseTree * parseConditional(char * conditionalString);
+void printConditionalParseTree(ConditionalParseTree * tree);
 
 #endif //CS421_PROJECT_CONDITIONALPARSER_H

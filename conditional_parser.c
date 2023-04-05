@@ -39,7 +39,7 @@ void push(Stack * stack, void * val){
 
 void * pop(Stack * stack){
     void * val = stack->arr[stack->size - 1];
-    stack->size--;
+    (stack->size)--;
     return val;
 }
 
@@ -62,7 +62,7 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
     currentToken[0] = '\0';
     int num_tokens = 0;
     bool parsingString = false;
-    int currentTokenIdx;
+    int currentTokenIdx = 0;
     int i = 0;
     while(i < strlen(conditionalString)){
         switch (conditionalString[i]) {
@@ -71,9 +71,9 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
                     currentToken[currentTokenIdx] = ' ';
                     currentTokenIdx++;
                 } else if (currentToken[0] != '\0') {
-                    char * copyToken = malloc(strlen(currentToken) + 1);
                     char ** ptr = malloc(sizeof(char *));
                     *ptr = malloc(strlen(currentToken) + 1);
+                    (*ptr)[0] = '\0';
                     strcpy(*ptr, currentToken);
                     (*ptr)[strlen(currentToken)] = '\0';
                     push(tokens, (void *)ptr);
@@ -86,17 +86,18 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
                 if(true){
                     char ** ptr = malloc(sizeof(char *));
                     *ptr = malloc(strlen(currentToken) + 1);
+                    (*ptr)[0] = '\0';
                     strcpy(*ptr, currentToken);
                     (*ptr)[strlen(currentToken)] = '\0';
                     push(tokens, (void *)ptr);
                     num_tokens++;
-                    char * equals = malloc(2);
-                    equals[0] = '=';
-                    equals[1] = '\0';
-                    ptr = malloc(sizeof(char *));
-                    *ptr = malloc(2);
-                    strcpy(*ptr, equals);
-                    push(tokens, (void *)ptr);
+
+                    char ** equals = malloc(sizeof(char *));
+                    *equals = malloc(2);
+                    (*equals)[1] = '\0';
+                    (*equals)[0] = '=';
+
+                    push(tokens, (void *)equals);
                     currentToken[0] = '\0';
                     currentTokenIdx = 0;
                     num_tokens++;
@@ -169,8 +170,6 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
                     currentTokenIdx = 0;
                     num_tokens++;
                 }
-
-
                 break;
             case ('\"'):
                 if (parsingString) {
@@ -198,7 +197,6 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
                 }
                 break;
             default:
-                //printf("current char: %c\n", conditionalString[i]);
                 currentToken[currentTokenIdx + 1] = '\0';
                 currentToken[currentTokenIdx] = conditionalString[i];
                 currentTokenIdx++;
@@ -206,7 +204,7 @@ Stack * getTokensFromConditionalString(char * conditionalString) {
         i++;
     }
         if(currentToken[0] != '\0'){
-            char * copyToken = malloc(strlen(currentToken) + 1);
+            //char * copyToken = malloc(strlen(currentToken) + 1);
             char ** ptr = malloc(sizeof(char *));
             *ptr = malloc(sizeof(currentToken)+1);
             (*ptr)[strlen(currentToken)] = '\0';
@@ -227,10 +225,14 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     }
     char *next_token = *(char **)pop(tokens);
     ConditionalParseTree *tree = initConditionalParseTree();
+    (tree->type)[0] = '\0';
     strcmp(tree->type, "test");
+    (tree->type)[4] = '\0';
 
     if(strcmp(next_token, "true") == 0 || strcmp(next_token, "false") == 0){
+        (tree->val)[0] = '\0';
         strcmp(tree->val, next_token);
+        (tree->val)[strlen(next_token)] = '\0';
         return tree;
     }
 
@@ -255,13 +257,14 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
         strcpy((tree->right)->val, next_token);
     }
 
-    next_token = *(char **)pop(tokens);
+    next_token = *(char **) (pop(tokens));
     tree->left = initConditionalParseTree();
     if (next_token[0] == '\"') {
         if (strcmp(tree->right->type, "attr") == 0) {
             printf("Syntax Error\n");
             return NULL;
         }
+        ((tree->left)->type)[0] = '\0';
         (tree->left)->type = "const";
         strcpy((tree->left)->val, next_token);
     } else if (isdigit(next_token[0])) {
@@ -269,11 +272,18 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
             printf("Syntax Error\n");
             return NULL;
         }
-        (tree->left)->type = "const";
+        ((tree->left)->type)[0] = '\0';
+        strcpy((tree->left)->type, "const");
+        ((tree->left)->type)[5] = '\0';
         strcpy((tree->left)->val, next_token);
     } else {
-        (tree->left)->type = "attr";
+        ((tree->left)->type)[0] = '\0';
+        strcpy((tree->left)->type, "attr");
+        ((tree->left)->type)[4] = '\0';
+        ((tree->left)->val)[0] = '\0';
         strcpy((tree->left)->val, next_token);
+        ((tree->left)->val)[strlen(next_token)] = '\0';
+
     }
     return tree;
 }
@@ -382,6 +392,11 @@ ConditionalParseTree * parseConditional(char * conditionalString){
      */
     Stack * tokens = getTokensFromConditionalString(conditionalString);
 
+    /*
+    while(stackIsEmpty(tokens) == false){
+        printf("Token: %s\n", *(char **)pop(tokens));
+    }
+     */
 
     if(stackIsEmpty(tokens)){
         ConditionalParseTree * conditionalParseTree = initConditionalParseTree();
@@ -392,8 +407,7 @@ ConditionalParseTree * parseConditional(char * conditionalString){
     }
 
     ConditionalParseTree * conditionalParseTree = parseOrConditional(tokens);
-    printConditionalParseTree(conditionalParseTree);
-
+    return conditionalParseTree;
 }
 
 

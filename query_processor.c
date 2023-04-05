@@ -784,12 +784,22 @@ bool parse_delete(char * command, char * db_loc, Schema * schema, Bufferm * buff
          condition[strlen(condition) - 1] = '\0';
      }
 
+
      // For Testing
      printf("table name: %s\n", table_name);
      printf("condition: %s\n", condition);
+     //char * conditionCopy = malloc(strlen(condition)+1);
+     if(condition[strlen(condition) - 1] == '\n'){
+         condition[strlen(condition) - 1] = '\0';
+     }
+
+     //strcpy(conditionCopy, condition);
+     //condition[strlen(condition)] = '\0';
+
+     ConditionalParseTree * conditionTree = parseConditional(condition);
+     printf("Conditional Parse Tree:\n");
+     printConditionalParseTree(conditionTree);
      return true;
-
-
 }
 
 void parse_command(char *command, char *db_loc, Schema *schema,
