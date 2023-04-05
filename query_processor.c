@@ -464,7 +464,6 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         strcat(condition, "true");
         printf("table name: %s\n", table_name);
         printf("condition: %s\n", condition);
-        return true;
     }
 
     else if(strcmp(token, "where") != 0){
