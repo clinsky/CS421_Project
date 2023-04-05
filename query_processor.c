@@ -466,31 +466,21 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
 
     token = strtok(NULL, " "); // where
     char * condition = malloc(250);
-    // If no where clause, condition is true
-    if(!token || endsWith(token, ";") != 0 || strcmp(token, "where") != 0) {
-        // parse semicolon
-        if (table_name[strlen(table_name) - 1] == ';') {
-            table_name[strlen(table_name) - 1] = '\0';
+
+    if(token && strcmp(token, "where") == 0){
+        token = strtok(NULL, " "); // <condition>
+        // parse condition
+        while (token != NULL && token[strlen(token) - 1] != ';' && strcmp(token, "groupby") != 0 && strcmp(token, "orderby") != 0) {
+            strcat(condition, token);
+            condition[strlen(condition) + 1] = '\0';
+            condition[strlen(condition)] = ' ';
+            token = strtok(NULL, " ");
         }
+    }
+    else{
         condition[0] = '\0';
         strcat(condition, "true");
-    }
-
-    token = strtok(NULL, " "); // <condition>
-
-
-    // condition is true if there is no condition
-    if(endsWith(token, ";") == true){
-        condition[0] = '\0';
-        strcat(condition, "true");
-    }
-
-    // parse condition
-    while (token != NULL && token[strlen(token) - 1] != ';' && strcmp(token, "groupby") != 0 && strcmp(token, "orderby") != 0) {
-        strcat(condition, token);
-        condition[strlen(condition) + 1] = '\0';
-        condition[strlen(condition)] = ' ';
-        token = strtok(NULL, " ");
+        condition[4] = '\0';
     }
 
     // parse semicolon
@@ -501,10 +491,11 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
     printf("Condition: %s\n", condition);
 
     ConditionalParseTree * conditionTree = parseConditional(condition);
+    printf("First Test: %s\n", conditionTree->left->type);
     printf("Conditional Parse Tree:\n");
     printConditionalParseTree(conditionTree);
 
-    if(token != NULL && token[strlen(token) - 1] != ';'){
+    if(token && token[strlen(token) - 1] != ';'){
         if(startsWith(token, "groupby") == true){
             token = strtok(NULL, " "); // <groupby_attr>
             char * groupby_attr = malloc(250);
@@ -514,7 +505,7 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         }
     }
 
-    if(token != NULL && token[strlen(token) - 1] != ';'){
+    if(token && token[strlen(token) - 1] != ';'){
         if(startsWith(token, "orderby") == true){
             token = strtok(NULL, " "); // <orderby_attr>
             char * groupby_attr = malloc(250);

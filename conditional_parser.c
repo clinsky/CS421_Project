@@ -243,10 +243,13 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
         return NULL;
     }
     char *next_token = *(char **)pop(tokens);
+    printf("Current Token: %s\n", next_token);
     ConditionalParseTree *tree = initConditionalParseTree();
-    (tree->type)[0] = '\0';
-    strcpy(tree->type, "test");
     (tree->type)[4] = '\0';
+    (tree->type)[0] = 't';
+    (tree->type)[1] = 'e';
+    (tree->type)[2] = 's';
+    (tree->type)[3] = 't';;
 
     if(strcmp(next_token, "true") == 0 || strcmp(next_token, "false") == 0){
         (tree->val)[0] = '\0';
@@ -256,36 +259,54 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     }
 
     char *relToken = *(char **)pop(tokens);
+    printf("Current Token: %s\n", relToken);
 
-    strcpy(tree->type, "test");
     if (strcmp(relToken, "=") != 0 && strcmp(relToken, "<") != 0 && strcmp(relToken, ">") != 0 &&
-        strcmp(relToken, "<=") != 0 & strcmp(relToken, ">=") != 0 && strcmp(relToken, "!=") != 0) {
+        strcmp(relToken, "<=") != 0 && strcmp(relToken, ">=") != 0 && strcmp(relToken, "!=") != 0) {
         printf("Syntax Error\n");
         return NULL;
     }
+    (tree->val)[0] = '\0';
     strcpy(tree->val, relToken);
+    (tree->val)[strlen(relToken)] = '\0';
     tree->right = initConditionalParseTree();
     if (next_token[0] == '\"') {
-        (tree->right)->type = "const";
+        ((tree->right)->type)[0] = '\0';
+        strcpy((tree->right)->type, "const");
+        ((tree->right)->type)[5] = '\0';
+        ((tree->right)->val)[0] = '\0';
         strcpy((tree->right)->val, next_token);
+        ((tree->right)->val)[strlen(next_token)] = '\0';
     } else if (isdigit(next_token[0])) {
+        ((tree->right)->type)[0] = '\0';
         (tree->right)->type = "const";
+        char * constant = "const";
+        (tree->right)->type = constant;
+        ((tree->right)->val)[0] = '\0';
         strcpy((tree->right)->val, next_token);
+        ((tree->right)->val)[strlen(next_token)] = '\0';
     } else {
+        ((tree->right)->type)[0] = '\0';
         (tree->right)->type = "attr";
+        ((tree->right)->val)[0] = '\0';
         strcpy((tree->right)->val, next_token);
+        ((tree->right)->val)[strlen(next_token)] = '\0';
     }
 
     next_token = *(char **) (pop(tokens));
+    printf("Current Token: %s\n", next_token);
     tree->left = initConditionalParseTree();
     if (next_token[0] == '\"') {
-        if (strcmp(tree->right->type, "attr") == 0) {
+        if (strcmp((tree->right)->type, "attr") == 0) {
             printf("Syntax Error\n");
             return NULL;
         }
         ((tree->left)->type)[0] = '\0';
         (tree->left)->type = "const";
+        ((tree->left)->type)[5] = '\0';
+        ((tree->left)->val)[0] = '\0';
         strcpy((tree->left)->val, next_token);
+        ((tree->left)->val)[strlen(next_token)] = '\0';
     } else if (isdigit(next_token[0])) {
         if (strcmp(tree->right->type, "attr") == 0) {
             printf("Syntax Error\n");
@@ -294,7 +315,9 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
         ((tree->left)->type)[0] = '\0';
         strcpy((tree->left)->type, "const");
         ((tree->left)->type)[5] = '\0';
+        ((tree->left)->val)[0] = '\0';
         strcpy((tree->left)->val, next_token);
+        ((tree->left)->val)[strlen(next_token)] = '\0';
     } else {
         ((tree->left)->type)[0] = '\0';
         strcpy((tree->left)->type, "attr");
@@ -304,6 +327,9 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
         ((tree->left)->val)[strlen(next_token)] = '\0';
 
     }
+
+    //printf("Test Tree Type: %s\n", tree->type);
+    //printf("Test Tree Val: %s\n", tree->val);
     return tree;
 }
 
@@ -315,16 +341,27 @@ ConditionalParseTree * parseAndConditional(Stack * tokens){
     ConditionalParseTree * testTree = parseTestConditional(tokens);
 
     if(stackIsEmpty(tokens)){
+        printf("Test Tree Type: %s\n", testTree->type);
+        printf("Test Tree Val: %s\n", testTree->val);
         return testTree;
     }
 
     char * currentToken = *(char **)pop(tokens);
     if(strcmp(currentToken, "and") == 0){
         ConditionalParseTree * andTree = initConditionalParseTree();
-        strcpy(andTree->type, "and");
-        strcpy(andTree->val, "and");
+        (andTree->type)[3] = '\0';
+        (andTree->type)[0] = 'a';
+        (andTree->type)[1] = 'n';
+        (andTree->type)[2] = 'd';
+
+        (andTree->val)[3] = '\0';
+        (andTree->val)[0] = 'a';
+        (andTree->val)[1] = 'n';
+        (andTree->val)[2] = 'd';
+
         andTree->right = testTree;
         andTree->left = parseAndConditional(tokens);
+        return andTree;
     }
     else{
         return testTree;
@@ -354,8 +391,16 @@ ConditionalParseTree * parseOrConditional(Stack * tokens){
 
     else if(strcmp(nextToken, "and") == 0){
         ConditionalParseTree * andTree =  initConditionalParseTree();
-        strcpy(andTree->type, "and");
-        strcpy(andTree->val, "and");
+        (andTree->type)[3] = '\0';
+        (andTree->type)[0] = 'a';
+        (andTree->type)[1] = 'n';
+        (andTree->type)[2] = 'd';
+
+        (andTree->val)[3] = '\0';
+        (andTree->val)[0] = 'a';
+        (andTree->val)[1] = 'n';
+        (andTree->val)[2] = 'd';
+
         andTree->right = testTree;
         andTree->left = parseAndConditional(tokens);
         if(stackIsEmpty(tokens)){
