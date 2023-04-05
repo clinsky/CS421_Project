@@ -696,8 +696,9 @@ void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalP
                         printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
                     }
                 }
+                printf("\n");
             }
-            printf("\n");
+
         }
         if (curr_page->next_page == NULL) {
             break;
