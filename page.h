@@ -72,6 +72,8 @@ void write_page_to_file(Table *table, Page *p, char *file_path);
 
 void print_page(Table *table, Page *p);
 
+void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalParseTree);
+
 void print_record(Table *table, Record *record);
 
 bool is_page_overfull(Page *p);

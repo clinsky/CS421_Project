@@ -432,7 +432,7 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
 }
 
 bool select_all_where(char *table_name, char *db_loc, Schema *schema,
-                Bufferm *buffer) {
+                Bufferm *buffer, ConditionalParseTree * conditionalParseTree) {
     Table *table = get_table(schema, table_name);
     if (table == NULL) {
         printf("No such table %s\n", table_name);
@@ -456,7 +456,8 @@ bool select_all_where(char *table_name, char *db_loc, Schema *schema,
     }
     printf("\n");
     if (p != NULL) {
-        print_page(table, p);
+        //print_page(table, p);
+        print_page_where(table, p, conditionalParseTree);
     }
 
     return true;
@@ -551,7 +552,8 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
 
     if (strcmp(attributes[0], "*") == 0) {
         // printf("selecting all from %s ..\n", table_name);
-        return select_all(table_name, db_loc, schema, buffer);
+        //return select_all(table_name, db_loc, schema, buffer);
+        return select_all_where(table_name, db_loc, schema, buffer, conditionTree);
     }
 
     printf("Table Name: %s\n", table_name);

@@ -145,7 +145,6 @@ bool evaluateTest(Record * record, ConditionalParseTree * conditionalParseTree, 
             strcmp(conditionalParseTree->right->type, "const") == 0) {
             int attr_idx = 0;
             Attribute_Values left_value;
-            Attribute_Values right_value;
             for (int i = 0; i < table->num_attributes; i++) {
                 if (strcmp(table->attributes[i].name, conditionalParseTree->left->val) == 0) {
                     left_value = record->attr_vals[i];
