@@ -506,7 +506,6 @@ bool select_where_projection_product(char ** table_names, int num_tables_request
         printf("ERROR\n");
         return false;
     }
-    printf("Joining requested tables\n");
     for(int i = 1; i < num_tables_requested; i++){
         char filepath[100];
         snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
@@ -557,7 +556,6 @@ bool select_all_where_product(char ** table_names, int num_tables_requested, cha
         printf("ERROR\n");
         return false;
     }
-    printf("Joining requested tables\n");
     for(int i = 1; i < num_tables_requested; i++){
         char filepath[100];
         snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
@@ -680,11 +678,7 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         condition[strlen(condition) - 1] = '\0';
     }
 
-    printf("Condition: %s\n", condition);
-
     ConditionalParseTree * conditionTree = parseConditional(condition);
-    printf("Conditional Parse Tree:\n");
-    printConditionalParseTree(conditionTree);
 
     if(token && token[strlen(token) - 1] != ';'){
         if(startsWith(token, "groupby") == true){
@@ -716,15 +710,8 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         return select_all_where_product(table_names, num_tables_requested, db_loc, schema, buffer, conditionTree);
     }
 
-    printf("Table Name: %s\n", table_name);
-    for(int i = 0; i < num_attributes; i++){
-        printf("Attr %d: %s\n", i, attributes[i]);
-    }
 
-    //return true;
-    for(int i = 0; i < num_tables_requested; i++){
-        printf("Table %d: %s\n", i, table_names[i]);
-    }
+
     return select_where_projection_product(table_names, num_tables_requested, db_loc, schema, buffer, conditionTree, attributes, num_attributes);
 }
 
