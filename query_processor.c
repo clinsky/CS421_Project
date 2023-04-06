@@ -557,18 +557,46 @@ bool select_all_where_product(char ** table_names, int num_tables_requested, cha
         return false;
     }
     for(int i = 1; i < num_tables_requested; i++){
+        //Page * p1 = read_page_from_file(schema, table, filepath);
+        Page *p1 = find_in_buffer(buffer, table);
+        // printf("num records of first page: %d\n", p->num_records);
         char filepath[100];
         snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
-        Page * p1 = read_page_from_file(schema, table, filepath);
+        if (p1 == NULL) {
+            // printf("select all reading from page file\n");
+            p1 = read_page_from_file(schema, table, filepath);
+            if (p1 != NULL) {
+                add_to_buffer(buffer, table, p1, filepath);
+            }
+        }
+
         Table * right_table = get_table(schema, table_names[i]);
         if (table == NULL) {
             printf("No such table %s\n", table_names[i]);
             printf("ERROR\n");
             return false;
         }
+
+
+
+
+        //Page * p2 = read_page_from_file(schema, right_table, filepath2);
+        Page *p2 = find_in_buffer(buffer, right_table);
+        // printf("num records of first page: %d\n", p->num_records);
         char filepath2[100];
         snprintf(filepath2, sizeof(filepath2), "%s/%s", schema->db_path, right_table->name);
-        Page * p2 = read_page_from_file(schema, right_table, filepath2);
+
+        if (p2 == NULL) {
+            // printf("select all reading from page file\n");
+            p2 = read_page_from_file(schema, right_table, filepath);
+            if (p2 != NULL) {
+                add_to_buffer(buffer, right_table, p2, filepath);
+            }
+        }
+
+
+
+
         table = join_two_tables_block_nested(table, right_table, p1, p2, schema, buffer);
         add_table_to_catalog(schema, table);
     }

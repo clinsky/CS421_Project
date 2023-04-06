@@ -259,7 +259,6 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     }
 
     char *relToken = *(char **)pop(tokens);
-    printf("Current Token: %s\n", relToken);
 
     if (strcmp(relToken, "=") != 0 && strcmp(relToken, "<") != 0 && strcmp(relToken, ">") != 0 &&
         strcmp(relToken, "<=") != 0 && strcmp(relToken, ">=") != 0 && strcmp(relToken, "!=") != 0) {
@@ -460,25 +459,6 @@ ConditionalParseTree * parseConditional(char * conditionalString){
      * true | orCond
      */
     Stack * tokens = getTokensFromConditionalString(conditionalString);
-
-
-    for(int i = 0; i < tokens->size; i++){
-        printf("Token: %s\n", *(char **)(tokens->arr)[i]);
-    }
-
-    /*
-    if(stackIsEmpty(tokens)){
-        ConditionalParseTree * conditionalParseTree = initConditionalParseTree();
-        (conditionalParseTree->val)[0] = '\0';
-        strcpy(conditionalParseTree->val, "true");
-        (conditionalParseTree->val)[4] = '\0';
-        (conditionalParseTree->type)[0] = '\0';
-        strcpy(conditionalParseTree->type, "test");
-        (conditionalParseTree->type)[4] = '\0';
-        return conditionalParseTree;
-    }
-     */
-
     ConditionalParseTree * conditionalParseTree = parseOrConditional(tokens);
     return conditionalParseTree;
 }
