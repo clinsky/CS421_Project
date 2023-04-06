@@ -76,6 +76,8 @@ void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalP
 
 void print_page_where_projection(Table *table, Page *p, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested);
 
+Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, Page * p2, Schema * schema, Bufferm * buffer);
+
 void print_record(Table *table, Record *record);
 
 bool is_page_overfull(Page *p);

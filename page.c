@@ -709,6 +709,86 @@ void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalP
 
 }
 
+Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, Page * p2, Schema * schema, Bufferm * buffer) {
+    Page *curr_page1 = p1;
+    Page *curr_page2 = p2;
+    int page1_num = 0;
+    int page2_num = 0;
+    Page *joined_page = malloc(sizeof(Page));
+    joined_page->max_size = schema->page_size;
+    joined_page->total_bytes_from_records = 0;
+    joined_page->record_capacity = 20;
+    Table *joined_table = malloc(sizeof(Table));
+    joined_table->attributes = malloc((table1->num_attributes + table2->num_attributes + 1) * sizeof(Attribute));
+    joined_table->attributes[0].type = INTEGER;
+    joined_table->attributes[0].is_primary_key = true;
+    joined_table->attributes[0].name = "1";
+    joined_table->name = malloc(256);
+    (joined_table->name)[0] = '\0';
+    joined_table->name = strcat(joined_table->name, table1->name);
+    joined_table->name = strcat(joined_table->name, "*");
+    joined_table->name = strcat(joined_table->name, table2->name);
+
+
+    for (int i = 0; i < table1->num_attributes; i++) {
+        joined_table->attributes[i + 1].name = table1->attributes[i].name;
+        joined_table->attributes[i + 1].type = table1->attributes[i].type;
+        joined_table->attributes[i + 1].len = table1->attributes[i].len;
+        joined_table->attributes[i + 1].is_primary_key = false;
+
+    }
+    for (int i = 0; i < table2->num_attributes; i++) {
+        joined_table->attributes[i + table1->num_attributes + 1].name = table2->attributes[i].name;
+        joined_table->attributes[i + table1->num_attributes + 1].type = table2->attributes[i].type;
+        joined_table->attributes[i + table1->num_attributes + 1].len = table2->attributes[i].len;
+        joined_table->attributes[i + table1->num_attributes + 1].is_primary_key = false;
+    }
+    joined_table->num_attributes = table1->num_attributes + table2->num_attributes;
+    int count = 0;
+    while (curr_page1 != NULL) {
+        while (curr_page2 != NULL) {
+            for (int n = 0; n < curr_page1->num_records; n++) {
+                for (int m = 0; m < curr_page2->num_records; m++) {
+                    printf("Count: %d\n", count);
+
+                    // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
+                    Record *record1 = &(curr_page1->records[n]);
+                    Record *record2 = &(curr_page1->records[m]);
+
+                    Record *combined_record = malloc(sizeof(Record));
+                    combined_record->bitmap = 0;
+                    combined_record->unique_attribute_indices = malloc(sizeof(int) * joined_table->num_unique_attributes);
+                    combined_record->attr_vals = malloc(sizeof(Attribute_Values) * joined_table->num_attributes);
+                    combined_record->attr_vals[0].int_val = count;
+                    combined_record->attr_vals[0].type = INTEGER;
+                    combined_record->primary_key_index = 0;
+
+                    for (int i = 1; i <= table1->num_attributes; i++) {
+                        combined_record->attr_vals[i] = *clone_attr_vals(&record1->attr_vals[i - 1]);
+                    }
+                    for (int i = 0; i < table2->num_attributes; i++) {
+                        combined_record->attr_vals[i + table1->num_attributes + 1] = *clone_attr_vals(&record2->attr_vals[i]);
+                    }
+                    add_record_to_page(schema, joined_table, combined_record, buffer);
+                    count++;
+                }
+            }
+            if (curr_page2->next_page == NULL) {
+                break;
+            }
+            curr_page2 = curr_page2->next_page;
+            page2_num += 1;
+        }
+        if(curr_page1->next_page == NULL){
+            break;
+        }
+        curr_page1 = curr_page1->next_page;
+        page1_num+= 1;
+    }
+    return joined_table;
+}
+
+
 void print_page_where_projection(Table *table, Page *p, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested){
     Page *curr_page = p;
     int page_num = 1;
@@ -719,16 +799,14 @@ void print_page_where_projection(Table *table, Page *p, ConditionalParseTree * c
         for (int k = 0; k < curr_page->num_records; k++) {
             // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
             if(evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table)) {
-                printf("| ");
+                printf("|");
                 for (int i = 0; i < num_attributes_requested; i++) {
-
                     int l = 0;
                     for(int j = 0; j < table->num_attributes; j++){
                         if(strcmp(table->attributes[j].name, requested_attributes[i]) == 0){
                             l = j;
                         }
                     }
-
                     ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
                     if (curr_page->records[k].attr_vals[l].is_null) {
                         printf("null ");
