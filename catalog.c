@@ -796,11 +796,13 @@ Attribute_Values *clone_attr_vals(Attribute_Values *src) {
   // printf("about to clone attr val\n");
   Attribute_Values *attr_val = malloc(sizeof(Attribute_Values));
   attr_val->type = src->type;
+
   ATTRIBUTE_TYPE type = attr_val->type;
   // printf("set type %s\n", attribute_type_to_string(attr_val->type));
   if (type == INTEGER) {
     attr_val->int_val = src->int_val;
   } else if (type == DOUBLE) {
+      printf("Source Price Val: %lf\n", src->double_val);
     attr_val->double_val = src->double_val;
   } else if (type == BOOL) {
     attr_val->bool_val = src->bool_val;
