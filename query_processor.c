@@ -463,6 +463,38 @@ bool select_all_where(char *table_name, char *db_loc, Schema *schema,
     return true;
 }
 
+bool select_where_projection(char *table_name, char *db_loc, Schema *schema,
+                  Bufferm *buffer, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested) {
+    Table *table = get_table(schema, table_name);
+    if (table == NULL) {
+        printf("No such table %s\n", table_name);
+        printf("ERROR\n");
+        return false;
+    }
+    Page *p = find_in_buffer(buffer, table);
+    // printf("num records of first page: %d\n", p->num_records);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+        // printf("select all reading from page file\n");
+        p = read_page_from_file(schema, table, filepath);
+        if (p != NULL) {
+            add_to_buffer(buffer, table, p, filepath);
+        }
+    }
+    printf("| ");
+    for (int i = 0; i < num_attributes_requested; i++) {
+        printf("%s | ", requested_attributes[i]);
+    }
+    printf("\n");
+    if (p != NULL) {
+        //print_page(table, p);
+        print_page_where_projection(table, p, conditionalParseTree, requested_attributes, num_attributes_requested);
+    }
+
+    return true;
+}
+
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
     /*
@@ -561,7 +593,8 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         printf("Attr %d: %s\n", i, attributes[i]);
     }
 
-    return true;
+    //return true;
+    return select_where_projection(table_name, db_loc, schema, buffer, conditionTree, attributes, num_attributes);
 }
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
