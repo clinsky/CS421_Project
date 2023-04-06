@@ -751,8 +751,6 @@ Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, 
         while (curr_page2 != NULL) {
             for (int n = 0; n < curr_page1->num_records; n++) {
                 for (int m = 0; m < curr_page2->num_records; m++) {
-                    printf("Count: %d\n", count);
-
                     // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
                     Record *record1 = &(curr_page1->records[n]);
                     Record *record2 = &(curr_page2->records[m]);
@@ -769,15 +767,8 @@ Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, 
                         combined_record->attr_vals[i+1] = *clone_attr_vals(&record1->attr_vals[i]);
                     }
                     for (int i = 0; i < table2->num_attributes; i++) {
-                        if(i == 1){
-                            printf("This val should not be 0.00: %lf\n", record2->attr_vals[i].double_val);
-                            printf("This val should not be 0.00: %d\n", record2->attr_vals[i].int_val);
-                            printf("This val should not be 0.00: %s\n", record2->attr_vals[i].chars_val);
-                            printf("This val should not be 0.00: %b\n", record2->attr_vals[i].bool_val);
-                        }
                         combined_record->attr_vals[i + table1->num_attributes + 1] = *clone_attr_vals(&record2->attr_vals[i]);
                     }
-                    printf("Price Value: %lf\n", combined_record->attr_vals[5].double_val);
                     add_record_to_page(schema, joined_table, combined_record, buffer);
                     count++;
                 }

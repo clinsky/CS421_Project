@@ -802,7 +802,6 @@ Attribute_Values *clone_attr_vals(Attribute_Values *src) {
   if (type == INTEGER) {
     attr_val->int_val = src->int_val;
   } else if (type == DOUBLE) {
-      printf("Source Price Val: %lf\n", src->double_val);
     attr_val->double_val = src->double_val;
   } else if (type == BOOL) {
     attr_val->bool_val = src->bool_val;
