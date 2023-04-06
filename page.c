@@ -729,22 +729,53 @@ Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, 
     joined_table->name = strcat(joined_table->name, table1->name);
     joined_table->name = strcat(joined_table->name, ",");
     joined_table->name = strcat(joined_table->name, table2->name);
-    drop_table(schema, buffer, joined_table->name);
-
-
     for (int i = 0; i < table1->num_attributes; i++) {
-        joined_table->attributes[i + 1].name = table1->attributes[i].name;
+        joined_table->attributes[i + 1].name = malloc(256);
+        joined_table->attributes[i + 1].name[0] = '\0';
+        strcpy(joined_table->attributes[i + 1].name, table1->attributes[i].name);
+        joined_table->attributes[i + 1].name[strlen(table1->attributes[i].name)] = '\0';
         joined_table->attributes[i + 1].type = table1->attributes[i].type;
         joined_table->attributes[i + 1].len = table1->attributes[i].len;
         joined_table->attributes[i + 1].is_primary_key = false;
 
     }
     for (int i = 0; i < table2->num_attributes; i++) {
-        joined_table->attributes[i + table1->num_attributes + 1].name = table2->attributes[i].name;
+        joined_table->attributes[i + table1->num_attributes + 1].name = malloc(256);
+        joined_table->attributes[i + table1->num_attributes + 1].name[0] = '\0';
+        strcpy(joined_table->attributes[i + table1->num_attributes + 1].name, table2->attributes[i].name);
+        joined_table->attributes[i + table1->num_attributes + 1].name[strlen(table2->attributes[i].name)] = '\0';
         joined_table->attributes[i + table1->num_attributes + 1].type = table2->attributes[i].type;
         joined_table->attributes[i + table1->num_attributes + 1].len = table2->attributes[i].len;
         joined_table->attributes[i + table1->num_attributes + 1].is_primary_key = false;
+        for(int j = 0; j < table1->num_attributes; j++){
+            if(strcmp(table1->attributes[j].name, table2->attributes[i].name) == 0){
+                joined_table->attributes[j+1].name[0] = '\0';
+                strcpy(joined_table->attributes[j+1].name, table1->name);
+                joined_table->attributes[j+1].name[strlen(table1->name)] = '\0';
+                joined_table->attributes[j+1].name = strcat(joined_table->attributes[j+1].name, ".");
+                joined_table->attributes[j+1].name = strcat(joined_table->attributes[j+1].name, table1->attributes[j].name);
+
+
+                //printf("third concat\n");
+                joined_table->attributes[i + table1->num_attributes + 1].name[0] = '\0';
+                strcpy(joined_table->attributes[i + table1->num_attributes + 1].name, table2->name);
+                joined_table->attributes[i + table1->num_attributes + 1].name[strlen(table2->name)] = '\0';
+                joined_table->attributes[i + table1->num_attributes + 1].name = strcat(joined_table->attributes[i + table1->num_attributes + 1].name, ".");
+                joined_table->attributes[i + table1->num_attributes + 1].name = strcat(joined_table->attributes[i + table1->num_attributes + 1].name, table2->attributes[i].name);
+
+
+
+
+                //joined_table->attributes[i + table1->num_attributes + 1].name = strcat(".", joined_table->attributes[i + table1->num_attributes + 1].name);
+                //printf("fourth concat\n");
+                //joined_table->attributes[i + table1->num_attributes + 1].name = strcat(table2->name, joined_table->attributes[i + table1->num_attributes + 1].name);
+                //printf("done with concating\n");
+
+            }
+        }
     }
+
+    drop_table(schema, buffer, joined_table->name);
     joined_table->num_attributes = table1->num_attributes + table2->num_attributes + 1;
     int count = 0;
     while (curr_page1 != NULL) {
@@ -765,6 +796,7 @@ Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, 
 
                     for (int i = 0; i < table1->num_attributes; i++) {
                         combined_record->attr_vals[i+1] = *clone_attr_vals(&record1->attr_vals[i]);
+
                     }
                     for (int i = 0; i < table2->num_attributes; i++) {
                         combined_record->attr_vals[i + table1->num_attributes + 1] = *clone_attr_vals(&record2->attr_vals[i]);
