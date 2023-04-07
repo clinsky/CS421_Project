@@ -259,7 +259,6 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     }
 
     char *relToken = *(char **)pop(tokens);
-    printf("Current Token: %s\n", relToken);
 
     if (strcmp(relToken, "=") != 0 && strcmp(relToken, "<") != 0 && strcmp(relToken, ">") != 0 &&
         strcmp(relToken, "<=") != 0 && strcmp(relToken, ">=") != 0 && strcmp(relToken, "!=") != 0) {
@@ -271,6 +270,10 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     (tree->val)[strlen(relToken)] = '\0';
     tree->right = initConditionalParseTree();
     if (next_token[0] == '\"') {
+        // remove quotes
+        next_token = next_token + 1;
+        next_token[strlen(next_token) - 1] = '\0';
+
         ((tree->right)->type)[0] = '\0';
         strcpy((tree->right)->type, "const");
         ((tree->right)->type)[5] = '\0';
@@ -297,6 +300,9 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     printf("Current Token: %s\n", next_token);
     tree->left = initConditionalParseTree();
     if (next_token[0] == '\"') {
+        next_token = next_token + 1;
+        next_token[strlen(next_token) - 1] = '\0';
+
         if (strcmp((tree->right)->type, "attr") == 0) {
             printf("Syntax Error\n");
             return NULL;
@@ -453,25 +459,6 @@ ConditionalParseTree * parseConditional(char * conditionalString){
      * true | orCond
      */
     Stack * tokens = getTokensFromConditionalString(conditionalString);
-
-
-    for(int i = 0; i < tokens->size; i++){
-        printf("Token: %s\n", *(char **)(tokens->arr)[i]);
-    }
-
-    /*
-    if(stackIsEmpty(tokens)){
-        ConditionalParseTree * conditionalParseTree = initConditionalParseTree();
-        (conditionalParseTree->val)[0] = '\0';
-        strcpy(conditionalParseTree->val, "true");
-        (conditionalParseTree->val)[4] = '\0';
-        (conditionalParseTree->type)[0] = '\0';
-        strcpy(conditionalParseTree->type, "test");
-        (conditionalParseTree->type)[4] = '\0';
-        return conditionalParseTree;
-    }
-     */
-
     ConditionalParseTree * conditionalParseTree = parseOrConditional(tokens);
     return conditionalParseTree;
 }

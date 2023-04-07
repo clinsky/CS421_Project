@@ -796,6 +796,7 @@ Attribute_Values *clone_attr_vals(Attribute_Values *src) {
   // printf("about to clone attr val\n");
   Attribute_Values *attr_val = malloc(sizeof(Attribute_Values));
   attr_val->type = src->type;
+
   ATTRIBUTE_TYPE type = attr_val->type;
   // printf("set type %s\n", attribute_type_to_string(attr_val->type));
   if (type == INTEGER) {

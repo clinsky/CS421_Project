@@ -431,6 +431,202 @@ bool select_all(char *table_name, char *db_loc, Schema *schema,
   return true;
 }
 
+bool select_all_where(char *table_name, char *db_loc, Schema *schema,
+                Bufferm *buffer, ConditionalParseTree * conditionalParseTree) {
+    Table *table = get_table(schema, table_name);
+    if (table == NULL) {
+        printf("No such table %s\n", table_name);
+        printf("ERROR\n");
+        return false;
+    }
+    Page *p = find_in_buffer(buffer, table);
+    // printf("num records of first page: %d\n", p->num_records);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+        // printf("select all reading from page file\n");
+        p = read_page_from_file(schema, table, filepath);
+        if (p != NULL) {
+            add_to_buffer(buffer, table, p, filepath);
+        }
+    }
+    printf("| ");
+    for (int i = 0; i < table->num_attributes; i++) {
+        printf("%s | ", table->attributes[i].name);
+    }
+    printf("\n");
+    if (p != NULL) {
+        //print_page(table, p);
+        print_page_where(table, p, conditionalParseTree);
+    }
+
+    return true;
+}
+
+bool select_where_projection(char *table_name, char *db_loc, Schema *schema,
+                  Bufferm *buffer, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested) {
+    Table *table = get_table(schema, table_name);
+    if (table == NULL) {
+        printf("No such table %s\n", table_name);
+        printf("ERROR\n");
+        return false;
+    }
+    Page *p = find_in_buffer(buffer, table);
+    // printf("num records of first page: %d\n", p->num_records);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+        // printf("select all reading from page file\n");
+        p = read_page_from_file(schema, table, filepath);
+        if (p != NULL) {
+            add_to_buffer(buffer, table, p, filepath);
+        }
+    }
+    printf("| ");
+    for (int i = 0; i < num_attributes_requested; i++) {
+        printf("%s | ", requested_attributes[i]);
+    }
+    printf("\n");
+    if (p != NULL) {
+        //print_page(table, p);
+        print_page_where_projection(table, p, conditionalParseTree, requested_attributes, num_attributes_requested);
+    }
+
+    return true;
+}
+
+
+
+bool select_where_projection_product(char ** table_names, int num_tables_requested, char *db_loc, Schema *schema,
+                             Bufferm *buffer, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested) {
+
+    Table *table = get_table(schema, table_names[0]);
+    if (table == NULL) {
+        printf("No such table %s\n", table_names[0]);
+        printf("ERROR\n");
+        return false;
+    }
+    for(int i = 1; i < num_tables_requested; i++){
+        char filepath[100];
+        snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+        Page * p1 = read_page_from_file(schema, table, filepath);
+        Table * right_table = get_table(schema, table_names[i]);
+        if (table == NULL) {
+            printf("No such table %s\n", table_names[i]);
+            printf("ERROR\n");
+            return false;
+        }
+        char filepath2[100];
+        snprintf(filepath2, sizeof(filepath2), "%s/%s", schema->db_path, right_table->name);
+        Page * p2 = read_page_from_file(schema, right_table, filepath2);
+        table = join_two_tables_block_nested(table, right_table, p1, p2, schema, buffer);
+        add_table_to_catalog(schema, table);
+    }
+
+    Page *p = find_in_buffer(buffer, table);
+    // printf("num records of first page: %d\n", p->num_records);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+        // printf("select all reading from page file\n");
+        p = read_page_from_file(schema, table, filepath);
+        if (p != NULL) {
+            add_to_buffer(buffer, table, p, filepath);
+        }
+    }
+    printf("| ");
+    for (int i = 0; i < num_attributes_requested; i++) {
+        printf("%s | ", requested_attributes[i]);
+    }
+    printf("\n");
+    if (p != NULL) {
+        //print_page(table, p);
+        print_page_where_projection(table, p, conditionalParseTree, requested_attributes, num_attributes_requested);
+    }
+
+    return true;
+}
+
+bool select_all_where_product(char ** table_names, int num_tables_requested, char *db_loc, Schema *schema,
+                      Bufferm *buffer, ConditionalParseTree * conditionalParseTree){
+
+    Table *table = get_table(schema, table_names[0]);
+    if (table == NULL) {
+        printf("No such table %s\n", table_names[0]);
+        printf("ERROR\n");
+        return false;
+    }
+    for(int i = 1; i < num_tables_requested; i++){
+        //Page * p1 = read_page_from_file(schema, table, filepath);
+        Page *p1 = find_in_buffer(buffer, table);
+        // printf("num records of first page: %d\n", p->num_records);
+        char filepath[100];
+        snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+        if (p1 == NULL) {
+            // printf("select all reading from page file\n");
+            p1 = read_page_from_file(schema, table, filepath);
+            if (p1 != NULL) {
+                add_to_buffer(buffer, table, p1, filepath);
+            }
+        }
+
+        Table * right_table = get_table(schema, table_names[i]);
+        if (table == NULL) {
+            printf("No such table %s\n", table_names[i]);
+            printf("ERROR\n");
+            return false;
+        }
+
+
+
+
+        //Page * p2 = read_page_from_file(schema, right_table, filepath2);
+        Page *p2 = find_in_buffer(buffer, right_table);
+        // printf("num records of first page: %d\n", p->num_records);
+        char filepath2[100];
+        snprintf(filepath2, sizeof(filepath2), "%s/%s", schema->db_path, right_table->name);
+
+        if (p2 == NULL) {
+            // printf("select all reading from page file\n");
+            p2 = read_page_from_file(schema, right_table, filepath);
+            if (p2 != NULL) {
+                add_to_buffer(buffer, right_table, p2, filepath);
+            }
+        }
+
+
+
+
+        table = join_two_tables_block_nested(table, right_table, p1, p2, schema, buffer);
+        add_table_to_catalog(schema, table);
+    }
+
+    Page *p = find_in_buffer(buffer, table);
+
+    // printf("num records of first page: %d\n", p->num_records);
+    char filepath[100];
+    snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+    if (p == NULL) {
+        // printf("select all reading from page file\n");
+        p = read_page_from_file(schema, table, filepath);
+        if (p != NULL) {
+            add_to_buffer(buffer, table, p, filepath);
+        }
+    }
+    printf("| ");
+    for (int i = 0; i < table->num_attributes; i++) {
+        printf("%s | ", table->attributes[i].name);
+    }
+    printf("\n");
+    if (p != NULL) {
+        //print_page(table, p);
+        print_page_where(table, p, conditionalParseTree);
+    }
+
+    return true;
+
+}
+
 bool parse_select(char *command, char *db_loc, Schema *schema,
                   Bufferm *buffer) {
     /*
@@ -460,11 +656,33 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
     return false;
   }
 
-  token = strtok(NULL, " "); // table_name
-  strcpy(table_name, token);
+  char ** table_names = malloc(sizeof(char*) * 256);
+  int num_tables_requested = 0;
+  token = strtok(NULL, " "); // <table_name1>
+
+  while (token != NULL && token[strlen(token) - 1] != ';' && strcmp(token, "where") != 0 && strcmp(token, "groupby") != 0 && strcmp(token, "orderby") != 0) {
+      table_names[num_tables_requested] = malloc(256);
+      table_names[num_tables_requested][0] = '\0';
+      strcpy(table_names[num_tables_requested], token);
+      token = strtok(NULL, " ");
+      num_tables_requested++;
+  }
+
+  if(table_names[num_tables_requested - 1][strlen(table_names[num_attributes - 1])-1] == ';'){
+      table_names[num_tables_requested - 1][strlen(table_names[num_attributes - 1])-1] = '\0';
+  }
+
+  // Remove the commas from the table names
+    for(int i = 0; i < num_tables_requested; i++){
+        if(table_names[i][strlen(table_names[i]) - 1] == ','){
+            table_names[i][strlen(table_names[i]) - 1] = '\0';
+        }
+    }
+
+  //strcpy(table_name, token);
   // printf("tableName: %s\n", table_name);
 
-    token = strtok(NULL, " "); // where
+    //token = strtok(NULL, " "); // where
     char * condition = malloc(250);
 
     if(token && strcmp(token, "where") == 0){
@@ -488,10 +706,7 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
         condition[strlen(condition) - 1] = '\0';
     }
 
-    printf("Condition: %s\n", condition);
     ConditionalParseTree * conditionTree = parseConditional(condition);
-    printf("Conditional Parse Tree:\n");
-    printConditionalParseTree(conditionTree);
 
     if(token && token[strlen(token) - 1] != ';'){
         if(startsWith(token, "groupby") == true){
@@ -519,15 +734,13 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
 
     if (strcmp(attributes[0], "*") == 0) {
         // printf("selecting all from %s ..\n", table_name);
-        return select_all(table_name, db_loc, schema, buffer);
+        //return select_all(table_name, db_loc, schema, buffer);
+        return select_all_where_product(table_names, num_tables_requested, db_loc, schema, buffer, conditionTree);
     }
 
-    printf("Table Name: %s\n", table_name);
-    for(int i = 0; i < num_attributes; i++){
-        printf("Attr %d: %s\n", i, attributes[i]);
-    }
 
-    return true;
+
+    return select_where_projection_product(table_names, num_tables_requested, db_loc, schema, buffer, conditionTree, attributes, num_attributes);
 }
 
 bool process_display_schema(char *command, char *db_loc, Schema *schema,
