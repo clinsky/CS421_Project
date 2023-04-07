@@ -3,7 +3,7 @@ CFLAGS = -c -Wall
 
 all: main
 
-main: main.o catalog.o page.o conditional_parser.o parse_utils.o query_processor.o display.o
+main: main.o catalog.o page.o record.o conditional_parser.o parse_utils.o query_processor.o display.o
 	$(CC) main.o catalog.o page.o record.o conditional_parser.o parse_utils.o query_processor.o display.o -o main
 
 main.o: main.c
