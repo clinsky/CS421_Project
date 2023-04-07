@@ -205,6 +205,7 @@ bool evaluateTest(Record * record, ConditionalParseTree * conditionalParseTree, 
 }
 
 bool evaluateCondition(Record * record, ConditionalParseTree * conditionalParseTree, Table * table){
+
     if(strcmp(conditionalParseTree->type, "test") == 0){
         return evaluateTest(record, conditionalParseTree, table);
     }

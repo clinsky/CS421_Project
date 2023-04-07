@@ -243,7 +243,6 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
         return NULL;
     }
     char *next_token = *(char **)pop(tokens);
-    printf("Current Token: %s\n", next_token);
     ConditionalParseTree *tree = initConditionalParseTree();
     (tree->type)[4] = '\0';
     (tree->type)[0] = 't';
@@ -297,7 +296,6 @@ ConditionalParseTree * parseTestConditional(Stack * tokens) {
     }
 
     next_token = *(char **) (pop(tokens));
-    printf("Current Token: %s\n", next_token);
     tree->left = initConditionalParseTree();
     if (next_token[0] == '\"') {
         next_token = next_token + 1;
