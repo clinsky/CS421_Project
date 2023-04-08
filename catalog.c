@@ -352,8 +352,8 @@ bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name) {
   // move last table to index of table that is going to be removed
   db_schema->tables[table_index] = db_schema->tables[db_schema->num_tables - 1];
   db_schema->num_tables -= 1;
-  db_schema->tables =
-      realloc(db_schema->tables, sizeof(Table) * db_schema->num_tables);
+  // db_schema->tables =
+  //  realloc(db_schema->tables, sizeof(Table) * db_schema->num_tables);
 
   return true;
 }
