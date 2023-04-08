@@ -397,7 +397,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // flush_buffer(buffer);
     return p;
   } else {
-    // printf("File %s does not exist for adding record to page\n", filepath);
+    printf("File %s does not exist for adding record to page\n", filepath);
     // FILE *fp = fopen(filepath, "w");
     // if (fp != NULL) {
     //   // printf("File %s created successfully\n", filepath);
@@ -412,7 +412,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // }
     p = find_in_buffer(buffer, table);
     if (p != NULL) {
-      // printf("buffer had %s\n", table->name);
+       printf("buffer had %s\n", table->name);
       p = insert_record_to_page(schema, table, p, record);
     } else {
       Page *first_page = malloc(sizeof(Page));
@@ -670,6 +670,9 @@ void print_page(Table *table, Page *p) {
 bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
                   ConditionalParseTree *conditionalParseTree) {
   Page *curr_page = p;
+    char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+
   // if (drop_table(schema, buffer, table_name)) {
   //   add_table_to_catalog(schema, original_table);
   // } else {
@@ -677,10 +680,10 @@ bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
   // }
   //
   printf("about to loop in delete_where\n");
+  bool added = false;
   while (curr_page != NULL) {
     for (int k = 0; k < curr_page->num_records; k++) {
 
-        printf("about to evaluateCondition in delete where\n");
         if(table != NULL){
             printf("table %s is not null\n", table->name);
         }
@@ -691,9 +694,33 @@ bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
       }
     
       printf("about to call add_record_topage\n");
+       printf("adding old record %d\n", k);
       // this is a record to keep
-      add_record_to_page(schema, table, &curr_page->records[k], buffer);
-      // printf("adding old record\n");
+      if(!added){
+          Record* record = &(curr_page->records[k]);
+          Page *first_page = malloc(sizeof(Page));
+          first_page->next_page = NULL;
+          first_page->max_size = schema->page_size;
+          first_page->num_records = 1;
+          first_page->record_capacity = 20;
+          first_page->page_number = 0;
+          first_page->offsets =
+              malloc(sizeof(Offset) * first_page->record_capacity);
+          first_page->records =
+              malloc(sizeof(Record) * first_page->record_capacity);
+          first_page->records[0] = *record;
+          first_page->total_bytes_from_records += record->size;
+          if (is_page_overfull(first_page)) {
+            // printf("RECORD IS LARGER THAN PAGE SIZE...\n");
+            return false;
+          }
+          p = first_page;
+          write_page_to_file(table, p, filepath);
+          add_to_buffer(buffer, table, p, filepath);
+          added = true;    
+      }else{
+        add_record_to_page(schema, table, &curr_page->records[k], buffer);
+      }
     }
     if (curr_page->next_page == NULL) {
       break;
@@ -1246,6 +1273,7 @@ Page *find_in_buffer(Bufferm *b, Table *table) {
 }
 
 void add_to_buffer(Bufferm *b, Table *table, Page *p, char *filepath) {
+//  printf("adding %s to buffer\n", table->name);
   b->counter += 1;
   Buffer_Entry *new_entry = malloc(sizeof(Buffer_Entry));
   if (b->curr_pages + 1 > b->max_pages) {

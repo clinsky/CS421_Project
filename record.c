@@ -207,13 +207,16 @@ bool evaluateTest(Record * record, ConditionalParseTree * conditionalParseTree, 
 bool evaluateCondition(Record * record, ConditionalParseTree * conditionalParseTree, Table * table){
 
     if(strcmp(conditionalParseTree->type, "test") == 0){
+        // printf("going evaluate test\n");
         return evaluateTest(record, conditionalParseTree, table);
     }
     else if(strcmp(conditionalParseTree->type, "or") == 0) {
+        // printf("going evaluate or\n");
         return evaluateCondition(record, conditionalParseTree->left, table) ||
                evaluateCondition(record, conditionalParseTree->right, table);
     }
     else if(strcmp(conditionalParseTree->type, "and") == 0) {
+        // printf("going evaluate and\n");
         return evaluateCondition(record, conditionalParseTree->left, table) &&
                evaluateCondition(record, conditionalParseTree->right, table);
     }
