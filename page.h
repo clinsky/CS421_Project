@@ -72,15 +72,28 @@ void write_page_to_file(Table *table, Page *p, char *file_path);
 
 void print_page(Table *table, Page *p);
 
-void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalParseTree);
+bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
+                  ConditionalParseTree *conditionalParseTree);
 
-void print_page_where_projection(Table *table, Page *p, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested);
+void print_page_where(Table *table, Page *p,
+                      ConditionalParseTree *conditionalParseTree);
 
-void print_page_where_projection_orderby(Table *table, Page *p, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested, char * orderby_attr);
+void print_page_where_projection(Table *table, Page *p,
+                                 ConditionalParseTree *conditionalParseTree,
+                                 char **requested_attributes,
+                                 int num_attributes_requested);
 
-void print_page_where_product_orderby(Table * table, Page * p, ConditionalParseTree * conditionalParseTree, char * orderby_attr);
+void print_page_where_projection_orderby(
+    Table *table, Page *p, ConditionalParseTree *conditionalParseTree,
+    char **requested_attributes, int num_attributes_requested,
+    char *orderby_attr);
 
-Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, Page * p2, Schema * schema, Bufferm * buffer);
+void print_page_where_product_orderby(
+    Table *table, Page *p, ConditionalParseTree *conditionalParseTree,
+    char *orderby_attr);
+
+Table *join_two_tables_block_nested(Table *table1, Table *table2, Page *p1,
+                                    Page *p2, Schema *schema, Bufferm *buffer);
 
 void print_record(Table *table, Record *record);
 
