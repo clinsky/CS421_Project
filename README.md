@@ -26,3 +26,14 @@ insert into foo values\
 (21 12.2 "hi");
 
 Where records are seperated by commas, attributes are not seperated by commas, and the semi-colon appears on the same line as the last record.
+
+## Phase 3 Submission Notes
+### select 
+Please use in the following manner: 
+
+select * from foo where num=1; 
+
+select name, age from person where name="Bob" and age>10;
+
+select name, age from person where name="Bob" and age>10 or age<6;
+
