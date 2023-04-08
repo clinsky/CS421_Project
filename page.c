@@ -667,401 +667,473 @@ void print_page(Table *table, Page *p) {
   }
 }
 
-void print_page_where(Table *table, Page *p, ConditionalParseTree * conditionalParseTree) {
-    Page *curr_page = p;
-    int page_num = 1;
-    // printf("in print page..\n");
-    while (curr_page != NULL) {
-        // printf("printing page# %d with num records: %d\n", page_num,
-        //        curr_page->num_records);
-        for (int k = 0; k < curr_page->num_records; k++) {
-            // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
-            if(evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table)) {
-                printf("| ");
-                for (int l = 0; l < table->num_attributes; l++) {
-                    ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
-                    if (curr_page->records[k].attr_vals[l].is_null) {
-                        printf("null ");
-                        continue;
-                    }
-                    if (type == INTEGER) {
-                        printf("%d | ", curr_page->records[k].attr_vals[l].int_val);
-                    } else if (type == DOUBLE) {
-                        printf("%f | ", curr_page->records[k].attr_vals[l].double_val);
-                    } else if (type == BOOL) {
-                        printf("%d | ", curr_page->records[k].attr_vals[l].bool_val);
-                    } else if (type == CHAR) {
-                        printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
-                    } else if (type == VARCHAR) {
-                        printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
-                    }
-                }
-                printf("\n");
-            }
+bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
+                  ConditionalParseTree *conditionalParseTree) {
+  Page *curr_page = p;
+  // if (drop_table(schema, buffer, table_name)) {
+  //   add_table_to_catalog(schema, original_table);
+  // } else {
+  //   // idk
+  // }
+  while (curr_page != NULL) {
+    for (int k = 0; k < curr_page->num_records; k++) {
+      if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree,
+                            table)) {
+        // printf("found a record to delete\n");
+        continue;
+      }
 
-        }
-        if (curr_page->next_page == NULL) {
-            break;
-        }
-        curr_page = curr_page->next_page;
-        page_num += 1;
+      // this is a record to keep
+      add_record_to_page(schema, table, &curr_page->records[k], buffer);
+      // printf("adding old record\n");
     }
-
+    if (curr_page->next_page == NULL) {
+      break;
+    }
+    curr_page = curr_page->next_page;
+  }
+  return true;
 }
 
-
-
-Table * join_two_tables_block_nested(Table * table1, Table * table2, Page * p1, Page * p2, Schema * schema, Bufferm * buffer) {
-    Page *curr_page1 = p1;
-    Page *curr_page2 = p2;
-    int page1_num = 0;
-    int page2_num = 0;
-    Page *joined_page = malloc(sizeof(Page));
-    joined_page->max_size = schema->page_size;
-    joined_page->total_bytes_from_records = 0;
-    joined_page->record_capacity = 20;
-    Table *joined_table = malloc(sizeof(Table));
-    joined_table->attributes = malloc((table1->num_attributes + table2->num_attributes + 1) * sizeof(Attribute));
-    joined_table->attributes[0].type = INTEGER;
-    joined_table->attributes[0].is_primary_key = true;
-    joined_table->attributes[0].name = " ";
-    joined_table->name = malloc(256);
-    (joined_table->name)[0] = '\0';
-    joined_table->name = strcat(joined_table->name, "*");
-    joined_table->name = strcat(joined_table->name, table1->name);
-    joined_table->name = strcat(joined_table->name, ",");
-    joined_table->name = strcat(joined_table->name, table2->name);
-    for (int i = 0; i < table1->num_attributes; i++) {
-        joined_table->attributes[i + 1].name = malloc(256);
-        joined_table->attributes[i + 1].name[0] = '\0';
-        strcpy(joined_table->attributes[i + 1].name, table1->attributes[i].name);
-        joined_table->attributes[i + 1].name[strlen(table1->attributes[i].name)] = '\0';
-        joined_table->attributes[i + 1].type = table1->attributes[i].type;
-        joined_table->attributes[i + 1].len = table1->attributes[i].len;
-        joined_table->attributes[i + 1].is_primary_key = false;
-
+void print_page_where(Table *table, Page *p,
+                      ConditionalParseTree *conditionalParseTree) {
+  Page *curr_page = p;
+  int page_num = 1;
+  // printf("in print page..\n");
+  while (curr_page != NULL) {
+    // printf("printing page# %d with num records: %d\n", page_num,
+    //        curr_page->num_records);
+    for (int k = 0; k < curr_page->num_records; k++) {
+      // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
+      if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree,
+                            table)) {
+        printf("| ");
+        for (int l = 0; l < table->num_attributes; l++) {
+          ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
+          if (curr_page->records[k].attr_vals[l].is_null) {
+            printf("null ");
+            continue;
+          }
+          if (type == INTEGER) {
+            printf("%d | ", curr_page->records[k].attr_vals[l].int_val);
+          } else if (type == DOUBLE) {
+            printf("%f | ", curr_page->records[k].attr_vals[l].double_val);
+          } else if (type == BOOL) {
+            printf("%d | ", curr_page->records[k].attr_vals[l].bool_val);
+          } else if (type == CHAR) {
+            printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
+          } else if (type == VARCHAR) {
+            printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
+          }
+        }
+        printf("\n");
+      }
     }
-    for (int i = 0; i < table2->num_attributes; i++) {
-        joined_table->attributes[i + table1->num_attributes + 1].name = malloc(256);
+    if (curr_page->next_page == NULL) {
+      break;
+    }
+    curr_page = curr_page->next_page;
+    page_num += 1;
+  }
+}
+
+Table *join_two_tables_block_nested(Table *table1, Table *table2, Page *p1,
+                                    Page *p2, Schema *schema, Bufferm *buffer) {
+  Page *curr_page1 = p1;
+  Page *curr_page2 = p2;
+  int page1_num = 0;
+  int page2_num = 0;
+  Page *joined_page = malloc(sizeof(Page));
+  joined_page->max_size = schema->page_size;
+  joined_page->total_bytes_from_records = 0;
+  joined_page->record_capacity = 20;
+  Table *joined_table = malloc(sizeof(Table));
+  joined_table->attributes =
+      malloc((table1->num_attributes + table2->num_attributes + 1) *
+             sizeof(Attribute));
+  joined_table->attributes[0].type = INTEGER;
+  joined_table->attributes[0].is_primary_key = true;
+  joined_table->attributes[0].name = " ";
+  joined_table->name = malloc(256);
+  (joined_table->name)[0] = '\0';
+  joined_table->name = strcat(joined_table->name, "*");
+  joined_table->name = strcat(joined_table->name, table1->name);
+  joined_table->name = strcat(joined_table->name, ",");
+  joined_table->name = strcat(joined_table->name, table2->name);
+  for (int i = 0; i < table1->num_attributes; i++) {
+    joined_table->attributes[i + 1].name = malloc(256);
+    joined_table->attributes[i + 1].name[0] = '\0';
+    strcpy(joined_table->attributes[i + 1].name, table1->attributes[i].name);
+    joined_table->attributes[i + 1].name[strlen(table1->attributes[i].name)] =
+        '\0';
+    joined_table->attributes[i + 1].type = table1->attributes[i].type;
+    joined_table->attributes[i + 1].len = table1->attributes[i].len;
+    joined_table->attributes[i + 1].is_primary_key = false;
+  }
+  for (int i = 0; i < table2->num_attributes; i++) {
+    joined_table->attributes[i + table1->num_attributes + 1].name = malloc(256);
+    joined_table->attributes[i + table1->num_attributes + 1].name[0] = '\0';
+    strcpy(joined_table->attributes[i + table1->num_attributes + 1].name,
+           table2->attributes[i].name);
+    joined_table->attributes[i + table1->num_attributes + 1]
+        .name[strlen(table2->attributes[i].name)] = '\0';
+    joined_table->attributes[i + table1->num_attributes + 1].type =
+        table2->attributes[i].type;
+    joined_table->attributes[i + table1->num_attributes + 1].len =
+        table2->attributes[i].len;
+    joined_table->attributes[i + table1->num_attributes + 1].is_primary_key =
+        false;
+    for (int j = 0; j < table1->num_attributes; j++) {
+      if (strcmp(table1->attributes[j].name, table2->attributes[i].name) == 0) {
+        joined_table->attributes[j + 1].name[0] = '\0';
+        strcpy(joined_table->attributes[j + 1].name, table1->name);
+        joined_table->attributes[j + 1].name[strlen(table1->name)] = '\0';
+        joined_table->attributes[j + 1].name =
+            strcat(joined_table->attributes[j + 1].name, ".");
+        joined_table->attributes[j + 1].name = strcat(
+            joined_table->attributes[j + 1].name, table1->attributes[j].name);
+
+        // printf("third concat\n");
         joined_table->attributes[i + table1->num_attributes + 1].name[0] = '\0';
-        strcpy(joined_table->attributes[i + table1->num_attributes + 1].name, table2->attributes[i].name);
-        joined_table->attributes[i + table1->num_attributes + 1].name[strlen(table2->attributes[i].name)] = '\0';
-        joined_table->attributes[i + table1->num_attributes + 1].type = table2->attributes[i].type;
-        joined_table->attributes[i + table1->num_attributes + 1].len = table2->attributes[i].len;
-        joined_table->attributes[i + table1->num_attributes + 1].is_primary_key = false;
-        for(int j = 0; j < table1->num_attributes; j++){
-            if(strcmp(table1->attributes[j].name, table2->attributes[i].name) == 0){
-                joined_table->attributes[j+1].name[0] = '\0';
-                strcpy(joined_table->attributes[j+1].name, table1->name);
-                joined_table->attributes[j+1].name[strlen(table1->name)] = '\0';
-                joined_table->attributes[j+1].name = strcat(joined_table->attributes[j+1].name, ".");
-                joined_table->attributes[j+1].name = strcat(joined_table->attributes[j+1].name, table1->attributes[j].name);
+        strcpy(joined_table->attributes[i + table1->num_attributes + 1].name,
+               table2->name);
+        joined_table->attributes[i + table1->num_attributes + 1]
+            .name[strlen(table2->name)] = '\0';
+        joined_table->attributes[i + table1->num_attributes + 1].name = strcat(
+            joined_table->attributes[i + table1->num_attributes + 1].name, ".");
+        joined_table->attributes[i + table1->num_attributes + 1].name = strcat(
+            joined_table->attributes[i + table1->num_attributes + 1].name,
+            table2->attributes[i].name);
 
-
-                //printf("third concat\n");
-                joined_table->attributes[i + table1->num_attributes + 1].name[0] = '\0';
-                strcpy(joined_table->attributes[i + table1->num_attributes + 1].name, table2->name);
-                joined_table->attributes[i + table1->num_attributes + 1].name[strlen(table2->name)] = '\0';
-                joined_table->attributes[i + table1->num_attributes + 1].name = strcat(joined_table->attributes[i + table1->num_attributes + 1].name, ".");
-                joined_table->attributes[i + table1->num_attributes + 1].name = strcat(joined_table->attributes[i + table1->num_attributes + 1].name, table2->attributes[i].name);
-
-
-
-
-                //joined_table->attributes[i + table1->num_attributes + 1].name = strcat(".", joined_table->attributes[i + table1->num_attributes + 1].name);
-                //printf("fourth concat\n");
-                //joined_table->attributes[i + table1->num_attributes + 1].name = strcat(table2->name, joined_table->attributes[i + table1->num_attributes + 1].name);
-                //printf("done with concating\n");
-
-            }
-        }
+        // joined_table->attributes[i + table1->num_attributes + 1].name =
+        // strcat(".", joined_table->attributes[i + table1->num_attributes +
+        // 1].name); printf("fourth concat\n"); joined_table->attributes[i +
+        // table1->num_attributes + 1].name = strcat(table2->name,
+        // joined_table->attributes[i + table1->num_attributes + 1].name);
+        // printf("done with concating\n");
+      }
     }
+  }
 
-    drop_table(schema, buffer, joined_table->name);
-    joined_table->num_attributes = table1->num_attributes + table2->num_attributes + 1;
-    int count = 0;
-    while (curr_page1 != NULL) {
-        while (curr_page2 != NULL) {
-            for (int n = 0; n < curr_page1->num_records; n++) {
-                for (int m = 0; m < curr_page2->num_records; m++) {
-                    // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
-                    Record *record1 = &(curr_page1->records[n]);
-                    Record *record2 = &(curr_page2->records[m]);
+  drop_table(schema, buffer, joined_table->name);
+  joined_table->num_attributes =
+      table1->num_attributes + table2->num_attributes + 1;
+  int count = 0;
+  while (curr_page1 != NULL) {
+    while (curr_page2 != NULL) {
+      for (int n = 0; n < curr_page1->num_records; n++) {
+        for (int m = 0; m < curr_page2->num_records; m++) {
+          // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
+          Record *record1 = &(curr_page1->records[n]);
+          Record *record2 = &(curr_page2->records[m]);
 
-                    Record *combined_record = malloc(sizeof(Record));
-                    combined_record->bitmap = 0;
-                    combined_record->unique_attribute_indices = malloc(sizeof(int) * joined_table->num_unique_attributes);
-                    combined_record->attr_vals = malloc(sizeof(Attribute_Values) * joined_table->num_attributes);
-                    combined_record->attr_vals[0].int_val = count;
-                    combined_record->attr_vals[0].type = INTEGER;
-                    combined_record->primary_key_index = 0;
+          Record *combined_record = malloc(sizeof(Record));
+          combined_record->bitmap = 0;
+          combined_record->unique_attribute_indices =
+              malloc(sizeof(int) * joined_table->num_unique_attributes);
+          combined_record->attr_vals =
+              malloc(sizeof(Attribute_Values) * joined_table->num_attributes);
+          combined_record->attr_vals[0].int_val = count;
+          combined_record->attr_vals[0].type = INTEGER;
+          combined_record->primary_key_index = 0;
 
-                    for (int i = 0; i < table1->num_attributes; i++) {
-                        combined_record->attr_vals[i+1] = *clone_attr_vals(&record1->attr_vals[i]);
-
-                    }
-                    for (int i = 0; i < table2->num_attributes; i++) {
-                        combined_record->attr_vals[i + table1->num_attributes + 1] = *clone_attr_vals(&record2->attr_vals[i]);
-                    }
-                    add_record_to_page(schema, joined_table, combined_record, buffer);
-                    count++;
-                }
-            }
-            if (curr_page2->next_page == NULL) {
-                break;
-            }
-            curr_page2 = curr_page2->next_page;
-            page2_num += 1;
+          for (int i = 0; i < table1->num_attributes; i++) {
+            combined_record->attr_vals[i + 1] =
+                *clone_attr_vals(&record1->attr_vals[i]);
+          }
+          for (int i = 0; i < table2->num_attributes; i++) {
+            combined_record->attr_vals[i + table1->num_attributes + 1] =
+                *clone_attr_vals(&record2->attr_vals[i]);
+          }
+          add_record_to_page(schema, joined_table, combined_record, buffer);
+          count++;
         }
-        if(curr_page1->next_page == NULL){
-            break;
-        }
-        curr_page1 = curr_page1->next_page;
-        page1_num+= 1;
+      }
+      if (curr_page2->next_page == NULL) {
+        break;
+      }
+      curr_page2 = curr_page2->next_page;
+      page2_num += 1;
     }
-    return joined_table;
+    if (curr_page1->next_page == NULL) {
+      break;
+    }
+    curr_page1 = curr_page1->next_page;
+    page1_num += 1;
+  }
+  return joined_table;
 }
 
-
-void print_page_where_projection(Table *table, Page *p, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested){
-    Page *curr_page = p;
-    int page_num = 1;
-    // printf("in print page..\n");
-    while (curr_page != NULL) {
-        // printf("printing page# %d with num records: %d\n", page_num,
-        //        curr_page->num_records);
-        for (int k = 0; k < curr_page->num_records; k++) {
-            // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
-            if(evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table)) {
-                printf("|");
-                for (int i = 0; i < num_attributes_requested; i++) {
-                    int l = 0;
-                    for(int j = 0; j < table->num_attributes; j++){
-                        if(strcmp(table->attributes[j].name, requested_attributes[i]) == 0){
-                            l = j;
-                        }
-                    }
-                    ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
-                    if (curr_page->records[k].attr_vals[l].is_null) {
-                        printf("null ");
-                        continue;
-                    }
-                    if (type == INTEGER) {
-                        printf("%d | ", curr_page->records[k].attr_vals[l].int_val);
-                    } else if (type == DOUBLE) {
-                        printf("%f | ", curr_page->records[k].attr_vals[l].double_val);
-                    } else if (type == BOOL) {
-                        printf("%d | ", curr_page->records[k].attr_vals[l].bool_val);
-                    } else if (type == CHAR) {
-                        printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
-                    } else if (type == VARCHAR) {
-                        printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
-                    }
-                }
-                printf("\n");
-            }
-
-        }
-        if (curr_page->next_page == NULL) {
-            break;
-        }
-        curr_page = curr_page->next_page;
-        page_num += 1;
-    }
-}
-
-int compare_records(Record * record1, Record * record2, char * orderby_attr, Table * table){
-    int attr_idx = 0;
-    for(int i = 0; i < table->num_attributes; i++){
-        if(strcmp(table->attributes[i].name, orderby_attr) == 0){
-            attr_idx = i;
-        }
-    }
-    switch(record1->attr_vals[attr_idx].type){
-        case(INTEGER):
-            return record1->attr_vals[attr_idx].int_val - record2->attr_vals[attr_idx].int_val;
-        case(DOUBLE):
-            return record1->attr_vals[attr_idx].double_val - record2->attr_vals[attr_idx].double_val;
-        case(BOOL):
-            return record1->attr_vals[attr_idx].bool_val == true ? 1 : -1;
-        case(VARCHAR):
-            return strcmp(record1->attr_vals[attr_idx].chars_val, record2->attr_vals[attr_idx].chars_val);
-        case(CHAR):
-            return strcmp(record1->attr_vals[attr_idx].chars_val, record2->attr_vals[attr_idx].chars_val);
-        default:
-            return 0;
-    }
-
-}
-
-Record ** merge_record_array(Record ** records1, int num_records1, Record ** records2, int num_records2, char * orderby_attr, Table * table){
-    printf("Merging\n");
-    printf("num_records1: %d\n", num_records1);
-    printf("num_records2: %d\n", num_records2);
-    printf("Val1: %d\n", records1[0]->attr_vals[0].int_val);
-    printf("Val2: %d\n", records2[0]->attr_vals[0].int_val);
-
-    if(num_records1 == 0){
-        return records1;
-    }
-    else if(num_records2 == 0){
-        return records2;
-    }
-    else if(compare_records(records1[0], records2[0], orderby_attr, table) < 0){
-        Record ** result = malloc(sizeof(Record *) * 1000);
-        result[0] = records1[0];
-        Record ** merged_records = merge_record_array(records1 + 8, num_records1 - 1, records2, num_records2, orderby_attr, table);
-        for(int i = 0; i < num_records1 - 1 + num_records2; i++){
-            result[i + 1] = merged_records[i];
-        }
-        return result;
-    }
-    else{
-        Record ** result = malloc(sizeof(Record *) * 1000);
-        result[0] = records2[0];
-        Record ** merged_records = merge_record_array(records1, num_records1, records2 + 8, num_records2 - 1, orderby_attr, table);
-        for(int i = 0; i < num_records1 + num_records2 - 1; i++){
-            result[i + 1] = merged_records[i];
-        }
-        return result;
-    }
-}
-
-Record ** merge_sort_records(Table * table, Record ** records, int num_records, char * orderby_attr){
-    if(num_records == 0 || num_records == 1){
-        return records;
-    }
-    int m = num_records / 2;
-    return merge_record_array(merge_sort_records(table, records, m, orderby_attr), m,merge_sort_records(table, records + (m*8), num_records - m, orderby_attr), num_records - m, orderby_attr, table);
-
-}
-
-Record ** insertion_sort_records(Table * table, Record ** records, int num_records, char * orderby_attr){
-    for(int i = 1; i < num_records; i++){
-        Record * current_record = records[i];
-        int current_record_idx = i;
-        while(current_record_idx > 0 && compare_records(current_record, records[current_record_idx - 1], orderby_attr, table) < 0){
-            Record * temp = current_record;
-            records[current_record_idx] = records[current_record_idx - 1];
-            records[current_record_idx - 1] = temp;
-            current_record_idx--;
-        }
-    }
-    return records;
-}
-
-void print_page_where_projection_orderby(Table *table, Page *p, ConditionalParseTree * conditionalParseTree, char ** requested_attributes, int num_attributes_requested, char * orderby_attr){
-    Page *curr_page = p;
-    int page_num = 1;
-    // printf("in print page..\n");
-    Record ** records = malloc(sizeof(Record *) * 10000);
-    int num_records = 0;
-    while (curr_page != NULL) {
-        // printf("printing page# %d with num records: %d\n", page_num,
-        //        curr_page->num_records);
-        for (int k = 0; k < curr_page->num_records; k++) {
-            if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table) == true) {
-                records[num_records] = malloc(sizeof(Record *));
-                records[num_records]->size = curr_page->records[k].size;
-                records[num_records]->bitmap = curr_page->records[k].bitmap;
-                records[num_records]->attr_vals = curr_page->records[k].attr_vals;
-                records[num_records]->size = curr_page->records[k].size;
-                records[num_records]->primary_key_index = curr_page->records[k].primary_key_index;
-                records[num_records]->unique_attribute_indices = curr_page->records[k].unique_attribute_indices;
-                num_records++;
-            }
-        }
-        if (curr_page->next_page == NULL) {
-            break;
-        }
-        curr_page = curr_page->next_page;
-        page_num += 1;
-    }
-    Record ** sorted_records = insertion_sort_records(table, records, num_records, orderby_attr);
-    for(int k = 0; k < num_records; k++){
+void print_page_where_projection(Table *table, Page *p,
+                                 ConditionalParseTree *conditionalParseTree,
+                                 char **requested_attributes,
+                                 int num_attributes_requested) {
+  Page *curr_page = p;
+  int page_num = 1;
+  // printf("in print page..\n");
+  while (curr_page != NULL) {
+    // printf("printing page# %d with num records: %d\n", page_num,
+    //        curr_page->num_records);
+    for (int k = 0; k < curr_page->num_records; k++) {
+      // printf("record #%d of size %d: \n", k, curr_page->records[k].size);
+      if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree,
+                            table)) {
         printf("|");
         for (int i = 0; i < num_attributes_requested; i++) {
-            int l = 0;
-            for(int j = 0; j < table->num_attributes; j++){
-                if(strcmp(table->attributes[j].name, requested_attributes[i]) == 0){
-                    l = j;
-                }
+          int l = 0;
+          for (int j = 0; j < table->num_attributes; j++) {
+            if (strcmp(table->attributes[j].name, requested_attributes[i]) ==
+                0) {
+              l = j;
             }
-            ATTRIBUTE_TYPE type = sorted_records[k]->attr_vals[l].type;
-            if (sorted_records[k]->attr_vals[l].is_null) {
-                printf("null ");
-                continue;
-            }
-            if (type == INTEGER) {
-                printf("%d | ", sorted_records[k]->attr_vals[l].int_val);
-            } else if (type == DOUBLE) {
-                printf("%f | ", sorted_records[k]->attr_vals[l].double_val);
-            } else if (type == BOOL) {
-                printf("%d | ", sorted_records[k]->attr_vals[l].bool_val);
-            } else if (type == CHAR) {
-                printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
-            } else if (type == VARCHAR) {
-                printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
-            }
+          }
+          ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[l].type;
+          if (curr_page->records[k].attr_vals[l].is_null) {
+            printf("null ");
+            continue;
+          }
+          if (type == INTEGER) {
+            printf("%d | ", curr_page->records[k].attr_vals[l].int_val);
+          } else if (type == DOUBLE) {
+            printf("%f | ", curr_page->records[k].attr_vals[l].double_val);
+          } else if (type == BOOL) {
+            printf("%d | ", curr_page->records[k].attr_vals[l].bool_val);
+          } else if (type == CHAR) {
+            printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
+          } else if (type == VARCHAR) {
+            printf("%s | ", curr_page->records[k].attr_vals[l].chars_val);
+          }
         }
         printf("\n");
+      }
     }
+    if (curr_page->next_page == NULL) {
+      break;
+    }
+    curr_page = curr_page->next_page;
+    page_num += 1;
+  }
 }
 
-void print_page_where_product_orderby(Table * table, Page * p, ConditionalParseTree * conditionalParseTree, char * orderby_attr){
-    Page *curr_page = p;
-    int page_num = 1;
-    // printf("in print page..\n");
-    Record ** records = malloc(sizeof(Record *) * 10000);
-    int num_records = 0;
-    while (curr_page != NULL) {
-        // printf("printing page# %d with num records: %d\n", page_num,
-        //        curr_page->num_records);
-        for (int k = 0; k < curr_page->num_records; k++) {
-            if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table) == true) {
-                records[num_records] = malloc(sizeof(Record *));
-                records[num_records]->size = curr_page->records[k].size;
-                records[num_records]->bitmap = curr_page->records[k].bitmap;
-                records[num_records]->attr_vals = curr_page->records[k].attr_vals;
-                records[num_records]->size = curr_page->records[k].size;
-                records[num_records]->primary_key_index = curr_page->records[k].primary_key_index;
-                records[num_records]->unique_attribute_indices = curr_page->records[k].unique_attribute_indices;
-                num_records++;
-            }
-        }
-        if (curr_page->next_page == NULL) {
-            break;
-        }
-        curr_page = curr_page->next_page;
-        page_num += 1;
+int compare_records(Record *record1, Record *record2, char *orderby_attr,
+                    Table *table) {
+  int attr_idx = 0;
+  for (int i = 0; i < table->num_attributes; i++) {
+    if (strcmp(table->attributes[i].name, orderby_attr) == 0) {
+      attr_idx = i;
     }
-
-    Record ** sorted_records = insertion_sort_records(table, records, num_records, orderby_attr);
-
-    for(int k = 0; k < num_records; k++){
-        printf("|");
-        for (int l = 0; l < table->num_attributes; l++) {
-            ATTRIBUTE_TYPE type = sorted_records[k]->attr_vals[l].type;
-            if (sorted_records[k]->attr_vals[l].is_null) {
-                printf("null ");
-                continue;
-            }
-            if (type == INTEGER) {
-                printf("%d | ", sorted_records[k]->attr_vals[l].int_val);
-            } else if (type == DOUBLE) {
-                printf("%f | ", sorted_records[k]->attr_vals[l].double_val);
-            } else if (type == BOOL) {
-                printf("%d | ", sorted_records[k]->attr_vals[l].bool_val);
-            } else if (type == CHAR) {
-                printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
-            } else if (type == VARCHAR) {
-                printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
-            }
-        }
-        printf("\n");
-    }
+  }
+  switch (record1->attr_vals[attr_idx].type) {
+  case (INTEGER):
+    return record1->attr_vals[attr_idx].int_val -
+           record2->attr_vals[attr_idx].int_val;
+  case (DOUBLE):
+    return record1->attr_vals[attr_idx].double_val -
+           record2->attr_vals[attr_idx].double_val;
+  case (BOOL):
+    return record1->attr_vals[attr_idx].bool_val == true ? 1 : -1;
+  case (VARCHAR):
+    return strcmp(record1->attr_vals[attr_idx].chars_val,
+                  record2->attr_vals[attr_idx].chars_val);
+  case (CHAR):
+    return strcmp(record1->attr_vals[attr_idx].chars_val,
+                  record2->attr_vals[attr_idx].chars_val);
+  default:
+    return 0;
+  }
 }
 
+Record **merge_record_array(Record **records1, int num_records1,
+                            Record **records2, int num_records2,
+                            char *orderby_attr, Table *table) {
+  printf("Merging\n");
+  printf("num_records1: %d\n", num_records1);
+  printf("num_records2: %d\n", num_records2);
+  printf("Val1: %d\n", records1[0]->attr_vals[0].int_val);
+  printf("Val2: %d\n", records2[0]->attr_vals[0].int_val);
+
+  if (num_records1 == 0) {
+    return records1;
+  } else if (num_records2 == 0) {
+    return records2;
+  } else if (compare_records(records1[0], records2[0], orderby_attr, table) <
+             0) {
+    Record **result = malloc(sizeof(Record *) * 1000);
+    result[0] = records1[0];
+    Record **merged_records =
+        merge_record_array(records1 + 8, num_records1 - 1, records2,
+                           num_records2, orderby_attr, table);
+    for (int i = 0; i < num_records1 - 1 + num_records2; i++) {
+      result[i + 1] = merged_records[i];
+    }
+    return result;
+  } else {
+    Record **result = malloc(sizeof(Record *) * 1000);
+    result[0] = records2[0];
+    Record **merged_records =
+        merge_record_array(records1, num_records1, records2 + 8,
+                           num_records2 - 1, orderby_attr, table);
+    for (int i = 0; i < num_records1 + num_records2 - 1; i++) {
+      result[i + 1] = merged_records[i];
+    }
+    return result;
+  }
+}
+
+Record **merge_sort_records(Table *table, Record **records, int num_records,
+                            char *orderby_attr) {
+  if (num_records == 0 || num_records == 1) {
+    return records;
+  }
+  int m = num_records / 2;
+  return merge_record_array(merge_sort_records(table, records, m, orderby_attr),
+                            m,
+                            merge_sort_records(table, records + (m * 8),
+                                               num_records - m, orderby_attr),
+                            num_records - m, orderby_attr, table);
+}
+
+Record **insertion_sort_records(Table *table, Record **records, int num_records,
+                                char *orderby_attr) {
+  for (int i = 1; i < num_records; i++) {
+    Record *current_record = records[i];
+    int current_record_idx = i;
+    while (current_record_idx > 0 &&
+           compare_records(current_record, records[current_record_idx - 1],
+                           orderby_attr, table) < 0) {
+      Record *temp = current_record;
+      records[current_record_idx] = records[current_record_idx - 1];
+      records[current_record_idx - 1] = temp;
+      current_record_idx--;
+    }
+  }
+  return records;
+}
+
+void print_page_where_projection_orderby(
+    Table *table, Page *p, ConditionalParseTree *conditionalParseTree,
+    char **requested_attributes, int num_attributes_requested,
+    char *orderby_attr) {
+  Page *curr_page = p;
+  int page_num = 1;
+  // printf("in print page..\n");
+  Record **records = malloc(sizeof(Record *) * 10000);
+  int num_records = 0;
+  while (curr_page != NULL) {
+    // printf("printing page# %d with num records: %d\n", page_num,
+    //        curr_page->num_records);
+    for (int k = 0; k < curr_page->num_records; k++) {
+      if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree,
+                            table) == true) {
+        records[num_records] = malloc(sizeof(Record *));
+        records[num_records]->size = curr_page->records[k].size;
+        records[num_records]->bitmap = curr_page->records[k].bitmap;
+        records[num_records]->attr_vals = curr_page->records[k].attr_vals;
+        records[num_records]->size = curr_page->records[k].size;
+        records[num_records]->primary_key_index =
+            curr_page->records[k].primary_key_index;
+        records[num_records]->unique_attribute_indices =
+            curr_page->records[k].unique_attribute_indices;
+        num_records++;
+      }
+    }
+    if (curr_page->next_page == NULL) {
+      break;
+    }
+    curr_page = curr_page->next_page;
+    page_num += 1;
+  }
+  Record **sorted_records =
+      insertion_sort_records(table, records, num_records, orderby_attr);
+  for (int k = 0; k < num_records; k++) {
+    printf("|");
+    for (int i = 0; i < num_attributes_requested; i++) {
+      int l = 0;
+      for (int j = 0; j < table->num_attributes; j++) {
+        if (strcmp(table->attributes[j].name, requested_attributes[i]) == 0) {
+          l = j;
+        }
+      }
+      ATTRIBUTE_TYPE type = sorted_records[k]->attr_vals[l].type;
+      if (sorted_records[k]->attr_vals[l].is_null) {
+        printf("null ");
+        continue;
+      }
+      if (type == INTEGER) {
+        printf("%d | ", sorted_records[k]->attr_vals[l].int_val);
+      } else if (type == DOUBLE) {
+        printf("%f | ", sorted_records[k]->attr_vals[l].double_val);
+      } else if (type == BOOL) {
+        printf("%d | ", sorted_records[k]->attr_vals[l].bool_val);
+      } else if (type == CHAR) {
+        printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
+      } else if (type == VARCHAR) {
+        printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
+      }
+    }
+    printf("\n");
+  }
+}
+
+void print_page_where_product_orderby(
+    Table *table, Page *p, ConditionalParseTree *conditionalParseTree,
+    char *orderby_attr) {
+  Page *curr_page = p;
+  int page_num = 1;
+  // printf("in print page..\n");
+  Record **records = malloc(sizeof(Record *) * 10000);
+  int num_records = 0;
+  while (curr_page != NULL) {
+    // printf("printing page# %d with num records: %d\n", page_num,
+    //        curr_page->num_records);
+    for (int k = 0; k < curr_page->num_records; k++) {
+      if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree,
+                            table) == true) {
+        records[num_records] = malloc(sizeof(Record *));
+        records[num_records]->size = curr_page->records[k].size;
+        records[num_records]->bitmap = curr_page->records[k].bitmap;
+        records[num_records]->attr_vals = curr_page->records[k].attr_vals;
+        records[num_records]->size = curr_page->records[k].size;
+        records[num_records]->primary_key_index =
+            curr_page->records[k].primary_key_index;
+        records[num_records]->unique_attribute_indices =
+            curr_page->records[k].unique_attribute_indices;
+        num_records++;
+      }
+    }
+    if (curr_page->next_page == NULL) {
+      break;
+    }
+    curr_page = curr_page->next_page;
+    page_num += 1;
+  }
+
+  Record **sorted_records =
+      insertion_sort_records(table, records, num_records, orderby_attr);
+
+  for (int k = 0; k < num_records; k++) {
+    printf("|");
+    for (int l = 0; l < table->num_attributes; l++) {
+      ATTRIBUTE_TYPE type = sorted_records[k]->attr_vals[l].type;
+      if (sorted_records[k]->attr_vals[l].is_null) {
+        printf("null ");
+        continue;
+      }
+      if (type == INTEGER) {
+        printf("%d | ", sorted_records[k]->attr_vals[l].int_val);
+      } else if (type == DOUBLE) {
+        printf("%f | ", sorted_records[k]->attr_vals[l].double_val);
+      } else if (type == BOOL) {
+        printf("%d | ", sorted_records[k]->attr_vals[l].bool_val);
+      } else if (type == CHAR) {
+        printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
+      } else if (type == VARCHAR) {
+        printf("%s | ", sorted_records[k]->attr_vals[l].chars_val);
+      }
+    }
+    printf("\n");
+  }
+}
 
 void print_record(Table *table, Record *record) {
 
