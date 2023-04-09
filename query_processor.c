@@ -1327,9 +1327,14 @@ bool parse_update_table(char *command, char *db_loc, Schema *schema,
     return false;
   }
 
-  token = strtok(NULL, " ");
+  token = strtok(NULL, " "); // <value>
   char *value = malloc(strlen(token) + 1);
   strcpy(value, token);
+  // parse quotes if there are any
+  if(value[0] == '\"'){
+      value += 1;
+      value[strlen(value) - 1] = '\0';
+  }
 
   token = strtok(NULL, " "); // where
 
