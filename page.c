@@ -680,7 +680,7 @@ bool update_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
     ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[attribute_index].type;
 
         if(table != NULL){
-            printf("table %s is not null\n", table->name);
+            //printf("table %s is not null\n", table->name);
         }
       if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table)) {
             if (type == INTEGER) {
@@ -733,8 +733,8 @@ bool update_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
             }
       }
     
-      printf("about to call add_record_topage\n");
-       printf("adding old record %d\n", k);
+      //printf("about to call add_record_topage\n");
+       //printf("adding old record %d\n", k);
       // this is a record to keep
       if(!added){
           Record* record = &(curr_page->records[k]);
