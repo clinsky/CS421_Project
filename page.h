@@ -75,6 +75,9 @@ void print_page(Table *table, Page *p);
 bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
                   ConditionalParseTree *conditionalParseTree);
 
+bool update_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
+                  ConditionalParseTree *conditionalParseTree, int attribute_index, char *v);
+
 void print_page_where(Table *table, Page *p,
                       ConditionalParseTree *conditionalParseTree);
 

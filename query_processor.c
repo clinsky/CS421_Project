@@ -1306,6 +1306,11 @@ bool parse_update_table(char *command, char *db_loc, Schema *schema,
   token = strtok(NULL, " ");          // <table_name>
   char *table_name = malloc(strlen(token) + 1);
   strcpy(table_name, token);
+  Table *original_table = get_table(schema, table_name);
+  if (original_table == NULL) {
+    printf("table %s does not exist\n", table_name);
+    return false;
+  }
   token = strtok(NULL, " "); // set
   if (strcmp(token, "set") != 0) {
     printf("Syntax Error\n");
@@ -1367,7 +1372,37 @@ bool parse_update_table(char *command, char *db_loc, Schema *schema,
   ConditionalParseTree *conditionTree = parseConditional(condition);
   printf("Conditional Parse Tree:\n");
   printConditionalParseTree(conditionTree);
-  return true;
+    
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table_name);
+  Page *p = find_in_buffer(buffer, original_table);
+  if (p == NULL) {
+    p = read_page_from_file(schema, original_table, filepath);
+    if (p == NULL) {
+      printf("didnt find page for %s while deleting\n", table_name);
+    }
+  }
+
+  int attribute_index = -1;
+  for (int i = 0; i < original_table->num_attributes; i++) {
+    if (strcmp(column, original_table->attributes[i].name) == 0){
+      attribute_index = i;
+    }
+  }
+  if (attribute_index == -1){
+    printf("Column %s not found.\n Error.\n", table_name);
+    return false;
+  }
+  printf("Attribute index is %d\n", attribute_index); 
+    
+  // drop the old table
+  // we still have reference to it tho via original_table
+  if (drop_table(schema, buffer, table_name)) {
+    add_table_to_catalog(schema, original_table);
+  } else {
+    // idk
+  }
+  return update_where(schema, original_table, buffer, p, conditionTree, attribute_index, value);    
 }
 
 void parse_command(char *command, char *db_loc, Schema *schema,

@@ -667,6 +667,109 @@ void print_page(Table *table, Page *p) {
   }
 }
 
+bool update_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
+                  ConditionalParseTree *conditionalParseTree, int attribute_index, char *v) {
+  Page *curr_page = p;
+  char filepath[100];
+  snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table->name);
+
+  printf("about to loop in update_where\n");
+  bool added = false;
+  while (curr_page != NULL) {
+    for (int k = 0; k < curr_page->num_records; k++) {
+    ATTRIBUTE_TYPE type = curr_page->records[k].attr_vals[attribute_index].type;
+
+        if(table != NULL){
+            printf("table %s is not null\n", table->name);
+        }
+      if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree, table)) {
+            if (type == INTEGER) {
+              int intval = atoi(v);
+              if (intval == 0) {
+                if (strcmp(v, "0") != 0) {
+                  return false;
+                }
+              }
+              curr_page->records[k].attr_vals[attribute_index].int_val = intval;
+            } else if (type == DOUBLE) {
+              char *endptr;
+              double double_val = strtod(v, &endptr);
+              if (endptr == v) {
+                return false;
+              } else if (*endptr != '\0') {
+                return false;
+              } else {
+                // printf("The double value of '%s' is %lf\n", v, double_val);
+              }
+              curr_page->records[k].attr_vals[attribute_index].double_val = double_val;
+            } else if (type == BOOL) {
+              if (strcmp(v, "false") == 0) {
+                curr_page->records[k].attr_vals[attribute_index].bool_val = 0;
+              } else if (strcmp(v, "true") == 0) {
+                curr_page->records[k].attr_vals[attribute_index].bool_val = 1;
+              } else {
+                printf("bool value should either be 'true' or 'false'\n");
+                return false;
+              }
+            } else if (type == CHAR) {
+              if (strlen(v) > table->attributes[attribute_index].len) {
+                printf("%s can only accept %d chars\n", table->attributes[attribute_index].name,
+                       table->attributes[attribute_index].len);
+                return false;
+              }
+              curr_page->records[k].attr_vals[attribute_index].chars_val = malloc(table->attributes[attribute_index].len + 1);
+              strncpy(curr_page->records[k].attr_vals[attribute_index].chars_val, v, strlen(v));
+              curr_page->records[k].attr_vals[attribute_index].chars_val[table->attributes[attribute_index].len] = '\0';
+
+            } else if (type == VARCHAR) {
+              if (strlen(v) > table->attributes[attribute_index].len) {
+                printf("%s can only accept %d chars\n", table->attributes[attribute_index].name,
+                       table->attributes[attribute_index].len);
+                return false;
+              }
+              curr_page->records[k].attr_vals[attribute_index].chars_val = malloc(strlen(v) + 1);
+              strncpy(curr_page->records[k].attr_vals[attribute_index].chars_val, v, strlen(v));
+              curr_page->records[k].attr_vals[attribute_index].chars_val[strlen(v)] = '\0';
+            }
+      }
+    
+      printf("about to call add_record_topage\n");
+       printf("adding old record %d\n", k);
+      // this is a record to keep
+      if(!added){
+          Record* record = &(curr_page->records[k]);
+          Page *first_page = malloc(sizeof(Page));
+          first_page->next_page = NULL;
+          first_page->max_size = schema->page_size;
+          first_page->num_records = 1;
+          first_page->record_capacity = 20;
+          first_page->page_number = 0;
+          first_page->offsets =
+              malloc(sizeof(Offset) * first_page->record_capacity);
+          first_page->records =
+              malloc(sizeof(Record) * first_page->record_capacity);
+          first_page->records[0] = *record;
+          first_page->total_bytes_from_records += record->size;
+          if (is_page_overfull(first_page)) {
+            // printf("RECORD IS LARGER THAN PAGE SIZE...\n");
+            return false;
+          }
+          p = first_page;
+          write_page_to_file(table, p, filepath);
+          add_to_buffer(buffer, table, p, filepath);
+          added = true;    
+      }else{
+        add_record_to_page(schema, table, &curr_page->records[k], buffer);
+      }
+    }
+    if (curr_page->next_page == NULL) {
+      break;
+    }
+    curr_page = curr_page->next_page;
+  }
+  return true;
+}
+
 bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
                   ConditionalParseTree *conditionalParseTree) {
   Page *curr_page = p;
