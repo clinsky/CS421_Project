@@ -782,13 +782,13 @@ bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
   //   // idk
   // }
   //
-  printf("about to loop in delete_where\n");
+  //printf("about to loop in delete_where\n");
   bool added = false;
   while (curr_page != NULL) {
     for (int k = 0; k < curr_page->num_records; k++) {
 
         if(table != NULL){
-            printf("table %s is not null\n", table->name);
+            //printf("table %s is not null\n", table->name);
         }
       if (evaluateCondition(&(curr_page->records[k]), conditionalParseTree,
                             table)) {

@@ -37,3 +37,9 @@ select name, age from person where name="Bob" and age>10;
 
 select name, age from person where name="Bob" and age>10 or age<6;
 
+### delete 
+delete from fruit where id=2;
+
+### update 
+update fruit set name = "lemon" where id=1;
+
