@@ -1263,7 +1263,7 @@ bool parse_delete(char *command, char *db_loc, Schema *schema,
 
   // For Testing
   //printf("table name: %s\n", table_name);
-  //printf("condition: %s\n", condition);
+  printf("condition: %s\n", condition);
   // char * conditionCopy = malloc(strlen(condition)+1);
   if (condition[strlen(condition) - 1] == '\n') {
     condition[strlen(condition) - 1] = '\0';

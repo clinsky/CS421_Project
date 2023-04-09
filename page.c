@@ -1096,7 +1096,7 @@ Record **merge_record_array(Record **records1, int num_records1,
     return records2;
   } else if (compare_records(records1[0], records2[0], orderby_attr, table) <
              0) {
-    Record **result = malloc(sizeof(Record *) * 1000);
+    Record **result = malloc(sizeof(Record *) * 256);
     result[0] = records1[0];
     Record **merged_records =
         merge_record_array(records1 + 8, num_records1 - 1, records2,
@@ -1106,7 +1106,7 @@ Record **merge_record_array(Record **records1, int num_records1,
     }
     return result;
   } else {
-    Record **result = malloc(sizeof(Record *) * 1000);
+    Record **result = malloc(sizeof(Record *) * 256);
     result[0] = records2[0];
     Record **merged_records =
         merge_record_array(records1, num_records1, records2 + 8,
@@ -1155,7 +1155,7 @@ void print_page_where_projection_orderby(
   Page *curr_page = p;
   int page_num = 1;
   // printf("in print page..\n");
-  Record **records = malloc(sizeof(Record *) * 10000);
+  Record **records = malloc(sizeof(Record *) * 256);
   int num_records = 0;
   while (curr_page != NULL) {
     // printf("printing page# %d with num records: %d\n", page_num,
@@ -1219,7 +1219,7 @@ void print_page_where_product_orderby(
   Page *curr_page = p;
   int page_num = 1;
   // printf("in print page..\n");
-  Record **records = malloc(sizeof(Record *) * 10000);
+  Record **records = malloc(sizeof(Record *) * 256);
   int num_records = 0;
   while (curr_page != NULL) {
     // printf("printing page# %d with num records: %d\n", page_num,
