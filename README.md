@@ -37,3 +37,8 @@ select name, age from person where name="Bob" and age>10;
 
 select name, age from person where name="Bob" and age>10 or age<6;
 
+### update
+Please use update in the following manner:
+
+update baz set y = "three" where y="four" and x=3;\
+Note there is a space between the set tokens but not the where tokens.
