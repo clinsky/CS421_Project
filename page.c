@@ -397,7 +397,7 @@ Page *add_record_to_page(Schema *schema, Table *table, Record *record,
     // flush_buffer(buffer);
     return p;
   } else {
-    printf("File %s does not exist for adding record to page\n", filepath);
+    //printf("File %s does not exist for adding record to page\n", filepath);
     // FILE *fp = fopen(filepath, "w");
     // if (fp != NULL) {
     //   // printf("File %s created successfully\n", filepath);
@@ -796,8 +796,8 @@ bool delete_where(Schema *schema, Table *table, Bufferm *buffer, Page *p,
         continue;
       }
     
-      printf("about to call add_record_topage\n");
-       printf("adding old record %d\n", k);
+      //printf("about to call add_record_topage\n");
+       //printf("adding old record %d\n", k);
       // this is a record to keep
       if(!added){
           Record* record = &(curr_page->records[k]);

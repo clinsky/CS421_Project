@@ -324,7 +324,7 @@ bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name) {
     printf("%s does not exist\n", table_name);
     return false;
   } else {
-    printf("dropping the %s table\n", table_name);
+    //printf("dropping the %s table\n", table_name);
   }
 
   // remove from buffer
@@ -335,7 +335,7 @@ bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name) {
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
   if (remove(filepath) == 0) {
-    printf("%s was removed\n", filepath);
+    //printf("%s was removed\n", filepath);
   } else {
     printf("%s was not removed for some reason\n", filepath);
   }

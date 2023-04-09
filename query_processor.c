@@ -881,7 +881,7 @@ bool parse_select(char *command, char *db_loc, Schema *schema,
       token = strtok(NULL, " "); // <groupby_attr>
       groupby_attr = malloc(250);
       strcpy(groupby_attr, token);
-      printf("Group By: %s\n", groupby_attr);
+      //printf("Group By: %s\n", groupby_attr);
       token = strtok(NULL, " "); // orderby
     }
   }
@@ -1012,7 +1012,7 @@ bool process_drop_table(char *command, char *db_loc, Schema *schema,
   token = strtok(NULL, " ");
   char *table_name = malloc(strlen(token) + 1);
   strcpy(table_name, token);
-  printf("Dropping table %s\n", table_name);
+  //printf("Dropping table %s\n", table_name);
   return drop_table(schema, buffer, table_name);
 }
 
@@ -1262,8 +1262,8 @@ bool parse_delete(char *command, char *db_loc, Schema *schema,
   }
 
   // For Testing
-  printf("table name: %s\n", table_name);
-  printf("condition: %s\n", condition);
+  //printf("table name: %s\n", table_name);
+  //printf("condition: %s\n", condition);
   // char * conditionCopy = malloc(strlen(condition)+1);
   if (condition[strlen(condition) - 1] == '\n') {
     condition[strlen(condition) - 1] = '\0';
@@ -1273,8 +1273,8 @@ bool parse_delete(char *command, char *db_loc, Schema *schema,
   // condition[strlen(condition)] = '\0';
 
   ConditionalParseTree *conditionTree = parseConditional(condition);
-  printf("Conditional Parse Tree:\n");
-  printConditionalParseTree(conditionTree);
+  //printf("Conditional Parse Tree:\n");
+  //printConditionalParseTree(conditionTree);
 
   char filepath[100];
   snprintf(filepath, sizeof(filepath), "%s/%s", schema->db_path, table_name);
@@ -1285,6 +1285,8 @@ bool parse_delete(char *command, char *db_loc, Schema *schema,
       printf("didnt find page for %s while deleting\n", table_name);
     }
   }
+
+  printf("origional table: %s\n", original_table->name);
 
   // drop the old table
   // we still have reference to it tho via original_table
@@ -1369,13 +1371,13 @@ bool parse_update_table(char *command, char *db_loc, Schema *schema,
   if (condition[strlen(condition) - 1] == ';') {
     condition[strlen(condition) - 1] = '\0';
   }
-  printf("table name: %s\n", table_name);
-  printf("column: %s\n", column);
-  printf("value: %s\n", value);
-  printf("condition: %s\n", condition);
+  //printf("table name: %s\n", table_name);
+  //printf("column: %s\n", column);
+  //printf("value: %s\n", value);
+  //printf("condition: %s\n", condition);
 
   ConditionalParseTree *conditionTree = parseConditional(condition);
-  printf("Conditional Parse Tree:\n");
+  //printf("Conditional Parse Tree:\n");
   printConditionalParseTree(conditionTree);
     
   char filepath[100];
@@ -1398,7 +1400,7 @@ bool parse_update_table(char *command, char *db_loc, Schema *schema,
     printf("Column %s not found.\n Error.\n", table_name);
     return false;
   }
-  printf("Attribute index is %d\n", attribute_index); 
+  //printf("Attribute index is %d\n", attribute_index);
     
   // drop the old table
   // we still have reference to it tho via original_table
