@@ -3,14 +3,17 @@ CFLAGS = -c -Wall
 
 all: main
 
-main: main.o catalog.o page.o record.o conditional_parser.o parse_utils.o query_processor.o display.o
-	$(CC) main.o catalog.o page.o record.o conditional_parser.o parse_utils.o query_processor.o display.o -o main
+main: main.o catalog.o page.o bplus_tree.o record.o conditional_parser.o parse_utils.o query_processor.o display.o
+	$(CC) main.o catalog.o page.o bplus_tree.o record.o conditional_parser.o parse_utils.o query_processor.o display.o -o main
 
 main.o: main.c
 	$(CC) $(CFLAGS) main.c
 
 page.o: page.c page.h
 	$(CC) $(CFLAGS) page.c
+
+bplus_tree.o: bplus_tree.c bplus_tree.h
+	$(CC) $(CFLAGS) bplus_tree.c
 
 record.o: record.c record.h
 	$(CC) $(CFLAGS) record.c
