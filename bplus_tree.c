@@ -285,15 +285,19 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
 
         BPlusTree * right_sibling = bPlusTree->parent->ptrs[i+1];
         BPlusTree * left_sibling = bPlusTree->parent->ptrs[i-1];
-        BPlusTree * N2 = right_sibling;
+        //BPlusTree * N2 = right_sibling;
+        /*
         int K2 = bPlusTree->parent->search_key_values[i];
         if(N2 == NULL){
             N2 = left_sibling;
             K2 = bPlusTree->parent->search_key_values[i - 1];
         }
+         */
 
-        // If entries in N and N' can fit in a single node
-        if (bPlusTree->num_search_keys + N2 ->num_search_keys <= bPlusTree -> N - 1) {
+        // If entries in N and N' can fit in the
+        if (bPlusTree->num_search_keys + right_sibling ->num_search_keys <= bPlusTree -> N - 1) {
+            BPlusTree * N2 = right_sibling;
+            int K2 = bPlusTree->parent->search_key_values[i];
             // If N is a predecessor of N', then swap_variables(N, N')
             if (K2 > value) {
                 // swap_variables(bPlusTree, sibling);
@@ -325,7 +329,45 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
             }
             // delete_entry(Parent(N), K', N)
             delete_entry(bPlusTree->parent, K2, bPlusTree);
-        } else {
+        }
+        else if (bPlusTree->num_search_keys + left_sibling ->num_search_keys <= bPlusTree -> N - 1) {
+            BPlusTree * N2 = right_sibling;
+            int K2 = bPlusTree->parent->search_key_values[i];
+            // If N is a predecessor of N', then swap_variables(N, N')
+            if (K2 > value) {
+                // swap_variables(bPlusTree, sibling);
+                BPlusTree temp_tree = *bPlusTree;
+                *bPlusTree = *N2;
+                *N2 = temp_tree;
+            }
+            if (bPlusTree->is_leaf == false) {
+                // append K' and all pointers  and values in N to N'
+                N2->search_key_values[0] = K2;
+                for (int k = 1; k < bPlusTree->num_search_keys; k++) {
+                    N2->search_key_values[k + N2->num_search_keys] = bPlusTree->search_key_values[k];
+                    N2->ptrs[k + N2->num_ptrs] = bPlusTree->ptrs[k];
+                }
+                N2->num_search_keys += bPlusTree->num_search_keys + 1;
+                N2->num_ptrs += bPlusTree->num_ptrs;
+            } else {
+                // 1. append all (Ki, Pi) pairs in N to N'
+                for (int k = 0; k < bPlusTree->num_search_keys; k++) {
+                    N2->search_key_values[k + N2->num_search_keys] = bPlusTree->search_key_values[k];
+                }
+                for (int k = 0; k < bPlusTree->num_ptrs; k++){
+                    N2->ptrs[k + N2->num_ptrs] = bPlusTree->ptrs[k];
+                }
+                N2->num_search_keys += bPlusTree->num_search_keys;
+                N2->num_ptrs += bPlusTree->num_ptrs;
+                // 2. Set N'.Pn = N.Pn
+                N2->ptrs[N2->N - 1] = bPlusTree->ptrs[bPlusTree->N - 1];
+            }
+            // delete_entry(Parent(N), K', N)
+            delete_entry(bPlusTree->parent, K2, bPlusTree);
+        }
+        else {
+            BPlusTree * N2 = right_sibling;
+            int K2 = bPlusTree->parent->search_key_values[i];
             // Redistribution of pointers
             if (N2 > bPlusTree){
                 if (bPlusTree->is_leaf == false) {
