@@ -292,6 +292,31 @@ void add_table_to_catalog(Schema *db_schema, Table *table) {
   db_schema->tables =
       realloc(db_schema->tables, sizeof(Table) * db_schema->num_tables);
   db_schema->tables[db_schema->num_tables - 1] = *table;
+  db_schema->btrees =
+      realloc(db_schema->btrees, sizeof(BPlusTree) * db_schema->num_tables);
+  Attribute attr;
+  for (int j = 0; j < table->num_attributes; j++) {
+    if (table->attributes[j].is_primary_key) {
+      attr = table.attributes[j];
+    }
+  }
+  printf("Creating index for attribute '%s' in table '%s'\n", attr.name,
+         table.name);
+  int max_size = 4;
+  if (attr.type == INTEGER) {
+    max_size += 4;
+  } else if (attr.type == DOUBLE) {
+    max_size += 8;
+  } else if (attr.type == BOOL) {
+    max_size += 4;
+  } else if (attr.type == CHAR) {
+    max_size += attr.len;
+  } else if (attr.type == VARCHAR) {
+    max_size += attr.len;
+  }
+  int b_tree_n = page_size / max_size - 1;
+  BPlusTree *index = init_BPlusTree(b_tree_n, true, false);
+  schema->btrees[db_schema->num_tables - 1] = *index;
 }
 
 void create_catalog(char *db_loc) {
@@ -324,7 +349,7 @@ bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name) {
     printf("%s does not exist\n", table_name);
     return false;
   } else {
-    //printf("dropping the %s table\n", table_name);
+    // printf("dropping the %s table\n", table_name);
   }
 
   // remove from buffer
@@ -335,7 +360,7 @@ bool drop_table(Schema *db_schema, struct bufferm *buffer, char *table_name) {
   snprintf(filepath, sizeof(filepath), "%s/%s", db_schema->db_path, table_name);
 
   if (remove(filepath) == 0) {
-    //printf("%s was removed\n", filepath);
+    // printf("%s was removed\n", filepath);
   } else {
     printf("%s was not removed for some reason\n", filepath);
   }
