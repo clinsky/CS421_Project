@@ -232,18 +232,41 @@ void split_leaf_node(BPlusTree * bPlusTree, int value, Record * record) {
     insert_in_parent(bPlusTree, K, right);
 }
 
+bool too_few_values(BPlusTree * bPlusTree){
+     if(bPlusTree->is_root == false && bPlusTree->is_leaf == false && bPlusTree->num_search_keys < ceil(bPlusTree->N/2.0)){
+         return true;
+    }
+    else if(bPlusTree->is_root && bPlusTree->is_leaf == false && bPlusTree->num_ptrs < 2){
+        return true;
+    }
+    else if(bPlusTree->is_root == false && bPlusTree->is_leaf && bPlusTree->num_search_keys < ceil((bPlusTree->N-1)/2.0)){
+        return true;
+    }
+    return false;
+}
 
 
 void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
     // delete (K, P) from N
+
     int i = 0;
-    while (bPlusTree->search_key_values[i] != value) {
+    while (bPlusTree->search_key_values[i] < value) {
         i++;
     }
-    for (int j = i; j < bPlusTree->num_search_keys; j++) {
+    //printf("Deleting %d from tree\n", value);
+    //printf("i: %d\n", i);
+    for (int j = i; j < bPlusTree->N - 1; j++) {
         bPlusTree->search_key_values[j] = bPlusTree->search_key_values[j + 1];
+    }
+    for(int j = i; j < bPlusTree->N; j++){
         bPlusTree->ptrs[j] = bPlusTree->ptrs[j + 1];
     }
+
+    bPlusTree->num_search_keys--;
+    bPlusTree->num_ptrs--;
+    //printf("%d Deleted\n", value);
+    //printf("Num Search Keys: %d\n", bPlusTree->num_search_keys);
+    //printf("Num Ptrs: %d\n", bPlusTree->num_ptrs);
 
     // if N is the root and N has only one remaining child
     if (bPlusTree->is_root && bPlusTree->num_ptrs == 1) {
@@ -251,71 +274,75 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
         ((BPlusTree *) (bPlusTree->ptrs[0]))->is_root = true;
         *bPlusTree = *(BPlusTree *)bPlusTree->ptrs[0];
     }
-    else if (bPlusTree->num_ptrs < bPlusTree->min_num_ptrs) {
+    else if (too_few_values(bPlusTree)) {
         // Let N' be the previous or next child of parent(N)
         // Let K' be the value between pointers N and N' in parent(N)
-        BPlusTree *parent = bPlusTree->parent;
-        int i = 0;
-        while (parent->search_key_values[i] != value) {
+
+        i = 0;
+        while(bPlusTree->parent->search_key_values[i] <= value){
             i++;
         }
-        BPlusTree *sibling = parent->ptrs[i + 1];
-        int sibling_idx = i + 1;
-        int K2 = parent->search_key_values[i];
-        if (i + 1 == parent->max_num_key_values - 1) {
-            sibling = parent->ptrs[i - 1];
-            sibling_idx = i - 1;
-            K2 = parent->search_key_values[i - 1];
+
+        BPlusTree * right_sibling = bPlusTree->parent->ptrs[i+1];
+        BPlusTree * left_sibling = bPlusTree->parent->ptrs[i-1];
+        BPlusTree * N2 = right_sibling;
+        int K2 = bPlusTree->parent->search_key_values[i];
+        if(N2 == NULL){
+            N2 = left_sibling;
+            K2 = bPlusTree->parent->search_key_values[i - 1];
         }
+
         // If entries in N and N' can fit in a single node
-        if (bPlusTree->num_search_keys + sibling->num_search_keys <= bPlusTree->max_num_key_values) {
+        if (bPlusTree->num_search_keys + N2 ->num_search_keys <= bPlusTree -> N - 1) {
             // If N is a predecessor of N', then swap_variables(N, N')
-            if (sibling_idx == i + 1) {
+            if (K2 > value) {
                 // swap_variables(bPlusTree, sibling);
                 BPlusTree temp_tree = *bPlusTree;
-                *bPlusTree = *sibling;
-                *sibling = temp_tree;
+                *bPlusTree = *N2;
+                *N2 = temp_tree;
             }
             if (bPlusTree->is_leaf == false) {
                 // append K' and all pointers  and values in N to N'
-                sibling->search_key_values[0] = K2;
+                N2->search_key_values[0] = K2;
                 for (int k = 1; k < bPlusTree->num_search_keys; k++) {
-                    sibling->search_key_values[k + sibling->num_search_keys] = bPlusTree->search_key_values[k];
-                    sibling->ptrs[k + sibling->num_ptrs] = bPlusTree->ptrs[k];
+                    N2->search_key_values[k + N2->num_search_keys] = bPlusTree->search_key_values[k];
+                    N2->ptrs[k + N2->num_ptrs] = bPlusTree->ptrs[k];
                 }
-                sibling->num_search_keys += bPlusTree->num_search_keys + 1;
-                sibling->num_ptrs += bPlusTree->num_ptrs;
+                N2->num_search_keys += bPlusTree->num_search_keys + 1;
+                N2->num_ptrs += bPlusTree->num_ptrs;
             } else {
                 // 1. append all (Ki, Pi) pairs in N to N'
                 for (int k = 0; k < bPlusTree->num_search_keys; k++) {
-                    sibling->search_key_values[k + sibling->num_search_keys] = bPlusTree->search_key_values[k];
-                    sibling->ptrs[k + sibling->num_ptrs] = bPlusTree->ptrs[k];
+                    N2->search_key_values[k + N2->num_search_keys] = bPlusTree->search_key_values[k];
                 }
-                sibling->num_search_keys += bPlusTree->num_search_keys;
-                sibling->num_ptrs += bPlusTree->num_ptrs;
+                for (int k = 0; k < bPlusTree->num_ptrs; k++){
+                    N2->ptrs[k + N2->num_ptrs] = bPlusTree->ptrs[k];
+                }
+                N2->num_search_keys += bPlusTree->num_search_keys;
+                N2->num_ptrs += bPlusTree->num_ptrs;
                 // 2. Set N'.Pn = N.Pn
-                sibling->ptrs[sibling->N - 1] = bPlusTree->ptrs[bPlusTree->N - 1];
+                N2->ptrs[N2->N - 1] = bPlusTree->ptrs[bPlusTree->N - 1];
             }
             // delete_entry(Parent(N), K', N)
             delete_entry(bPlusTree->parent, K2, bPlusTree);
         } else {
             // Redistribution of pointers
-            if (sibling_idx == i - 1) {
+            if (N2 > bPlusTree){
                 if (bPlusTree->is_leaf == false) {
                     // let m be such that N'.Pm is the last pointer in N'
-                    int m = sibling->num_ptrs - 1;
+                    int m = N2->num_ptrs - 1;
                     // remove (N'.K_m-1, N'.Pm) from N'
-                    for (int k = m - 1; k < sibling->num_search_keys; k++) {
-                        sibling->search_key_values[k] = sibling->search_key_values[k + 1];
+                    for (int k = m - 1; k < N2->num_search_keys; k++) {
+                        N2->search_key_values[k] = N2->search_key_values[k + 1];
                     }
-                    sibling->num_search_keys--;
-                    for (int k = m; k < sibling->num_ptrs; k++) {
-                        sibling->ptrs[k] = sibling->ptrs[k + 1];
+                    N2->num_search_keys--;
+                    for (int k = m; k < N2->num_ptrs; k++) {
+                        N2->ptrs[k] = N2->ptrs[k + 1];
                     }
-                    sibling->num_ptrs--;
+                    N2->num_ptrs--;
                     // insert (N'.Pm, K') as the first pointer and value in N
                     int val_to_be_inserted = K2;
-                    void *ptr_to_be_inserted = sibling->ptrs[m - 1];
+                    void *ptr_to_be_inserted = N2->ptrs[m - 1];
 
                     for (int k = 0; k < bPlusTree->num_search_keys; k++) {
                         int temp_val = bPlusTree->search_key_values[k];
@@ -326,54 +353,57 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
                         ptr_to_be_inserted = temp_ptr;
                     }
                     // replace K' in parent(N) by N'.Km-1
-                    int i = 0;
-                    while (parent->search_key_values[i] != K2) {
+                    BPlusTree * parent = bPlusTree->parent;
+                    i = 0;
+                    while (parent->search_key_values[i] <= K2) {
                         i++;
                     }
-                    parent->search_key_values[i] = sibling->search_key_values[m - 1];
+                    parent->search_key_values[i] = N2->search_key_values[m - 1];
                 } else {
                     // let m be such that (N'.Pm, N'.Km) is the last pointer/value pair in N'
-                    int m = sibling->num_search_keys - 1;
-                    int val_to_be_inserted = sibling->search_key_values[m];
-                    void *ptr_to_be_inserted = sibling->ptrs[m];
-                    int Km = val_to_be_inserted;
-                    void *Pm = ptr_to_be_inserted;
-                    // remove (sibling->ptrs[m], sibling->values[m]) from sibling
-                    sibling->num_search_keys--;
-                    sibling->num_ptrs--;
-
-                    // Insert (sibling.P[m], sibling.K[m]) as the first ptr and val in N
-                    for (int k = 0; k < bPlusTree->num_search_keys; k++) {
-                        int temp_val = bPlusTree->search_key_values[k];
-                        void *temp_ptr = bPlusTree->ptrs[k];
-                        bPlusTree->search_key_values[k] = val_to_be_inserted;
-                        bPlusTree->ptrs[k] = ptr_to_be_inserted;
-                        val_to_be_inserted = temp_val;
-                        ptr_to_be_inserted = temp_ptr;
+                    int m = 0;
+                    int Km = N2->search_key_values[m];
+                    void * Nm = N2->ptrs[m];
+                    // remove (N' Pm, N' Km) from N'
+                    for(int q = 0; q < N2->N - 1; q++){
+                        N2->search_key_values[q] = N2->search_key_values[q+1];
+                        N2->ptrs[q] = N2->ptrs[q+1];
                     }
+                    N2->num_search_keys--;
+                    N2->num_ptrs--;
+
+
+                    // Insert (N' Pm, N' Km) as the last pointer and value in N
+                    bPlusTree->search_key_values[bPlusTree->num_search_keys] = Km;
+                    bPlusTree->ptrs[bPlusTree->num_ptrs] = Nm;
+                    bPlusTree->num_search_keys++;
+                    bPlusTree->num_ptrs++;
+
                     // replace K' in parent(N) by N'.Km
-                    int i = 0;
+                    int K3 = N2->search_key_values[0];
+                    i = 0;
                     while (bPlusTree->parent->search_key_values[i] != K2) {
                         i++;
                     }
-                    bPlusTree->parent->search_key_values[i] = Km;
+                    bPlusTree->parent->search_key_values[i] = K3;
                 }
             } else {
                 if (bPlusTree->is_leaf == false) {
                     // let m be such that N'.Pm is the last pointer in N'
-                    int m = sibling->num_ptrs - 1;
+                    int m = N2->num_search_keys - 1;
                     // remove (N'.K_m-1, N'.Pm) from N'
-                    for (int k = m - 1; k < sibling->num_search_keys; k++) {
-                        sibling->search_key_values[k] = sibling->search_key_values[k + 1];
+                    for (int k = m - 1; k < N2->num_search_keys; k++) {
+                        N2->search_key_values[k] = N2->search_key_values[k + 1];
                     }
-                    sibling->num_search_keys--;
-                    for (int k = m; k < sibling->num_ptrs; k++) {
-                        sibling->ptrs[k] = sibling->ptrs[k + 1];
+                    N2->num_search_keys--;
+                    for (int k = m; k < N2->num_ptrs; k++) {
+                        N2->ptrs[k] = N2->ptrs[k + 1];
                     }
-                    sibling->num_ptrs--;
+                    N2->num_ptrs--;
+                    N2->num_search_keys--;
                     // insert (N'.Pm, K') as the first pointer and value in N
                     int val_to_be_inserted = K2;
-                    void *ptr_to_be_inserted = sibling->ptrs[m - 1];
+                    void *ptr_to_be_inserted = N2->ptrs[m - 1];
 
                     for (int k = 0; k < bPlusTree->num_search_keys; k++) {
                         int temp_val = bPlusTree->search_key_values[k];
@@ -384,21 +414,22 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
                         ptr_to_be_inserted = temp_ptr;
                     }
                     // replace K' in parent(N) by N'.Km-1
-                    int i = 0;
-                    while (parent->search_key_values[i] != K2) {
+                    i = 0;
+                    while (N2->search_key_values[i] != K2) {
                         i++;
                     }
-                    parent->search_key_values[i] = sibling->search_key_values[m - 1];
+                    BPlusTree * parent = bPlusTree->parent;
+                    parent->search_key_values[i] = N2->search_key_values[m - 1];
                 } else {
                     // let m be such that (N'.Pm, N'.Km) is the last pointer/value pair in N'
-                    int m = sibling->num_search_keys - 1;
-                    int val_to_be_inserted = sibling->search_key_values[m];
-                    void *ptr_to_be_inserted = sibling->ptrs[m];
+                    int m = N2->num_search_keys - 1;
+                    int val_to_be_inserted = N2->search_key_values[m];
+                    void *ptr_to_be_inserted = N2->ptrs[m];
                     int Km = val_to_be_inserted;
                     void *Pm = ptr_to_be_inserted;
                     // remove (sibling->ptrs[m], sibling->values[m]) from sibling
-                    sibling->num_search_keys--;
-                    sibling->num_ptrs--;
+                    N2->num_search_keys--;
+                    N2->num_ptrs--;
 
                     // Insert (sibling.P[m], sibling.K[m]) as the first ptr and val in N
                     for (int k = 0; k < bPlusTree->num_search_keys; k++) {
@@ -410,7 +441,7 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
                         ptr_to_be_inserted = temp_ptr;
                     }
                     // replace K' in parent(N) by N'.Km
-                    int i = 0;
+                    i = 0;
                     while (bPlusTree->parent->search_key_values[i] != K2) {
                         i++;
                     }
@@ -424,11 +455,11 @@ void delete_entry(BPlusTree * bPlusTree, int value, void * ptr) {
 
 
 
-void remove_from_BPlusTree(BPlusTree * bPlusTree, int value, void * ptr) {
+void remove_from_BPlusTree(BPlusTree ** bPlusTree, int value, void * ptr) {
     // 1. Let V be the search key value of the record, and Pr be ethe pointer to the record
     int V = value;
     BPlusTree *Pr = NULL;
-    BPlusTree *C = bPlusTree;
+    BPlusTree *C = *bPlusTree;
     while (C->is_leaf == false) {
         int i = 0;
         while (i < C->num_search_keys && value > C->search_key_values[i]) {
@@ -446,7 +477,7 @@ void remove_from_BPlusTree(BPlusTree * bPlusTree, int value, void * ptr) {
 }
 
 
-Record * find_in_BPlusTree(BPlusTree * bPlusTree, int value){
+Record * find_in_BPlusTree(BPlusTree ** bPlusTree, int value){
     BPlusTree * C = bPlusTree;
     while(C->is_leaf == false){
         int i = 0;
@@ -489,6 +520,7 @@ void insert_in_leaf(BPlusTree * bPlusTree, int K, Record * P){
             ptr_to_be_inserted = temp_ptr;
         }
         bPlusTree->num_search_keys++;
+        bPlusTree->num_ptrs++;
 }
 
 void insert_into_BPlusTree(BPlusTree ** bplusTree, Record * record, int value) {

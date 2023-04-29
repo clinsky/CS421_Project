@@ -35,8 +35,8 @@ typedef struct bplus_tree BPlusTree;
 
 BPlusTree * init_BPlusTree(int N, bool is_root, bool is_leaf);
 void insert_into_BPlusTree(BPlusTree ** bplusTree, Record * record, int value);
-void remove_from_BPlusTree(BPlusTree * bPlusTree, int value, void * ptr);
-Record * find_in_BPlusTree(BPlusTree * bPlusTree, int value);
+void remove_from_BPlusTree(BPlusTree ** bPlusTree, int value, void * ptr);
+Record * find_in_BPlusTree(BPlusTree ** bPlusTree, int value);
 void traverse_tree(BPlusTree * bPlusTree);
 
 #endif //CS421_PROJECT_BPLUS_TREE_H
