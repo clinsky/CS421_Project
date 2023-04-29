@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Schema
 struct schema {
@@ -18,6 +19,7 @@ struct schema {
   unsigned int max_num_tables;
   unsigned int *page_locations;
   Table *tables;
+  bool indexing;
   BPlusTree *btrees;
 };
 
