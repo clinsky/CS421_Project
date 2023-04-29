@@ -1,12 +1,12 @@
+#include "bplus_tree.h"
 #include "catalog.h"
 #include "page.h"
 #include "parse_utils.h"
 #include "query_processor.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <math.h>
-#include "bplus_tree.h"
 
 // check if a directory exists
 bool directory_exists(char *dir) {
@@ -86,32 +86,29 @@ int main(int argc, char *argv[]) {
       Table table = schema->tables[i];
       Attribute attr;
       for (int j = 0; j < table.num_attributes; j++) {
-        if (table.attributes[j].is_primary_key){
+        if (table.attributes[j].is_primary_key) {
           attr = table.attributes[j];
         }
       }
-      printf("Creating index for attribute '%s' in table '%s'\n", attr.name, table.name);
+      printf("Creating index for attribute '%s' in table '%s'\n", attr.name,
+             table.name);
       int max_size = 4;
       if (attr.type == INTEGER) {
-          max_size += 4;
-      } 
-      else if (attr.type == DOUBLE) {
-          max_size += 8;
-      } 
-      else if (attr.type == BOOL) {
-          max_size += 1;
-      } 
-      else if (attr.type == CHAR) {
-          max_size += 2 * attr.len;
-      } 
-      else if (attr.type == VARCHAR) {
-          max_size += 2 * attr.len;
+        max_size += 4;
+      } else if (attr.type == DOUBLE) {
+        max_size += 8;
+      } else if (attr.type == BOOL) {
+        max_size += 4;
+      } else if (attr.type == CHAR) {
+        max_size += attr.len;
+      } else if (attr.type == VARCHAR) {
+        max_size += attr.len;
       }
-      int b_tree_n = floor(page_size / max_size) - 1;
+      int b_tree_n = page_size / max_size - 1;
       BPlusTree *index = init_BPlusTree(b_tree_n, true, false);
     }
   }
-    
+
   printf("\nPlease enter commands, enter <quit> to shutdown the db\n");
   process(db_loc, schema, bufferm);
   return 0;
