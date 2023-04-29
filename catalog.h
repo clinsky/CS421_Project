@@ -1,6 +1,7 @@
 #ifndef CATALOG_H
 #define CATALOG_H
 
+#include "bplus_tree.h"
 #include "display.h"
 #include "parse_utils.h"
 #include "table.h"
@@ -17,6 +18,7 @@ struct schema {
   unsigned int max_num_tables;
   unsigned int *page_locations;
   Table *tables;
+  BPlusTree *btrees;
 };
 
 typedef struct schema Schema;

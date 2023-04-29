@@ -80,6 +80,8 @@ int main(int argc, char *argv[]) {
   printf("Buffer size: %d\n", buffer_size);
   Bufferm *bufferm = create_new_bufferm(buffer_size);
 
+  schema->btrees = malloc(sizeof(BPlusTree) * schema->num_tables);
+
   if (strcmp(indexing, "true") == 0) {
     printf("\nCreating indexes...\n");
     for (int i = 0; i < schema->num_tables; i++) {
@@ -106,6 +108,7 @@ int main(int argc, char *argv[]) {
       }
       int b_tree_n = page_size / max_size - 1;
       BPlusTree *index = init_BPlusTree(b_tree_n, true, false);
+      schema->btrees[i] = *index;
     }
   }
 
