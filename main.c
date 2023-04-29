@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <math.h>
+#include "bplus_tree.h"
 
 // check if a directory exists
 bool directory_exists(char *dir) {
@@ -90,23 +91,24 @@ int main(int argc, char *argv[]) {
         }
       }
       printf("Creating index for attribute '%s' in table '%s'\n", attr.name, table.name);
-      int max_size = 0;
+      int max_size = 4;
       if (attr.type == INTEGER) {
-          max_size = 4;
+          max_size += 4;
       } 
       else if (attr.type == DOUBLE) {
-          max_size = 8;
+          max_size += 8;
       } 
       else if (attr.type == BOOL) {
-          max_size = 1;
+          max_size += 1;
       } 
       else if (attr.type == CHAR) {
-          max_size = 2 * attr.len;
+          max_size += 2 * attr.len;
       } 
       else if (attr.type == VARCHAR) {
-          max_size = 2 * attr.len;
+          max_size += 2 * attr.len;
       }
-      
+      int b_tree_n = floor(page_size / max_size) - 1;
+      BPlusTree *index = init_BPlusTree(b_tree_n, true, false);
     }
   }
     
