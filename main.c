@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <math.h>
 
 // check if a directory exists
 bool directory_exists(char *dir) {
@@ -61,6 +62,7 @@ int main(int argc, char *argv[]) {
   char *db_loc = argv[1];
   int page_size = atoi(argv[2]);
   int buffer_size = atoi(argv[3]);
+  char *indexing = argv[4];
   Schema *schema;
   printf("Looking at %s for existing db...\n", db_loc);
   if (database_exists(db_loc)) {
@@ -76,6 +78,37 @@ int main(int argc, char *argv[]) {
   printf("Page size: %d\n", page_size);
   printf("Buffer size: %d\n", buffer_size);
   Bufferm *bufferm = create_new_bufferm(buffer_size);
+
+  if (strcmp(indexing, "true") == 0) {
+    printf("\nCreating indexes...\n");
+    for (int i = 0; i < schema->num_tables; i++) {
+      Table table = schema->tables[i];
+      Attribute attr;
+      for (int j = 0; j < table.num_attributes; j++) {
+        if (table.attributes[j].is_primary_key){
+          attr = table.attributes[j];
+        }
+      }
+      printf("Creating index for attribute '%s' in table '%s'\n", attr.name, table.name);
+      int max_size = 0;
+      if (attr.type == INTEGER) {
+          max_size = 4;
+      } 
+      else if (attr.type == DOUBLE) {
+          max_size = 8;
+      } 
+      else if (attr.type == BOOL) {
+          max_size = 1;
+      } 
+      else if (attr.type == CHAR) {
+          max_size = 2 * attr.len;
+      } 
+      else if (attr.type == VARCHAR) {
+          max_size = 2 * attr.len;
+      }
+      
+    }
+  }
     
   printf("\nPlease enter commands, enter <quit> to shutdown the db\n");
   process(db_loc, schema, bufferm);
