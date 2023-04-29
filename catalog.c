@@ -297,11 +297,11 @@ void add_table_to_catalog(Schema *db_schema, Table *table) {
   Attribute attr;
   for (int j = 0; j < table->num_attributes; j++) {
     if (table->attributes[j].is_primary_key) {
-      attr = table.attributes[j];
+      attr = table->attributes[j];
     }
   }
   printf("Creating index for attribute '%s' in table '%s'\n", attr.name,
-         table.name);
+         table->name);
   int max_size = 4;
   if (attr.type == INTEGER) {
     max_size += 4;
@@ -314,9 +314,9 @@ void add_table_to_catalog(Schema *db_schema, Table *table) {
   } else if (attr.type == VARCHAR) {
     max_size += attr.len;
   }
-  int b_tree_n = page_size / max_size - 1;
+  int b_tree_n = db_schema->page_size / max_size - 1;
   BPlusTree *index = init_BPlusTree(b_tree_n, true, false);
-  schema->btrees[db_schema->num_tables - 1] = *index;
+  db_schema->btrees[db_schema->num_tables - 1] = *index;
 }
 
 void create_catalog(char *db_loc) {
